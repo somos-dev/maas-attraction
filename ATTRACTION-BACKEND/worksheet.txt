@@ -1,0 +1,23 @@
+Venerdi 23/05/2025:
+
+Done work:
+- register (username, email, pass, re-pass, CF)
+- login (username, pass)
+- email confirmation (user is not active and cannot login unless he clicks on confirmation link)
+- authentication tokens (refresh, access)
+- password recovery: 
+    user enters to "/api/auth/password-reset/" and puts his email and POST, after that he receives an email with recovery link 
+    "/api/auth/password-reset-confirm/<uidb64>/<token>/", when clicks, it asks for new password (it can be old and new), and then
+    POST --> the password is updated in backend and user can login with new pass.
+
+URLs with corresponding HTTP Methods and the Purpose
+1. /api/auth/register/	--> POST --> Register a new user
+2. /api/auth/login/ -->	POST --> Obtain JWT access & refresh tokens (login)
+3. /api/auth/token/refresh/ --> POST --> Refresh JWT access token
+4. /api/auth/activate/<uidb64>/<token>/ --> GET --> Activate a user account using emailed token
+5. /api/auth/password-reset/ --> POST --> Request password reset by submitting email
+6. /api/auth/password-reset-confirm/<uidb64>/<token>/ --> POST --> Confirm password reset and set new password
+
+--------------------------------------------------------------------------------------------------------------------
+
+

@@ -104,6 +104,10 @@ EMAIL_HOST_PASSWORD = 'boetbwewtwxswasl'
 DEFAULT_FROM_EMAIL = 'janamamaree9@gmail.com'
 
 
+AUTH_USER_MODEL = 'accounts.CustomUser'
+
+
+
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 

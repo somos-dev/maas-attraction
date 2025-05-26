@@ -20,4 +20,10 @@ URLs with corresponding HTTP Methods and the Purpose
 
 --------------------------------------------------------------------------------------------------------------------
 
+for admin
 
+username: somos
+email: info@somos.srl
+password: somos@9364.attr.478
+
+--------------------------------------------------------

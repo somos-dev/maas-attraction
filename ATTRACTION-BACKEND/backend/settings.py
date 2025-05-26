@@ -25,7 +25,8 @@ SECRET_KEY = 'django-insecure-%$$!48-)f__(s1ujwm+3o%lsqs=0=czaim)us+bpk!tpv*mses
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*'] 
+
 
 
 # Application definition
@@ -41,6 +42,7 @@ INSTALLED_APPS = [
     'accounts',
     'rest_framework_simplejwt',
     'django.contrib.sites',
+    'corsheaders',
 ]
 SITE_ID = 1  # required for password reset
 
@@ -64,7 +66,12 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    
 ]
+
+CORS_ALLOW_ALL_ORIGINS = True
+
 
 ROOT_URLCONF = 'backend.urls'
 

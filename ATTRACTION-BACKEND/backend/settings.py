@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'django.contrib.sites',
     'corsheaders',
+    'activity',
 ]
 SITE_ID = 1  # required for password reset
 

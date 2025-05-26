@@ -40,10 +40,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'accounts',
+    'activity',
     'rest_framework_simplejwt',
     'django.contrib.sites',
     'corsheaders',
-    'activity',
 ]
 SITE_ID = 1  # required for password reset
 

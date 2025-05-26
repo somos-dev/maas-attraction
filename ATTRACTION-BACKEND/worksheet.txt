@@ -27,3 +27,11 @@ email: info@somos.srl
 password: somos@9364.attr.478
 
 --------------------------------------------------------
+Lunedi 26/05/2025:
+
+Done work: 
+
+1. api/auth/search --> post and get -->for all searches [id, origin, destination, time, mode]
+2. api/auth/places --> post and get --> for favorite places [id, address, type]
+3. api/auth/track -->get --> for tracking activity of users it takes [id] and turns origin, destination, time, and mode
+4. api/auth/booking --> post and get --> to book a trip [id, origin, destination, time, mode]

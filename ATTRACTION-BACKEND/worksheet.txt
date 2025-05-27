@@ -1,15 +1,3 @@
-Venerdi 23/05/2025:
-
-Done work:
-- register (username, email, pass, re-pass, CF)
-- login (username, pass)
-- email confirmation (user is not active and cannot login unless he clicks on confirmation link)
-- authentication tokens (refresh, access)
-- password recovery: 
-    user enters to "/api/auth/password-reset/" and puts his email and POST, after that he receives an email with recovery link 
-    "/api/auth/password-reset-confirm/<uidb64>/<token>/", when clicks, it asks for new password (it can be old and new), and then
-    POST --> the password is updated in backend and user can login with new pass.
-
 URLs with corresponding HTTP Methods and the Purpose
 1. /api/auth/register/	--> POST --> Register a new user
 2. /api/auth/login/ -->	POST --> Obtain JWT access & refresh tokens (login)
@@ -17,6 +5,11 @@ URLs with corresponding HTTP Methods and the Purpose
 4. /api/auth/activate/<uidb64>/<token>/ --> GET --> Activate a user account using emailed token
 5. /api/auth/password-reset/ --> POST --> Request password reset by submitting email
 6. /api/auth/password-reset-confirm/<uidb64>/<token>/ --> POST --> Confirm password reset and set new password
+7. api/auth/search --> post and get -->for all searches [id, origin, destination, time, mode]
+8. api/auth/places --> post and get --> for favorite places [id, address, type]
+9. api/auth/track -->get --> for tracking activity of users it takes [id] and turns origin, destination, time, and mode
+10. api/auth/booking --> post and get --> to book a trip [id, origin, destination, time, mode]
+11. api/auth/feedback --> post --> to send a feedback
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -26,15 +19,6 @@ username: somos
 email: info@somos.srl
 password: somos@9364.attr.478
 
---------------------------------------------------------
-Lunedi 26/05/2025:
 
-Done work: 
-
-1. api/auth/search --> post and get -->for all searches [id, origin, destination, time, mode]
-2. api/auth/places --> post and get --> for favorite places [id, address, type]
-3. api/auth/track -->get --> for tracking activity of users it takes [id] and turns origin, destination, time, and mode
-4. api/auth/booking --> post and get --> to book a trip [id, origin, destination, time, mode]
-
--------------------------------
 we need to change email confirmation origin from my email to info@somos.srl
+

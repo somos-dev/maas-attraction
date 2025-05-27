@@ -5,4 +5,4 @@ from .models import CustomUser
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):
     # Optionally customize list_display etc
-    list_display = ('username', 'email', 'codice_fiscale', 'phone_number', 'address', 'is_staff', 'is_active')
+    list_display = ('id','username', 'email', 'codice_fiscale', 'is_staff', 'is_active')

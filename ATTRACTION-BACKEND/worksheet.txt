@@ -35,3 +35,6 @@ Done work:
 2. api/auth/places --> post and get --> for favorite places [id, address, type]
 3. api/auth/track -->get --> for tracking activity of users it takes [id] and turns origin, destination, time, and mode
 4. api/auth/booking --> post and get --> to book a trip [id, origin, destination, time, mode]
+
+-------------------------------
+we need to change email confirmation origin from my email to info@somos.srl

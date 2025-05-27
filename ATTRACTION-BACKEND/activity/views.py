@@ -35,3 +35,15 @@ class TrackUserActivityView(AuthenticatedMixin, APIView):
         latest = searches.first()
         serializer = SearchSerializer(latest)
         return Response(serializer.data)
+
+
+from rest_framework import generics
+from rest_framework.permissions import AllowAny  # or IsAuthenticated if you want
+from .models import Feedback
+from .serializers import FeedbackSerializer
+
+class FeedbackCreateView(generics.CreateAPIView):
+    queryset = Feedback.objects.all()
+    serializer_class = FeedbackSerializer
+    permission_classes = [AllowAny]  # or IsAuthenticated
+

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Search, FavoritePlace, Booking
+from .models import Search, FavoritePlace, Booking, Feedback
 
 class SearchSerializer(serializers.ModelSerializer):
     class Meta:
@@ -15,3 +15,21 @@ class BookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = '__all__'
+
+from rest_framework import serializers
+from django.contrib.auth import get_user_model
+from .models import Feedback
+
+User = get_user_model()
+
+class FeedbackSerializer(serializers.ModelSerializer):
+    user_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        source='user'  # maps user_id to the Feedback.user foreign key
+    )
+
+    class Meta:
+        model = Feedback
+        fields = ['user_id', 'text']
+
+

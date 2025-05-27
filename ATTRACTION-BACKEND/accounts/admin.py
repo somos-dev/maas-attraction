@@ -4,5 +4,12 @@ from .models import CustomUser
 
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):
-    # Optionally customize list_display etc
-    list_display = ('id','username', 'email', 'codice_fiscale', 'is_staff', 'is_active')
+    list_display = ('id', 'username', 'email', 'type', 'codice_fiscale', 'is_staff', 'is_active')
+
+    # To make sure the `type` field shows up on the user edit form:
+    fieldsets = UserAdmin.fieldsets + (
+        (None, {'fields': ('codice_fiscale', 'type')}),
+    )
+    add_fieldsets = UserAdmin.add_fieldsets + (
+        (None, {'fields': ('codice_fiscale', 'type')}),
+    )

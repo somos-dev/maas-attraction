@@ -14,7 +14,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ['id','username', 'email', 'codice_fiscale', 'password', 'confirm_password']
+        fields = ['id', 'username', 'email', 'codice_fiscale', 'user_type', 'password', 'confirm_password']
 
     def validate_email(self, value):
         if CustomUser.objects.filter(email=value).exists():
@@ -29,13 +29,13 @@ class RegisterSerializer(serializers.ModelSerializer):
     def validate(self, data):
         if data['password'] != data['confirm_password']:
             raise serializers.ValidationError("Passwords do not match.")
-        validate_password(data['password'])  # Optional but recommended
+        validate_password(data['password'])
         return data
 
     def create(self, validated_data):
         validated_data.pop('confirm_password')
         user = CustomUser.objects.create_user(**validated_data)
-        user.is_active = False  # Require email activation
+        user.is_active = False
         user.save()
         self.send_activation_email(user)
         return user

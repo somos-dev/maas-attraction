@@ -23,5 +23,4 @@ email: info@somos.srl
 password: somos@9364.attr.478
 
 
-we need to change email confirmation origin from my email to info@somos.srl
 

@@ -14,7 +14,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'email', 'codice_fiscale', 'user_type', 'password', 'confirm_password']
+        fields = ['id', 'username', 'email', 'codice_fiscale', 'type', 'password', 'confirm_password']
 
     def validate_email(self, value):
         if CustomUser.objects.filter(email=value).exists():
@@ -51,7 +51,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         activation_link = f"http://127.0.0.1:8000/api/auth/activate/{uid}/{token}/"
         subject = "Activate Your Account"
         message = f"Click the link to activate your account:\n{activation_link}"
-        send_mail(subject, message, 'noreply@yourdomain.com', [user.email])
+        send_mail(subject, message, 'noreply@somos.srl', [user.email])
         
 
 class PasswordResetRequestSerializer(serializers.Serializer):

@@ -18,11 +18,6 @@ class FavoritePlaceAdmin(admin.ModelAdmin):
     user_id.short_description = 'User ID'
 
 
-@admin.register(Booking)
-class BookingAdmin(admin.ModelAdmin):
-    list_display = ('id', 'origin', 'destination', 'time', 'mode')
-    search_fields = ('origin', 'destination', 'mode')
-
 @admin.register(Feedback)
 class FeedbackAdmin(admin.ModelAdmin):
     list_display = ('user_id', 'text', 'timestamp')

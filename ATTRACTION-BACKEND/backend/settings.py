@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'django.contrib.sites',
     'corsheaders',
+    'rest_framework_simplejwt.token_blacklist',
 ]
 SITE_ID = 1  # required for password reset
 
@@ -53,6 +54,10 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
     ),
+}
+
+SIMPLE_JWT = {
+    "BLACKLIST_AFTER_ROTATION": True,
 }
 
 

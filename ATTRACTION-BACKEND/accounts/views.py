@@ -115,3 +115,14 @@ class PasswordResetConfirmView(APIView):
         user.save()
 
         return Response({"detail": "Password reset successful."}, status=status.HTTP_200_OK)
+
+from rest_framework import generics, permissions
+from .serializers import UserProfileSerializer
+from .models import CustomUser
+
+class UserProfileView(generics.RetrieveUpdateAPIView):
+    serializer_class = UserProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user

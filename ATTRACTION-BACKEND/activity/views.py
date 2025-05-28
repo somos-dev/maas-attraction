@@ -14,9 +14,28 @@ class SearchListCreateView(AuthenticatedMixin, generics.ListCreateAPIView):
     queryset = Search.objects.all()
     serializer_class = SearchSerializer
 
-class FavoritePlaceListCreateView(AuthenticatedMixin, generics.ListCreateAPIView):
-    queryset = FavoritePlace.objects.all()
+# activity/views.py
+from rest_framework import generics, permissions
+from .models import FavoritePlace
+from .serializers import FavoritePlaceSerializer
+
+class FavoritePlaceListCreateView(generics.ListCreateAPIView):
     serializer_class = FavoritePlaceSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return FavoritePlace.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class FavoritePlaceDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = FavoritePlaceSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return FavoritePlace.objects.filter(user=self.request.user)
+
 
 class BookingListCreateView(AuthenticatedMixin, generics.ListCreateAPIView):
     queryset = Booking.objects.all()

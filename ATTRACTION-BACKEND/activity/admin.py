@@ -6,10 +6,17 @@ class SearchAdmin(admin.ModelAdmin):
     list_display = ('id', 'origin', 'destination', 'time', 'mode')
     search_fields = ('origin', 'destination', 'mode')
 
+
 @admin.register(FavoritePlace)
 class FavoritePlaceAdmin(admin.ModelAdmin):
-    list_display = ('id', 'address', 'type')
-    search_fields = ('address', 'type')
+    list_display = ('id', 'user_id', 'address', 'type')  # Show place id, user id, address, and type
+
+    # Optional: if you want to make user_id clickable to go to the user page
+    def user_id(self, obj):
+        return obj.user.id
+    user_id.admin_order_field = 'user__id'  # Allows sorting by user id
+    user_id.short_description = 'User ID'
+
 
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):

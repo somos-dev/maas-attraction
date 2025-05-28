@@ -12,6 +12,7 @@ URLs with corresponding HTTP Methods and the Purpose
 11. api/auth/feedback --> post --> to send a feedback
 12. api/auth/profile --> get and put --> to get user info and favorate places and update user info
 13. api/auth/places/place_id --> put --> to update/modify/ delete favorate places
+14. api/auth/logout -->post --> for logot using refresh and access tokens
 
 --------------------------------------------------------------------------------------------------------------------
 

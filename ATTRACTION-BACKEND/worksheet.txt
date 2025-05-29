@@ -13,6 +13,7 @@ URLs with corresponding HTTP Methods and the Purpose
 12. api/auth/profile --> get and put --> to get user info and favorate places and update user info
 13. api/auth/places/place_id --> put --> to update/modify/ delete favorate places
 14. api/auth/logout -->post --> for logot using refresh and access tokens
+15. api/auth/plan-trip/ -->post and get --> to request transportation data from OTP server
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -23,4 +24,42 @@ email: info@somos.srl
 password: somos@9364.attr.478
 
 
+
+1. Support Trip Planning API for Both Authenticated and Anonymous Users
+
+- The system must accept trip planning requests from users with or without authentication.
+
+- For authenticated users, trip data must be saved linked to their user ID.
+
+- For anonymous users, trip data must be saved linked to their session key.
+
+2. Call External GraphQL API for Trip Planning
+
+- The API endpoint must send trip details (origin, destination, date) to an external GraphQL service.
+
+- Receive and parse the itineraries response and extract relevant trip details like modes of transport.
+
+3. Save Trip Search Data with Relevant Metadata
+
+- Save origin/destination coordinates, trip date, modes of transport, and requested timestamp.
+
+- Save associated user ID for authenticated users or session key for anonymous users.
+
+4. Session Management for Anonymous Users
+
+- Ensure that anonymous users have a session key generated and maintained.
+
+- Save their trip search data using this session key.
+
+5. Admin Interface Displays Conditional Columns
+
+- In Django Admin, show user_id for searches made by authenticated users.
+
+- For anonymous user searches, show session key instead.
+
+- Provide meaningful display of origin and destination coordinates.
+
+6. Data Linking After User Login
+
+- When an anonymous user logs in, transfer or link their previous session’s trip data to their user account to unify the history.
 

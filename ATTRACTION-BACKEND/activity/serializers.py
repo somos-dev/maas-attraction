@@ -33,4 +33,13 @@ class FeedbackSerializer(serializers.ModelSerializer):
         model = Feedback
         fields = ['user_id', 'text']
 
+# api/serializers.py
+from rest_framework import serializers
+
+class PlanTripSerializer(serializers.Serializer):
+    fromLat = serializers.FloatField()
+    fromLon = serializers.FloatField()
+    toLat = serializers.FloatField()
+    toLon = serializers.FloatField()
+    date = serializers.DateField()
 

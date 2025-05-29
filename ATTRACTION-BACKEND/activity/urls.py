@@ -4,6 +4,7 @@ from .views import (
     FeedbackCreateView,
     FavoritePlaceListCreateView,
     FavoritePlaceDetailView,
+    PlanTripView,
 )
 
 urlpatterns = [
@@ -13,4 +14,5 @@ urlpatterns = [
     path('auth/track/', views.TrackUserActivityView.as_view(), name='track-api'),
     path('auth/booking/', views.BookingListCreateView.as_view(), name='booking-api'),
     path('auth/feedback/', FeedbackCreateView.as_view(), name='submit-feedback'),
+    path('auth/plan-trip/', PlanTripView.as_view(), name='plan-trip'),
 ]

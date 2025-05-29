@@ -1,11 +1,22 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.utils import timezone  # <-- add this
+
+User = get_user_model()
 
 class Search(models.Model):
-    origin = models.CharField(max_length=255)
-    destination = models.CharField(max_length=255)
-    time = models.DateTimeField()
-    mode = models.CharField(max_length=100)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    anonymous_session_key = models.CharField(max_length=40, null=True, blank=True)
+    from_lat = models.FloatField(default=0.0)
+    from_lon = models.FloatField(default=0.0)
+    to_lat = models.FloatField(default=0.0)
+    to_lon = models.FloatField(default=0.0)
+    trip_date = models.DateTimeField(default=timezone.now)
+    requested_at = models.DateTimeField(auto_now_add=True)
+    modes = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"Search from ({self.from_lat}, {self.from_lon}) to ({self.to_lat}, {self.to_lon}) on {self.trip_date}"
 
 
 from django.conf import settings

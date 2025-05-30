@@ -52,7 +52,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         subject = "Activate Your Account"
         message = f"Click the link to activate your account:\n{activation_link}"
         send_mail(subject, message, 'noreply@somos.srl', [user.email])
-        
+
 
 class PasswordResetRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -71,14 +71,15 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 from rest_framework import serializers
 from .models import CustomUser
 from activity.models import FavoritePlace
+from activity.serializers import FavoritePlaceSerializer
 
-class FavoritePlaceSerializer(serializers.ModelSerializer):
-    user = serializers.ReadOnlyField(source='user.id')  # or username
+# class FavoritePlaceSerializer(serializers.ModelSerializer):
+#     user = serializers.ReadOnlyField(source='user.id')  # or username
 
-    class Meta:
-        model = FavoritePlace
-        fields = ['id', 'user', 'address', 'type']
-        read_only_fields = ['id', 'user']
+#     class Meta:
+#         model = FavoritePlace
+#         fields = ['id', 'user', 'address', 'type']
+#         read_only_fields = ['id', 'user']
 
 
 class UserProfileSerializer(serializers.ModelSerializer):

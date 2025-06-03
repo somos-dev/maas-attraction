@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Public Transport Stops Map</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet CSS -->
+ <link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+/>
+  <style>
+    #map {
+      height: 600px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Public Transport Stops</h2>
+<div id="map"></div>
+
+<div id="tripResults" style="margin-top: 20px; max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;">
+  <h3>Trip results will appear here</h3>
+</div>
+
+
+<!-- Leaflet JS -->
+<script
+  src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
+></script>
+
+<script>
+
+  function planTripsFromStop(lat, lon, stopName, mode) {
+  const date = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
+  const stops = window.allStops || []; // Save all stops globally
+
+  if (!stops.length) {
+    alert('Stops data not loaded.');
+    return;
+  }
+
+  const filteredStops = stops.filter(s => s.lat && s.lon && (s.lat !== lat || s.lon !== lon));
+
+  document.getElementById('tripResults').innerHTML = `<h3>Trips from ${stopName} (${mode})</h3>`;
+
+  filteredStops.forEach(targetStop => {
+    let fromLat, fromLon, toLat, toLon, fromName, toName;
+
+    if (mode === 'departure') {
+      fromLat = lat;
+      fromLon = lon;
+      toLat = targetStop.lat;
+      toLon = targetStop.lon;
+      fromName = stopName;
+      toName = targetStop.name;
+    } else { // destination
+      fromLat = targetStop.lat;
+      fromLon = targetStop.lon;
+      toLat = lat;
+      toLon = lon;
+      fromName = targetStop.name;
+      toName = stopName;
+    }
+
+    fetch('http://127.0.0.1:8000/api/auth/plan-trip/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fromLat, fromLon, toLat, toLon, date }),
+    })
+    
+    .then(res => res.json())
+    .then(data => {
+      // Show duration or error
+      let duration = '-';
+      if (data.plan && data.plan.itineraries && data.plan.itineraries.length > 0) {
+        duration = data.plan.itineraries[0].duration;
+      }
+      document.getElementById('tripResults').innerHTML += `
+        <p><strong>${fromName}</strong> → <strong>${toName}</strong>: ${duration} sec</p>
+      `;
+    })
+    .catch(err => {
+      document.getElementById('tripResults').innerHTML += `
+        <p><strong>${fromName}</strong> → <strong>${toName}</strong>: Error fetching trip</p>
+      `;
+    });
+  });
+}
+
+  const map = L.map('map').setView([38.5, 16.3], 8);
+
+  // Add OpenStreetMap tile layer
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+  }).addTo(map);
+
+  // Fetch stops from your Django API
+  fetch('/api/auth/stops/')
+  .then(response => response.json())
+  .then(data => {
+    if (!data.stops || data.stops.length === 0) {
+      alert('No stops data received.');
+      return;
+    }
+    window.allStops = data.stops;
+
+    data.stops.forEach(stop => {
+        if (stop.lat && stop.lon) {
+            const popupContent = `
+                <b>${stop.name}</b><br>
+                Code: ${stop.code || 'N/A'}<br><br>
+                <button onclick="planTripsFromStop(${stop.lat}, ${stop.lon}, '${stop.name}', 'departure')">Departure</button>
+                <button onclick="planTripsFromStop(${stop.lat}, ${stop.lon}, '${stop.name}', 'destination')">Destination</button>
+            `;
+
+            L.marker([stop.lat, stop.lon])
+                .addTo(map)
+                .bindPopup(popupContent);
+        }
+    });
+
+  })
+  .catch(err => {
+    console.error('Error fetching stops:', err);
+    alert('Failed to load stops data.');
+  });
+
+</script>
+
+</body>
+</html>

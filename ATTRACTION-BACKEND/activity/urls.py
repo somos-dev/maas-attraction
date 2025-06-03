@@ -5,6 +5,8 @@ from .views import (
     FavoritePlaceListCreateView,
     FavoritePlaceDetailView,
     PlanTripView,
+    StopsView,
+    stops_map_view,
 )
 
 urlpatterns = [
@@ -15,4 +17,7 @@ urlpatterns = [
     path('auth/booking/', views.BookingListCreateView.as_view(), name='booking-api'),
     path('auth/feedback/', FeedbackCreateView.as_view(), name='submit-feedback'),
     path('auth/plan-trip/', PlanTripView.as_view(), name='plan-trip'),
+    path('auth/stops/', StopsView.as_view(), name='stops-list'),
+    path('auth/stops-map/', stops_map_view, name='stops-map'),
+    
 ]

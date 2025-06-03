@@ -187,3 +187,50 @@ def link_anonymous_searches_to_user_signal(sender, request, user, **kwargs):
     session_key = request.session.session_key
     if session_key:
         Search.objects.filter(anonymous_session_key=session_key).update(user=user, anonymous_session_key=None)
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+import requests
+
+class StopsView(APIView):
+    def get(self, request):
+        graphql_query = """
+        query {
+          stops {
+            id
+            name
+            lat
+            lon
+            code
+          }
+        }
+        """
+
+        json_data = {"query": graphql_query}
+        headers = {"Content-Type": "application/json"}
+
+        try:
+            resp = requests.post(
+                "http://server.somos.srl:8080/otp/routers/default/index/graphql",
+                json=json_data,
+                headers=headers,
+                timeout=10
+            )
+            resp.raise_for_status()
+            result = resp.json()
+
+            if "errors" in result:
+                return Response({"errors": result["errors"]}, status=status.HTTP_400_BAD_REQUEST)
+
+            stops = result.get("data", {}).get("stops", [])
+
+            return Response({"stops": stops}, status=status.HTTP_200_OK)
+
+        except requests.RequestException as e:
+            return Response({"error": str(e)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            
+from django.shortcuts import render
+
+def stops_map_view(request):
+    return render(request, 'stops_map.html')

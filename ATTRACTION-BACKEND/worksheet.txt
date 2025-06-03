@@ -14,6 +14,9 @@ URLs with corresponding HTTP Methods and the Purpose
 13. api/auth/places/place_id --> put --> to update/modify/ delete favorate places
 14. api/auth/logout -->post --> for logot using refresh and access tokens
 15. api/auth/plan-trip/ -->post and get --> to request transportation data from OTP server
+16. api/auth/stops/--> post and get --> to get all stops in the server
+17. api/auth/stops-map/ --> get --> to show all stops on map as a button, when you click on a stop, it shows the name and the user 
+can choose to see all trips from this station as departure or destination
 
 --------------------------------------------------------------------------------------------------------------------
 

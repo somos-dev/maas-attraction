@@ -223,14 +223,24 @@ class StopsView(APIView):
             if "errors" in result:
                 return Response({"errors": result["errors"]}, status=status.HTTP_400_BAD_REQUEST)
 
-            stops = result.get("data", {}).get("stops", [])
+            all_stops = result.get("data", {}).get("stops", [])
 
-            return Response({"stops": stops}, status=status.HTTP_200_OK)
+            # Filter for Rende and Cosenza
+            def in_rende_or_cosenza(stop):
+                lat = stop.get("lat")
+                lon = stop.get("lon")
+                if not lat or not lon:
+                    return False
+
+                in_cosenza = 39.28 <= lat <= 39.32 and 16.22 <= lon <= 16.28
+                in_rende = 39.30 <= lat <= 39.38 and 16.17 <= lon <= 16.26
+                return in_cosenza or in_rende
+
+            filtered_stops = [stop for stop in all_stops if in_rende_or_cosenza(stop)]
+
+            return Response({"stops": filtered_stops}, status=status.HTTP_200_OK)
 
         except requests.RequestException as e:
             return Response({"error": str(e)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-            
-from django.shortcuts import render
 
-def stops_map_view(request):
-    return render(request, 'stops_map.html')
+

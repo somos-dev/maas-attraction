@@ -92,6 +92,9 @@ MIDDLEWARE = [
 
 CORS_ALLOW_ALL_ORIGINS = True
 
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 100000 # or higher depending on your needs
+
+
 
 ROOT_URLCONF = 'backend.urls'
 

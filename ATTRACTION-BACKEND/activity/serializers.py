@@ -42,4 +42,6 @@ class PlanTripSerializer(serializers.Serializer):
     toLat = serializers.FloatField()
     toLon = serializers.FloatField()
     date = serializers.DateField()
+    mode = serializers.CharField(required=False)  # <-- add this
+
 

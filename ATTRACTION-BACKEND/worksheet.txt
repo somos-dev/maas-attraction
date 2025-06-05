@@ -64,3 +64,37 @@ password: somos@9364.attr.478
 
 - When an anonymous user logs in, transfer or link their previous session’s trip data to their user account to unify the history.
 
+--------------------------------------------------------
+for this API. api/auth/plan-trip/
+
+1. Receive and validate input
+Uses PlanTripSerializer to validate:
+- fromLat, fromLon, toLat, toLon, date, and optional mode.
+
+2. Fetch all transit stops
+- Sends a GraphQL query to OTP to retrieve all stops.
+
+3. Find nearest stops
+- Uses the haversine formula to calculate distance between user coordinates and OTP stops.
+- Determines the closest from_stop and to_stop.
+
+4. Query trip plan
+- Sends another GraphQL query to OTP to get trip itineraries between the two stops on the given date.
+
+5. Filter and format itineraries
+Optionally filters results by:
+- BUS (must include both BUS and WALK),
+- WALK (only WALK),
+- or any other specified mode.
+- Converts each leg into human-readable instructions (e.g., "Take bus X from A to B").
+
+6. Save the search
+Saves the search to the Search model with:
+- Authenticated user OR anonymous session key.
+- From/to coordinates and date.
+- Requested mode.
+
+7. Return structured response
+Returns:
+- Closest stop names,
+- A list of formatted trip options.

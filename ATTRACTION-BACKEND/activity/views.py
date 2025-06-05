@@ -197,14 +197,26 @@ class PlanTripView(APIView):
                 legs = itinerary.get("legs", [])
                 modes_in_itinerary = set(leg.get("mode", "").upper() for leg in legs)
 
+                # Mode filtering logic
                 if mode_filter == "BUS":
+                    # show options with both BUS and WALK legs
                     if not ("BUS" in modes_in_itinerary and "WALK" in modes_in_itinerary):
                         continue
                 elif mode_filter == "WALK":
+                    # only walk legs
                     if modes_in_itinerary != {"WALK"}:
                         continue
-                elif mode_filter is not None:
-                    if mode_filter not in modes_in_itinerary:
+                elif mode_filter == "BICYCLE":
+                    # include if BICYCLE leg present
+                    if "BICYCLE" not in modes_in_itinerary:
+                        continue
+                elif mode_filter == "SCOOTER":
+                    # include if SCOOTER leg present
+                    if "SCOOTER" not in modes_in_itinerary:
+                        continue
+                else:
+                    # for other modes, include if present
+                    if mode_filter and mode_filter not in modes_in_itinerary:
                         continue
 
                 leg_descriptions = []

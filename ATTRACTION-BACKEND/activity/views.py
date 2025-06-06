@@ -192,30 +192,32 @@ class PlanTripView(APIView):
 
             itineraries = result["data"]["plan"].get("itineraries", [])
 
-            options = []
+            options = {
+                "walk": [],
+                "bus": [],
+                "bicycle": [],
+                "scooter": [],
+                "other": []
+            }
+
             for idx, itinerary in enumerate(itineraries, start=1):
                 legs = itinerary.get("legs", [])
                 modes_in_itinerary = set(leg.get("mode", "").upper() for leg in legs)
 
                 # Mode filtering logic
                 if mode_filter == "BUS":
-                    # show options with both BUS and WALK legs
                     if not ("BUS" in modes_in_itinerary and "WALK" in modes_in_itinerary):
                         continue
                 elif mode_filter == "WALK":
-                    # only walk legs
                     if modes_in_itinerary != {"WALK"}:
                         continue
                 elif mode_filter == "BICYCLE":
-                    # include if BICYCLE leg present
                     if "BICYCLE" not in modes_in_itinerary:
                         continue
                 elif mode_filter == "SCOOTER":
-                    # include if SCOOTER leg present
                     if "SCOOTER" not in modes_in_itinerary:
                         continue
                 else:
-                    # for other modes, include if present
                     if mode_filter and mode_filter not in modes_in_itinerary:
                         continue
 
@@ -259,7 +261,19 @@ class PlanTripView(APIView):
 
                 if leg_descriptions:
                     option_str = f"Option {idx}: " + ", then ".join(leg_descriptions)
-                    options.append(option_str)
+
+                    # Determine primary mode
+                    primary_mode = "other"
+                    if modes_in_itinerary == {"WALK"}:
+                        primary_mode = "walk"
+                    elif "BUS" in modes_in_itinerary:
+                        primary_mode = "bus"
+                    elif "BICYCLE" in modes_in_itinerary:
+                        primary_mode = "bicycle"
+                    elif "SCOOTER" in modes_in_itinerary:
+                        primary_mode = "scooter"
+
+                    options[primary_mode].append(option_str)
 
             # Save search data (user or anonymous)
             user = request.user if request.user.is_authenticated else None
@@ -269,7 +283,6 @@ class PlanTripView(APIView):
 
             anonymous_session_key = request.session.session_key if user is None else None
 
-            # Save request input (not response) in Search model
             Search.objects.create(
                 user=user,
                 anonymous_session_key=anonymous_session_key,

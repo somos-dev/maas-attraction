@@ -67,34 +67,104 @@ password: somos@9364.attr.478
 --------------------------------------------------------
 for this API. api/auth/plan-trip/
 
-1. Receive and validate input
-Uses PlanTripSerializer to validate:
-- fromLat, fromLon, toLat, toLon, date, and optional mode.
+1. Input Handling & Validation:
 
-2. Fetch all transit stops
-- Sends a GraphQL query to OTP to retrieve all stops.
+- Receives a POST request with trip details (fromLat, fromLon, toLat, toLon, date, time, and mode).
+- Validates input using a serializer (PlanTripSerializer).
+- Requires the mode parameter (e.g., WALK, BUS, BICYCLE, SCOOTER, ALL).
+- Handles the time parameter flexibly: if missing or "timenow", defaults to current time; enforces "HH:MM:SS" format.
 
-3. Find nearest stops
-- Uses the haversine formula to calculate distance between user coordinates and OTP stops.
-- Determines the closest from_stop and to_stop.
+2. Stops Fetching and Closest Stop Calculation:
 
-4. Query trip plan
-- Sends another GraphQL query to OTP to get trip itineraries between the two stops on the given date.
+- Queries an external GraphQL API for all transit stops.
+- Uses the Haversine formula to compute distances and find the closest stops to the user's start (fromLat, fromLon) and destination (toLat, toLon).
 
-5. Filter and format itineraries
-Optionally filters results by:
-- BUS (must include both BUS and WALK),
-- WALK (only WALK),
-- or any other specified mode.
-- Converts each leg into human-readable instructions (e.g., "Take bus X from A to B").
+3. Trip Planning Query:
 
-6. Save the search
-Saves the search to the Search model with:
-- Authenticated user OR anonymous session key.
-- From/to coordinates and date.
-- Requested mode.
+- Sends another GraphQL query to the external API to get trip itineraries between the start and destination points, on the requested date and time.
+- Retrieves trip itineraries with detailed legs including modes, start/end times, stop names, and bus route numbers.
 
-7. Return structured response
-Returns:
-- Closest stop names,
-- A list of formatted trip options.
+4. Filtering and Formatting Itineraries:
+
+- Filters itineraries based on the requested mode:
+- "ALL" returns all itineraries.
+- "WALK" returns only itineraries consisting of walking legs.
+- "BUS", "BICYCLE", "SCOOTER" include itineraries that contain those modes.
+- Formats the legs of each itinerary into human-readable strings describing the trip steps with duration and times.
+
+5. Data Persistence:
+
+- Stores the search query in the Search model, recording the user (or anonymous session), coordinates, trip date/time, and mode filter.
+
+6. Response:
+
+Returns JSON with:
+
+- Names of closest from/to stations.
+- A dictionary of options grouped by primary mode (walk, bus, bicycle, scooter, other), each containing textual descriptions of trip options.
+
+7. Error Handling:
+
+- Handles input validation errors.
+- Handles network errors or API errors with appropriate HTTP responses.
+
+
+{
+  "fromLat": 39.35589,
+  "fromLon": 16.22727,
+  "toLat": 39.35331,
+  "toLon": 16.24230,
+  "date": "2025-06-06",
+  "time": "17:00:00",
+  "mode": "bus"
+}
+
+{
+  "fromLat": 39.35589,
+  "fromLon": 16.22727,
+  "toLat": 39.35331,
+  "toLon": 16.24230,
+  "date": "2025-06-06",
+  "time": "17:00:00",
+  "mode": "all"
+}
+
+{
+  "fromLat": 39.35589,
+  "fromLon": 16.22727,
+  "toLat": 39.35331,
+  "toLon": 16.24230,
+  "date": "2025-06-06",
+  "time": "17:00:00",
+  "mode": "walk"
+}
+
+{
+  "fromLat": 39.35589,
+  "fromLon": 16.22727,
+  "toLat": 39.35331,
+  "toLon": 16.24230,
+  "date": "2025-06-06",
+  "time": "timenow",
+  "mode": "bus"
+}
+
+{
+  "fromLat": 39.35589,
+  "fromLon": 16.22727,
+  "toLat": 39.35331,
+  "toLon": 16.24230,
+  "date": "2025-06-06",
+  "time": "timenow",
+  "mode": "walk"
+}
+
+{
+  "fromLat": 39.35589,
+  "fromLon": 16.22727,
+  "toLat": 39.35331,
+  "toLon": 16.24230,
+  "date": "2025-06-06",
+  "time": "timenow",
+  "mode": "all"
+}

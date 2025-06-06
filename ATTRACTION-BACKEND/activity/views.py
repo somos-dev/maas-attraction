@@ -315,6 +315,9 @@ class PlanTripView(APIView):
 
             anonymous_session_key = request.session.session_key if user is None else None
 
+            # Combine date and time into single datetime object for trip_date
+            trip_datetime = datetime.strptime(f"{date_obj.strftime('%Y-%m-%d')} {time_str}", "%Y-%m-%d %H:%M:%S")
+
             Search.objects.create(
                 user=user,
                 anonymous_session_key=anonymous_session_key,
@@ -322,7 +325,7 @@ class PlanTripView(APIView):
                 from_lon=data['fromLon'],
                 to_lat=data['toLat'],
                 to_lon=data['toLon'],
-                trip_date=date_obj,
+                trip_date=trip_datetime,
                 modes=mode_filter
             )
 

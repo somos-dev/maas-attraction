@@ -81,10 +81,12 @@ from .serializers import PlanTripSerializer
 
 
 def haversine(lon1, lat1, lon2, lat2):
+    # Convert decimal degrees to radians
     lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+    # Haversine formula
     dlon = lon2 - lon1
     dlat = lat2 - lat1
-    a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
+    a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
     c = 2 * asin(sqrt(a))
     r = 6371000  # Radius of Earth in meters
     return c * r
@@ -98,11 +100,29 @@ class PlanTripView(APIView):
         serializer = PlanTripSerializer(data=request.data)
         if serializer.is_valid():
             data = serializer.validated_data
-            mode_filter = data.get('mode', None)
-            if mode_filter:
-                mode_filter = mode_filter.upper()
 
-            # 1) Get all stops
+            # Force 'mode' to be present and uppercase
+            mode_filter = data.get('mode')
+            if not mode_filter:
+                return Response({"error": "Mode is required and cannot be empty."}, status=status.HTTP_400_BAD_REQUEST)
+            mode_filter = mode_filter.strip().upper()
+
+            date_obj = data.get('date')
+
+            # Updated time handling logic: accept "timenow" or specific HH:MM:SS or default to now
+            time_str = data.get('time', None)
+
+            if not time_str or (isinstance(time_str, str) and time_str.lower() == 'timenow'):
+                time_str = datetime.now().strftime("%H:%M:%S")
+
+            try:
+                datetime.strptime(time_str, "%H:%M:%S")
+            except ValueError:
+                return Response({"error": "Time must be in HH:MM:SS format."}, status=status.HTTP_400_BAD_REQUEST)
+
+            date_str = date_obj.strftime("%Y-%m-%d")
+
+            # Fetch stops
             stops_query = """
             query {
               stops {
@@ -115,14 +135,18 @@ class PlanTripView(APIView):
             }
             """
             headers = {"Content-Type": "application/json"}
-            stops_response = requests.post(
-                "http://server.somos.srl:8080/otp/routers/default/index/graphql",
-                json={"query": stops_query},
-                headers=headers,
-                timeout=10
-            )
-            stops_response.raise_for_status()
-            stops_data = stops_response.json()
+
+            try:
+                stops_response = requests.post(
+                    "http://server.somos.srl:8080/otp/routers/default/index/graphql",
+                    json={"query": stops_query},
+                    headers=headers,
+                    timeout=10
+                )
+                stops_response.raise_for_status()
+                stops_data = stops_response.json()
+            except requests.exceptions.RequestException as e:
+                return Response({"error": f"Failed to fetch stops: {str(e)}"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
             if "errors" in stops_data:
                 return Response({"errors": stops_data["errors"]}, status=status.HTTP_400_BAD_REQUEST)
@@ -142,13 +166,14 @@ class PlanTripView(APIView):
             from_stop = find_closest_stop(data['fromLat'], data['fromLon'])
             to_stop = find_closest_stop(data['toLat'], data['toLon'])
 
-            # 2) Query OTP plan
+            # Query OTP plan
             plan_query = """
-            query PlanTrip($fromLat: Float!, $fromLon: Float!, $toLat: Float!, $toLon: Float!, $date: String!) {
+            query PlanTrip($fromLat: Float!, $fromLon: Float!, $toLat: Float!, $toLon: Float!, $date: String!, $time: String!) {
               plan(
                 from: { lat: $fromLat, lon: $fromLon },
                 to: { lat: $toLat, lon: $toLon },
-                date: $date
+                date: $date,
+                time: $time
               ) {
                 itineraries {
                   duration
@@ -170,22 +195,27 @@ class PlanTripView(APIView):
               }
             }
             """
+
             variables = {
                 "fromLat": data['fromLat'],
                 "fromLon": data['fromLon'],
                 "toLat": data['toLat'],
                 "toLon": data['toLon'],
-                "date": data['date'].isoformat()
+                "date": date_str,
+                "time": time_str,
             }
 
-            plan_response = requests.post(
-                "http://server.somos.srl:8080/otp/routers/default/index/graphql",
-                json={"query": plan_query, "variables": variables},
-                headers=headers,
-                timeout=10
-            )
-            plan_response.raise_for_status()
-            result = plan_response.json()
+            try:
+                plan_response = requests.post(
+                    "http://server.somos.srl:8080/otp/routers/default/index/graphql",
+                    json={"query": plan_query, "variables": variables},
+                    headers=headers,
+                    timeout=10
+                )
+                plan_response.raise_for_status()
+                result = plan_response.json()
+            except requests.exceptions.RequestException as e:
+                return Response({"error": f"Failed to fetch plan: {str(e)}"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
             if "errors" in result:
                 return Response({"errors": result["errors"]}, status=status.HTTP_400_BAD_REQUEST)
@@ -202,24 +232,28 @@ class PlanTripView(APIView):
 
             for idx, itinerary in enumerate(itineraries, start=1):
                 legs = itinerary.get("legs", [])
-                modes_in_itinerary = set(leg.get("mode", "").upper() for leg in legs)
+                modes_in_itinerary = {leg.get("mode", "").upper() for leg in legs}
 
-                # Mode filtering logic
-                if mode_filter == "BUS":
-                    if not ("BUS" in modes_in_itinerary and "WALK" in modes_in_itinerary):
-                        continue
-                elif mode_filter == "WALK":
-                    if modes_in_itinerary != {"WALK"}:
-                        continue
-                elif mode_filter == "BICYCLE":
-                    if "BICYCLE" not in modes_in_itinerary:
-                        continue
-                elif mode_filter == "SCOOTER":
-                    if "SCOOTER" not in modes_in_itinerary:
-                        continue
-                else:
-                    if mode_filter and mode_filter not in modes_in_itinerary:
-                        continue
+                # Filtering according to mode_filter:
+                if mode_filter != "ALL":
+                    if mode_filter == "WALK":
+                        # Only include itineraries with 100% WALK legs
+                        if modes_in_itinerary != {"WALK"}:
+                            continue
+                    elif mode_filter == "BUS":
+                        # Include itineraries containing at least one BUS leg
+                        if "BUS" not in modes_in_itinerary:
+                            continue
+                    elif mode_filter == "BICYCLE":
+                        if "BICYCLE" not in modes_in_itinerary:
+                            continue
+                    elif mode_filter == "SCOOTER":
+                        if "SCOOTER" not in modes_in_itinerary:
+                            continue
+                    else:
+                        # Unknown mode: skip
+                        if mode_filter not in modes_in_itinerary:
+                            continue
 
                 leg_descriptions = []
                 for leg in legs:
@@ -262,7 +296,6 @@ class PlanTripView(APIView):
                 if leg_descriptions:
                     option_str = f"Option {idx}: " + ", then ".join(leg_descriptions)
 
-                    # Determine primary mode
                     primary_mode = "other"
                     if modes_in_itinerary == {"WALK"}:
                         primary_mode = "walk"
@@ -275,7 +308,6 @@ class PlanTripView(APIView):
 
                     options[primary_mode].append(option_str)
 
-            # Save search data (user or anonymous)
             user = request.user if request.user.is_authenticated else None
 
             if not request.session.session_key:
@@ -290,8 +322,8 @@ class PlanTripView(APIView):
                 from_lon=data['fromLon'],
                 to_lat=data['toLat'],
                 to_lon=data['toLon'],
-                trip_date=data['date'],
-                modes=mode_filter or ''
+                trip_date=date_obj,
+                modes=mode_filter
             )
 
             response_data = {
@@ -304,14 +336,15 @@ class PlanTripView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-#{
-  #"fromLat": 39.366095,
-  #"fromLon": 16.227135,
-  #"toLat": 39.333922,
-  #"toLon": 16.241697,
-  #"date": "2025-05-29"
-#}
+'''{
+  "fromLat": 39.35589,
+  "fromLon": 16.22727,
+  "toLat": 39.35331,
+  "toLon": 16.24230,
+  "date": "2025-06-06",
+  "time": "timenow",
+  "mode": "bus"
+} '''
 
 from django.contrib.auth.signals import user_logged_in
 from django.dispatch import receiver

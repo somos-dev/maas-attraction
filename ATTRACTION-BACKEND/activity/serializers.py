@@ -41,8 +41,13 @@ class PlanTripSerializer(serializers.Serializer):
     fromLon = serializers.FloatField()
     toLat = serializers.FloatField()
     toLon = serializers.FloatField()
-    date = serializers.DateTimeField()  # change this from DateField to DateTimeField
-    mode = serializers.CharField(required=False)
+    date = serializers.DateField()
+    time = serializers.CharField()
+    mode = serializers.CharField()  # required by default
 
-
+    def validate_mode(self, value):
+        allowed_modes = ['all', 'bus', 'walk', 'bicycle', 'scooter']
+        if value.lower() not in allowed_modes:
+            raise serializers.ValidationError(f"Mode must be one of {allowed_modes}")
+        return value.lower()
 

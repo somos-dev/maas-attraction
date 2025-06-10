@@ -1,0 +1,52 @@
+<!-- activity/templates/stop_schedule.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ stop_name }} – Bus Schedule</title>
+    <style>
+        body { font-family: Arial; padding: 2rem; background: #f4f4f4; }
+        h1 { color: #333; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            background: #fff;
+        }
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #ccc;
+        }
+        th { background: #007acc; color: white; }
+        tr:hover { background: #eef; }
+    </style>
+</head>
+<body>
+    <h1>Upcoming Buses at: {{ stop_name }}</h1>
+    {% if upcoming_trips %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Route</th>
+                    <th>Name</th>
+                    <th>Arrival</th>
+                    <th>Departure</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for trip in upcoming_trips %}
+                <tr>
+                    <td>{{ trip.route }}</td>
+                    <td>{{ trip.name }}</td>
+                    <td>{{ trip.arrival }}</td>
+                    <td>{{ trip.departure }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No upcoming buses for today.</p>
+    {% endif %}
+</body>
+</html>

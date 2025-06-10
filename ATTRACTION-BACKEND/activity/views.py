@@ -698,3 +698,67 @@ class StopsView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
+from datetime import datetime, timedelta
+from django.shortcuts import render
+import requests
+
+def get_stop_schedule(request, stop_id):
+    query = """
+    query ($stopId: String!) {
+      stop(id: $stopId) {
+        name
+        stoptimesWithoutPatterns (numberOfDepartures: 300) {
+          scheduledArrival
+          realtimeArrival
+          scheduledDeparture
+          realtimeDeparture
+          trip {
+            route {
+              shortName
+              longName
+            }
+          }
+        }
+      }
+    }
+    """
+    variables = {"stopId": stop_id}
+    response = requests.post(
+        'http://server.somos.srl:8080/otp/routers/default/index/graphql',
+        json={'query': query, 'variables': variables}
+    )
+    data = response.json()
+
+    if "errors" in data or not data.get("data") or not data["data"].get("stop"):
+        return render(request, "stop_schedule.html", {
+            "stop_name": "Unknown Stop",
+            "upcoming_trips": []
+        })
+
+    stop = data["data"]["stop"]
+    now_seconds = datetime.now().hour * 3600 + datetime.now().minute * 60 + datetime.now().second
+    midnight_seconds = 86400
+
+    filtered = [
+        t for t in stop.get("stoptimesWithoutPatterns", [])
+        if t["realtimeArrival"] is not None and now_seconds <= t["realtimeArrival"] <= midnight_seconds
+    ]
+
+    # Optional: sort and limit
+    filtered = sorted(filtered, key=lambda t: t["realtimeArrival"])
+
+    upcoming_trips = []
+    for t in filtered:
+        arrival_sec = t["realtimeArrival"] or t["scheduledArrival"]
+        departure_sec = t["realtimeDeparture"] or t["scheduledDeparture"]
+        upcoming_trips.append({
+            "route": t["trip"]["route"]["shortName"],
+            "name": t["trip"]["route"]["longName"],
+            "arrival": str(timedelta(seconds=arrival_sec))[:-3],
+            "departure": str(timedelta(seconds=departure_sec))[:-3]
+        })
+
+    return render(request, "stop_schedule.html", {
+        "stop_name": stop["name"],
+        "upcoming_trips": upcoming_trips
+    })

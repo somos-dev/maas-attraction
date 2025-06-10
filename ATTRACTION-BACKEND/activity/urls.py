@@ -6,8 +6,10 @@ from .views import (
     FavoritePlaceDetailView,
     PlanTripView,
     StopsView,
+    get_stop_schedule,
     
 )
+
 
 urlpatterns = [
     path('auth/search/', views.SearchListCreateView.as_view(), name='search-api'),
@@ -18,5 +20,5 @@ urlpatterns = [
     path('auth/feedback/', FeedbackCreateView.as_view(), name='submit-feedback'),
     path('auth/plan-trip/', PlanTripView.as_view(), name='plan-trip'),
     path('auth/stops/', StopsView.as_view(), name='stops-list'),
-    
+    path("auth/station/<str:stop_id>/", get_stop_schedule, name="stop_schedule"),
 ]

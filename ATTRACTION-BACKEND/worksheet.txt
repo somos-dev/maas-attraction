@@ -15,6 +15,7 @@ URLs with corresponding HTTP Methods and the Purpose
 14. api/auth/logout -->post --> for logot using refresh and access tokens
 15. api/auth/plan-trip/ -->post and get --> to request transportation data from OTP server
 16. api/auth/stops/--> post and get --> to get all stops in the server
+17. api/auth/station/<str:stop_id>/ --> post and get --> QR code at each station that, when scanned, shows all bus arrivals and departures from scanned time until midnight
 
 --------------------------------------------------------------------------------------------------------------------
 

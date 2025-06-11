@@ -191,6 +191,9 @@ class PlanTripView(APIView):
                     trip {
                       routeShortName
                     }
+                    legGeometry {
+                      points
+                    }
                   }
                 }
               }
@@ -326,6 +329,7 @@ class PlanTripView(APIView):
             anonymous_session_key = request.session.session_key if user is None else None
 
             trip_datetime = datetime.strptime(f"{date_obj.strftime('%Y-%m-%d')} {time_str}", "%Y-%m-%d %H:%M:%S")
+            trip_datetime = timezone.make_aware(trip_datetime)
 
             Search.objects.create(
                 user=user,

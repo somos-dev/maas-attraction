@@ -9,7 +9,7 @@ class SearchSerializer(serializers.ModelSerializer):
 class FavoritePlaceSerializer(serializers.ModelSerializer):
     class Meta:
         model = FavoritePlace
-        fields = ['id', 'address', 'type']  # id is read-only by default
+        fields = ['id', 'address', 'type', 'latitude', 'longitude']  # id is read-only by default
 
 
 class BookingSerializer(serializers.ModelSerializer):

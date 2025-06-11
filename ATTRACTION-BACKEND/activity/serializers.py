@@ -43,6 +43,8 @@ class PlanTripSerializer(serializers.Serializer):
     toLon = serializers.FloatField()
     date = serializers.DateField()
     time = serializers.CharField()
+    requested_date= serializers.DateField()
+    requested_time = serializers.CharField()
     mode = serializers.CharField()  # required by default
 
     def validate_mode(self, value):

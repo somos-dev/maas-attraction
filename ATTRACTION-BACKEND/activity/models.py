@@ -12,7 +12,7 @@ class Search(models.Model):
     to_lat = models.FloatField(default=0.0)
     to_lon = models.FloatField(default=0.0)
     trip_date = models.DateTimeField(default=timezone.now)
-    requested_at = models.DateTimeField(auto_now_add=True)
+    requested_at = models.DateTimeField(default=timezone.now)
     modes = models.TextField(blank=True, null=True)
 
     def __str__(self):

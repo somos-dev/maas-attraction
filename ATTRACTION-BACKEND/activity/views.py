@@ -113,15 +113,22 @@ class PlanTripView(APIView):
             # Updated time handling logic: accept "timenow" or specific HH:MM:SS or default to now
             time_str = data.get('time', None)
 
+            req_date_obj = data.get('requested_date')
+
+            # Updated time handling logic: accept "timenow" or specific HH:MM:SS or default to now
+            req_time_str = data.get('requested_time', None)
+
             if not time_str or (isinstance(time_str, str) and time_str.lower() == 'timenow'):
                 time_str = datetime.now().strftime("%H:%M:%S")
 
             try:
                 datetime.strptime(time_str, "%H:%M:%S")
+                datetime.strptime(req_time_str, "%H:%M:%S")
             except ValueError:
                 return Response({"error": "Time must be in HH:MM:SS format."}, status=status.HTTP_400_BAD_REQUEST)
 
             date_str = date_obj.strftime("%Y-%m-%d")
+            req_date_str = req_date_obj.strftime("%Y-%m-%d")
 
             # Fetch stops
             stops_query = """
@@ -265,6 +272,7 @@ class PlanTripView(APIView):
                     end_ts = leg.get("endTime")
                     from_name = leg.get("from", {}).get("name", "Unknown stop")
                     to_name = leg.get("to", {}).get("name", "Unknown stop")
+                    geometry = leg.get("legGeometry", {}).get("points")
 
                     # Replace generic origin/destination names with closest stops if available
                     if from_name == "Origin" and from_stop:
@@ -293,7 +301,8 @@ class PlanTripView(APIView):
                         "to": to_name,
                         "duration": duration_str,
                         "start_time": start_time_iso,
-                        "end_time": end_time_iso
+                        "end_time": end_time_iso,
+                        "geometry": geometry
                     }
 
                     # Add route for bus legs
@@ -328,8 +337,10 @@ class PlanTripView(APIView):
 
             anonymous_session_key = request.session.session_key if user is None else None
 
-            trip_datetime = datetime.strptime(f"{date_obj.strftime('%Y-%m-%d')} {time_str}", "%Y-%m-%d %H:%M:%S")
-            trip_datetime = timezone.make_aware(trip_datetime)
+            trip_datetime_naive = datetime.strptime(f"{date_obj.strftime('%Y-%m-%d')} {time_str}", "%Y-%m-%d %H:%M:%S")
+            trip_datetime = timezone.make_aware(trip_datetime_naive)
+            req_datetime_naive = datetime.strptime(f"{req_date_obj.strftime('%Y-%m-%d')} {req_time_str}", "%Y-%m-%d %H:%M:%S")
+            req_datetime = timezone.make_aware(req_datetime_naive)
 
             Search.objects.create(
                 user=user,
@@ -339,6 +350,7 @@ class PlanTripView(APIView):
                 to_lat=data['toLat'],
                 to_lon=data['toLon'],
                 trip_date=trip_datetime,
+                requested_at=req_datetime,
                 modes=mode_filter
             )
 
@@ -351,7 +363,6 @@ class PlanTripView(APIView):
             return Response(response_data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 '''import requests
 from datetime import datetime

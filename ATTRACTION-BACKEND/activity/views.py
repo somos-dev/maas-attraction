@@ -70,13 +70,12 @@ class FeedbackCreateView(generics.CreateAPIView):
 import requests
 from datetime import datetime
 from math import radians, cos, sin, asin, sqrt
-
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.authentication import JWTAuthentication
-
+from django.utils import timezone
 from .models import Search
 from .serializers import PlanTripSerializer
 

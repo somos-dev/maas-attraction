@@ -167,5 +167,7 @@ Returns JSON with:
   "toLon": 16.24230,
   "date": "2025-06-06",
   "time": "timenow",
+  "requested_date": "2025-06-06",
+  "requested_time": "12:13:00",
   "mode": "all"
 }

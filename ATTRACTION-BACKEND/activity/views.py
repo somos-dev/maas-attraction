@@ -1,85 +1,30 @@
 from django.shortcuts import render
-from rest_framework import generics, permissions
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework.exceptions import NotFound
-from .models import Search, FavoritePlace, Booking
-from .serializers import SearchSerializer, FavoritePlaceSerializer, BookingSerializer
-
-# Requires authentication
-class AuthenticatedMixin:
-    permission_classes = [permissions.IsAuthenticated]
-
-class SearchListCreateView(AuthenticatedMixin, generics.ListCreateAPIView):
-    queryset = Search.objects.all()
-    serializer_class = SearchSerializer
-
-# activity/views.py
-from rest_framework import generics, permissions
-from .models import FavoritePlace
-from .serializers import FavoritePlaceSerializer
-
-class FavoritePlaceListCreateView(generics.ListCreateAPIView):
-    serializer_class = FavoritePlaceSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        return FavoritePlace.objects.filter(user=self.request.user)
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
-class FavoritePlaceDetailView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = FavoritePlaceSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        return FavoritePlace.objects.filter(user=self.request.user)
-
-
-class BookingListCreateView(AuthenticatedMixin, generics.ListCreateAPIView):
-    queryset = Booking.objects.all()
-    serializer_class = BookingSerializer
-
-class TrackUserActivityView(AuthenticatedMixin, APIView):
-    def get(self, request):
-        user_id = request.query_params.get("id")
-        if not user_id:
-            return Response({"error": "Missing 'id' parameter"}, status=400)
-
-        searches = Search.objects.filter(id=user_id).order_by("-time")
-        if not searches.exists():
-            raise NotFound("No search activity found.")
-
-        latest = searches.first()
-        serializer = SearchSerializer(latest)
-        return Response(serializer.data)
-
-
-from rest_framework import generics
-from rest_framework.permissions import AllowAny  # or IsAuthenticated if you want
-from .models import Feedback
-from .serializers import FeedbackSerializer
-
-class FeedbackCreateView(generics.CreateAPIView):
-    queryset = Feedback.objects.all()
-    serializer_class = FeedbackSerializer
-    permission_classes = [AllowAny]  # or IsAuthenticated
-
-
-import requests
-from datetime import datetime
-from math import radians, cos, sin, asin, sqrt
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import AllowAny
-from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.utils import timezone
-from .models import Search
-from .serializers import PlanTripSerializer
+from django.contrib.auth.signals import user_logged_in
+from django.dispatch import receiver
+from datetime import datetime, timedelta
+from math import radians, cos, sin, asin, sqrt
+import requests
 
+from rest_framework import generics, status, permissions
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.exceptions import NotFound
 
+from .models import Search, FavoritePlace, Booking, Feedback
+from .serializers import (
+    SearchSerializer,
+    FavoritePlaceSerializer,
+    BookingSerializer,
+    FeedbackSerializer,
+    PlanTripSerializer,
+)
+
+# ------------------------------
+#helpers
+# ------------------------------
 def haversine(lon1, lat1, lon2, lat2):
     # Convert decimal degrees to radians
     lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
@@ -91,6 +36,134 @@ def haversine(lon1, lat1, lon2, lat2):
     r = 6371000  # Radius of Earth in meters
     return c * r
 
+# ------------------------------
+# Authentication Mixin
+# ------------------------------
+
+class AuthenticatedMixin:
+    permission_classes = [permissions.IsAuthenticated]
+
+# ------------------------------
+# Search
+# ------------------------------
+
+class SearchListCreateView(AuthenticatedMixin, generics.ListCreateAPIView):
+    queryset = Search.objects.all()
+    serializer_class = SearchSerializer
+    def list(self, request, *args, **kwargs):
+        searches = self.get_queryset()
+        serializer = self.get_serializer(searches, many=True)
+        return Response({
+            "success": True,
+            "message": "Searches retrieved successfully",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+    
+
+# ------------------------------
+# Favorite Places
+# ------------------------------
+
+class FavoritePlaceListCreateView(generics.ListCreateAPIView):
+    serializer_class = FavoritePlaceSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return FavoritePlace.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            "success": True,
+            "message": "Favorite places retrieved successfully",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            self.perform_create(serializer)
+            return Response({
+                "success": True,
+                "message": "Favorite place added successfully",
+                "data": serializer.data
+            }, status=status.HTTP_201_CREATED)
+        return Response({
+            "success": False,
+            "error": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+class FavoritePlaceDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = FavoritePlaceSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return FavoritePlace.objects.filter(user=self.request.user)
+    
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response({"success": True, "data": serializer.data}, status=status.HTTP_200_OK)
+
+# ------------------------------
+# Booking
+# ------------------------------
+
+class BookingListCreateView(AuthenticatedMixin, generics.ListCreateAPIView):
+    queryset = Booking.objects.all()
+    serializer_class = BookingSerializer
+
+    def list(self, request, *args, **kwargs):
+        serializer = self.get_serializer(self.get_queryset(), many=True)
+        return Response({
+            "success": True,
+            "message": "Bookings retrieved successfully",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+    
+# ------------------------------
+# Track User Activity
+# ------------------------------
+
+class TrackUserActivityView(AuthenticatedMixin, APIView):
+    def get(self, request):
+        user_id = request.query_params.get("id")
+        if not user_id:
+            return Response({"success": False, "error": "Missing 'id' parameter"}, status=status.HTTP_400_BAD_REQUEST)
+
+        searches = Search.objects.filter(id=user_id).order_by("-time")
+        if not searches.exists():
+            return Response({"success": False, "error": "No search activity found"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = SearchSerializer(searches.first())
+        return Response({"success": True, "data": serializer.data}, status=status.HTTP_200_OK)
+
+# ------------------------------
+# Feedback
+# ------------------------------
+
+class FeedbackCreateView(generics.CreateAPIView):
+    queryset = Feedback.objects.all()
+    serializer_class = FeedbackSerializer
+    permission_classes = [AllowAny]  # or IsAuthenticated
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "success": True,
+                "message": "Feedback submitted successfully",
+                "data": serializer.data
+            }, status=status.HTTP_201_CREATED)
+        return Response({"success": False, "error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+# ------------------------------
+# Plan Trip
+# ------------------------------
 
 class PlanTripView(APIView):
     authentication_classes = [JWTAuthentication]
@@ -98,6 +171,9 @@ class PlanTripView(APIView):
 
     def post(self, request):
         serializer = PlanTripSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({"success": False, "error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
         if serializer.is_valid():
             data = serializer.validated_data
 
@@ -646,9 +722,10 @@ class PlanTripView(APIView):
   "mode": "bus"
 } '''
 
-from django.contrib.auth.signals import user_logged_in
-from django.dispatch import receiver
-from .models import Search
+# ------------------------------
+# Link Anonymous Searches to User
+# ------------------------------
+
 
 @receiver(user_logged_in)
 def link_anonymous_searches_to_user_signal(sender, request, user, **kwargs):
@@ -656,10 +733,9 @@ def link_anonymous_searches_to_user_signal(sender, request, user, **kwargs):
     if session_key:
         Search.objects.filter(anonymous_session_key=session_key).update(user=user, anonymous_session_key=None)
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-import requests
+# ------------------------------
+# Stops View
+# ------------------------------
 
 class StopsView(APIView):
     def get(self, request):
@@ -712,9 +788,9 @@ class StopsView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
-from datetime import datetime, timedelta
-from django.shortcuts import render
-import requests
+# ------------------------------
+# Stop Schedule
+# ------------------------------
 
 def get_stop_schedule(request, stop_id):
     query = """

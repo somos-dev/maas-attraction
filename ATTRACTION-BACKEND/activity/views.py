@@ -58,6 +58,17 @@ class SearchListCreateView(AuthenticatedMixin, generics.ListCreateAPIView):
             "message": "Searches retrieved successfully",
             "data": serializer.data
         }, status=status.HTTP_200_OK)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "success": True,
+                "message": "Search created successfully",
+                "data": serializer.data
+            }, status=status.HTTP_201_CREATED)
+        return Response({"success": False, "error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
     
 
 # ------------------------------
@@ -82,8 +93,11 @@ class FavoritePlaceListCreateView(generics.ListCreateAPIView):
             "message": "Favorite places retrieved successfully",
             "data": serializer.data
         }, status=status.HTTP_200_OK)
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
+        if not request.user.is_authenticated:
+            return Response({"success": False, "error": "Authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
         if serializer.is_valid():
             self.perform_create(serializer)
             return Response({
@@ -91,10 +105,7 @@ class FavoritePlaceListCreateView(generics.ListCreateAPIView):
                 "message": "Favorite place added successfully",
                 "data": serializer.data
             }, status=status.HTTP_201_CREATED)
-        return Response({
-            "success": False,
-            "error": serializer.errors
-        }, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"success": False, "error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 class FavoritePlaceDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = FavoritePlaceSerializer
@@ -107,6 +118,18 @@ class FavoritePlaceDetailView(generics.RetrieveUpdateDestroyAPIView):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         return Response({"success": True, "data": serializer.data}, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return Response({"success": False, "error": "Authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
+        if request.content_type != 'application/json':
+            return Response({"success": False, "error": "Unsupported media type"}, status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return Response({"success": False, "error": "Authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
+        return super().destroy(request, *args, **kwargs)
 
 # ------------------------------
 # Booking
@@ -123,6 +146,17 @@ class BookingListCreateView(AuthenticatedMixin, generics.ListCreateAPIView):
             "message": "Bookings retrieved successfully",
             "data": serializer.data
         }, status=status.HTTP_200_OK)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "success": True,
+                "message": "Booking created successfully",
+                "data": serializer.data
+            }, status=status.HTTP_201_CREATED)
+        return Response({"success": False, "error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
     
 # ------------------------------
 # Track User Activity
@@ -136,7 +170,7 @@ class TrackUserActivityView(AuthenticatedMixin, APIView):
 
         searches = Search.objects.filter(id=user_id).order_by("-time")
         if not searches.exists():
-            return Response({"success": False, "error": "No search activity found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"success": False, "error": "No search activity found."}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = SearchSerializer(searches.first())
         return Response({"success": True, "data": serializer.data}, status=status.HTTP_200_OK)
@@ -417,6 +451,7 @@ class PlanTripView(APIView):
             req_datetime_naive = datetime.strptime(f"{req_date_obj.strftime('%Y-%m-%d')} {req_time_str}", "%Y-%m-%d %H:%M:%S")
             req_datetime = timezone.make_aware(req_datetime_naive)
 
+
             Search.objects.create(
                 user=user,
                 anonymous_session_key=anonymous_session_key,
@@ -688,8 +723,11 @@ class PlanTripView(APIView):
 
             anonymous_session_key = request.session.session_key if user is None else None
 
-            # Combine date and time into single datetime object for trip_date
-            trip_datetime = datetime.strptime(f"{date_obj.strftime('%Y-%m-%d')} {time_str}", "%Y-%m-%d %H:%M:%S")
+            # Always use the provided date/time fields for trip_date and requested_at
+            trip_datetime_naive = datetime.strptime(f"{data['date']} {data['time']}", "%Y-%m-%d %H:%M:%S")
+            trip_datetime = timezone.make_aware(trip_datetime_naive)
+            req_datetime_naive = datetime.strptime(f"{data.get('requested_date', data['date'])} {data.get('requested_time', data['time'])}", "%Y-%m-%d %H:%M:%S")
+            req_datetime = timezone.make_aware(req_datetime_naive)
 
             Search.objects.create(
                 user=user,
@@ -699,6 +737,7 @@ class PlanTripView(APIView):
                 to_lat=data['toLat'],
                 to_lon=data['toLon'],
                 trip_date=trip_datetime,
+                requested_at=req_datetime,
                 modes=mode_filter
             )
 

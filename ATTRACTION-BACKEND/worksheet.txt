@@ -224,3 +224,116 @@ Code	Meaning	When to Use	Mobile 📱	Web 🌐
 for a Django REST API, you’ll realistically implement 200–429, while 
 301/302/304/502/503/504 will mostly come from outside Django.
 ------------------------------------------------------------------------------
+try {
+    $response = Invoke-WebRequest -Method POST -Uri "http://127.0.0.1:8000/api/auth/login/" `
+        -Headers @{ "Content-Type" = "application/json" } `
+        -Body '{ "email": "51830345@students.liu.edu.lb", "password": "Jana.1234" }'
+
+    Write-Host "Status Code: $($response.StatusCode)"
+    Write-Host "Response Body: $($response.Content)"
+}
+catch [System.Net.WebException] {
+    $errorResponse = $_.Exception.Response
+    $reader = New-Object System.IO.StreamReader($errorResponse.GetResponseStream())
+    $body = $reader.ReadToEnd()
+    Write-Host "Status Code: $($errorResponse.StatusCode.value__)"
+    Write-Host "Response Body: $body"
+}
+
+------------------------------------------------------------------------------------
+API-Specific Error Codes
+
+1. /api/auth/register/ (POST)
+201: User registered
+400: Invalid input, missing fields, weak password
+409: Email/username already exists
+
+2. /api/auth/login/ (POST)
+200: Login successful
+400: Invalid credentials, malformed request
+401: Authentication failed
+
+3. /api/auth/token/refresh/ (POST)
+200: Token refreshed
+400: Invalid/expired refresh token
+401: Not authenticated
+
+4. /api/auth/activate/<uidb64>/<token>/ (GET)
+200: Account activated
+400: Invalid token or user ID
+403: User is banned
+404: User not found
+
+5. /api/auth/password-reset/ (POST)
+200: Reset link sent
+400: Invalid email format
+404: Email not found (may still return 200 for security)
+
+6. /api/auth/password-reset-confirm/<uidb64>/<token>/ (POST)
+200: Password reset successful
+400: Invalid/expired token, weak password
+403: User is banned
+
+7. /api/auth/search (GET/POST)
+200: Success
+400: Invalid input
+401: Not authenticated
+404: Search not found
+
+8. /api/auth/places (GET/POST)
+200: Success
+201: Place added
+400: Invalid input
+401: Not authenticated
+404: Place not found
+
+9. /api/auth/track (GET)
+200: Success
+400: Missing 'id' parameter
+404: No search activity found
+
+10. /api/auth/booking (GET/POST)
+200: Success
+201: Booking created
+400: Invalid input
+401: Not authenticated
+409: Booking conflict
+
+11. /api/auth/feedback (POST)
+201: Feedback submitted
+400: Invalid input
+
+12. /api/auth/profile (GET/PUT)
+200: Success
+400: Invalid input
+401: Not authenticated
+404: User not found
+415: Unsupported media type
+
+13. /api/auth/places/<place_id> (PUT)
+200: Success
+400: Invalid input
+401: Not authenticated
+404: Place not found
+
+14. /api/auth/logout (POST)
+205: Successfully logged out
+400: Missing/invalid refresh token
+401: Not authenticated
+
+15. /api/auth/plan-trip/ (POST/GET)
+200: Success
+400: Invalid input, validation error
+401: Not authenticated (if required)
+503: External API/network error
+
+16. /api/auth/stops/ (GET/POST)
+200: Success
+400: Invalid input
+503: External API/network error
+
+17. /api/auth/station/<stop_id>/ (GET/POST)
+200: Success
+400: Invalid input
+404: Stop not found
+503: External API/network error

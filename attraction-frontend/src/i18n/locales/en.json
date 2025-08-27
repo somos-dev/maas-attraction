@@ -1,0 +1,275 @@
+{
+  "navigation": {
+    "journeyPlanner": "Journey Planner",
+    "planYourPerfectTrip": "Plan your perfect trip",
+    "savedLocations": "Saved Locations",
+    "tripHistory": "Trip History",
+    "directions": "Directions",
+    "favorites": "Favorites",
+    "profile": "Profile",
+    "settings": "Settings"
+  },
+  "account": "Account",
+  "language": {
+    "title": "Language",
+    "description": "Select your preferred language",
+    "italian": "Italian",
+    "english": "English",
+    "engShort": "ENG",
+    "itaShort": "ITA"
+  },
+  "settings": {
+    "title": "Settings",
+    "preferences": "Preferences",
+    "notifications": "Notifications",
+    "privacy": "Privacy",
+    "about": "About",
+    "pushNotifications": "Push Notifications",
+    "locationAlerts": "Location Alerts",
+    "locationSharing": "Location Sharing",
+    "analytics": "Analytics"
+  },
+  "savedLocations": {
+    "title": "Your Lists",
+    "noSavedLocations": "No saved locations yet",
+    "addFirstLocation": "Add your first location to get started",
+    "addLocation": "Add Location",
+    "noPlacesInList": "No places in this list yet",
+    "addFirstPlace": "Add your first place to get started",
+    "places": "places",
+    "place": "place",
+    "types": "types"
+  },
+  "common": {
+    "version": "Version",
+    "currentLocation": "Current Location",
+    "current": "Current",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "back": "Back",
+    "home": "Home",
+    "remove": "Remove",
+    "close": "Close",
+    "edit": "Edit",
+    "delete": "Delete",
+    "loading": "Loading",
+    "search": "Search",
+    "clear": "Clear",
+    "searching": "Searching...",
+    "noResults": "No results found",
+    "error": "Error",
+    "success": "Success",
+    "info": "Info",
+    "warning": "Warning",
+    "chooseYourRoute": "Choose Your Route",
+    "selectRouteToSeeDetails": "Select a route option to see your journey details",
+    "mobilityManagementPlatform": "Mobility Management Platform",
+    "noJourneySteps": "No journey steps available",
+    "minutes": "m",
+    "hours": "h",
+    "meters": "m",
+    "kilometers": "km",
+    "depart": "Depart",
+    "arrive": "Arrive",
+    "steps": "steps",
+    "and": "and"
+  },
+  "directions": {
+    "from": "From",
+    "to": "To",
+    "route": "Route",
+    "duration": "Duration",
+    "distance": "Distance",
+    "getDirections": "Directions",
+    "routeType": "Route",
+    "routeDetails": "Route Details",
+    "setStartingPointAndDestination": "Set your starting point and destination to find routes",
+    "addOriginToFindRoutes": "Add a origin to find routes",
+    "addDestinationToFindRoutes": "Add a destination to find routes",
+    "noRoutesFound": "No Routes Found..."
+  },
+  "search": {
+    "startingPoint": "Starting point (e.g., address, bus stop)",
+    "whereTo": "Where to?",
+    "addresses": "Addresses",
+    "busStops": "Bus Stops",
+    "busStop": "Bus Stop",
+    "noResultsFor": "No results found for",
+    "findRoutes": "Find Routes",
+    "useCurrentLocation": "Use Your Current Location?",
+    "clearOriginInput": "Clear origin input",
+    "clearDestinationInput": "Clear destination input",
+    "searchPlaces": "Search for places, addresses, or landmarks..."
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "signUp": "Sign Up",
+    "forgotPassword": "Forgot Password",
+    "resetPassword": "Reset Password",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "username": "Username",
+    "enterEmail": "Enter your email",
+    "enterPassword": "Enter your password",
+    "enterUsername": "Enter your username",
+    "loginAgain": "Login Again",
+    "backToDashboard": "Back to dashboard",
+    "sendingResetRequest": "Sending the reset request...",
+    "reset": "Reset",
+    "codiceFiscale": "Codice Fiscale",
+    "enterCodiceFiscale": "Enter your Codice fiscale",
+    "reEnterPassword": "Re enter your password",
+    "signUpPrompt": "Enter your email and password to sign up!",
+    "signUpButton": "Sign Up",
+    "agreeToTerms": "I agree to the terms and conditions",
+    "signIn": "Sign In",
+    "signInPrompt": "Enter your email and password to sign in!",
+    "signInWithGoogle": "Sign in with Google",
+    "signInWithX": "Sign in with X",
+    "signUpWithGoogle": "Sign up with Google",
+    "signUpWithX": "Sign up with X",
+    "or": "Or",
+    "dontHaveAccount": "Don't have an account?",
+    "alreadyHaveAccount": "Already have an account?",
+    "selectRole": "Select your role",
+    "userRole": "User",
+    "adminRole": "Admin",
+    "agreeToTermsText": "By creating an account means you agree to the",
+    "termsAndConditions": "Terms and Conditions",
+    "privacyPolicyLink": "Privacy Policy",
+    "creatingAccount": "Creating your account...",
+    "keepMeLoggedIn": "Keep me logged in",
+    "forgotPasswordLink": "Forgot password?",
+    "signingIn": "Signing in...",
+    "signInButton": "Sign in",
+    "forgotPasswordTitle": "Forgot your Password?",
+    "forgotPasswordPrompt": "Enter your email to reset your password!",
+    "resetButton": "Reset",
+    "goBackTo": "Go back to",
+    "resetPasswordTitle": "Reset Password",
+    "resetPasswordPrompt": "Please Choose Your New Password?"
+  },
+  "profile": {
+    "title": "Profile",
+    "editProfile": "Edit Profile",
+    "manageAccount": "Manage your account settings and preferences",
+    "updateAccountInfo": "Update your account information",
+    "accountInfo": "Your account information and settings",
+    "quickActions": "Quick Actions",
+    "savedPlaces": "Saved Places",
+    "accountType": "Account Type",
+    "noChangesDetected": "No changes detected.",
+    "saveChanges": "Save Changes"
+  },
+  "session": {
+    "expired": "Session Expired",
+    "expiredMessage": "Your session has expired for security reasons. Please log in again to continue.",
+    "redirectMessage": "You will be redirected to login automatically in {countdown} seconds"
+  },
+  "toast": {
+    "currentLocationSet": "Current location set!",
+    "currentLocationError": "Failed to get current location. Please enable location services.",
+    "mapNotLoaded": "Map not loaded. Cannot get current location.",
+    "allFieldsRequired": "Please insert all required fields!",
+    "locationRemovedSuccessfully": "Location removed successfully",
+    "failedToRemoveLocation": "Failed to remove location"
+  },
+  "placeholders": {
+    "selectDate": "Select a date",
+    "cardNumber": "Card number",
+    "infoGmail": "info@gmail.com",
+    "selectOption": "Select an option",
+    "disabledEmail": "disabled@example.com",
+    "enterName": "Enter your name"
+  },
+  "labels": {
+    "input": "Input",
+    "inputWithPlaceholder": "Input with Placeholder",
+    "selectInput": "Select Input",
+    "passwordInput": "Password Input",
+    "datePickerInput": "Date Picker Input",
+    "timePickerInput": "Time Picker Input",
+    "inputWithPayment": "Input with Payment",
+    "name": "Name",
+    "openProfile": "Open profile"
+  },
+  "hints": {
+    "invalidEmail": "This is an invalid email address.",
+    "validEmail": "Valid email!",
+    "fieldDisabled": "This field is disabled."
+  },
+  "footer": {
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of service"
+  },
+  "locationTypes": {
+    "home": "Home locations",
+    "work": "Work locations", 
+    "visited": "Places you have visited",
+    "favorites": "Your favorite places",
+    "starred": "Starred locations",
+    "restaurant": "Restaurants",
+    "hotel": "Hotels",
+    "shopping": "Shopping locations",
+    "other": "Other locations"
+  },
+  "marketing": {
+    "termsOfService": "Terms of Service",
+    "privacyPolicy": "Privacy Policy",
+    "login": "Login",
+    "getAttractionForFree": "Get Attraction for free",
+    "flexibleMobilityManagement": "FLEXIBLE Mobility Management",
+    "planTrackManage": "Plan, track, and manage your travel",
+    "moveForward": "move forward.",
+    "description": "Attraction is a flexible mobility management platform that helps you plan, track, and manage your travel. Whether you're a business traveler or a leisure traveler, Attraction has the tools you need to make your travel experience seamless and enjoyable.",
+    "heroTitle": "Transform Your Journey",
+    "heroSubtitle": "Experience the future of mobility",
+    "heroDescription": "Revolutionary platform that connects all your transportation needs in one seamless experience. Plan smarter, travel better, live more.",
+    "getStarted": "Get Started",
+    "watchDemo": "Watch Demo",
+    "trustedBy": "Trusted by thousands of travelers worldwide",
+    "features": {
+      "title": "Everything you need for perfect travel",
+      "subtitle": "Powerful features designed to make your mobility experience effortless",
+      "smartPlanning": {
+        "title": "Smart Planning",
+        "description": "AI-powered route optimization that learns your preferences and suggests the best travel options."
+      },
+      "realTimeUpdates": {
+        "title": "Real-time Updates",
+        "description": "Stay informed with live traffic, delays, and alternative routes to keep you moving."
+      },
+      "multiModal": {
+        "title": "Multi-modal Transport",
+        "description": "Seamlessly combine different transport modes for the most efficient journey."
+      },
+      "carbonFootprint": {
+        "title": "Carbon Tracking",
+        "description": "Monitor and reduce your environmental impact with detailed carbon footprint analytics."
+      },
+      "offlineAccess": {
+        "title": "Offline Access",
+        "description": "Access your travel plans and maps even without internet connection."
+      },
+      "teamCollaboration": {
+        "title": "Team Collaboration",
+        "description": "Share itineraries and coordinate travel plans with your team or family."
+      }
+    },
+    "stats": {
+      "title": "Making mobility accessible for everyone",
+      "users": "Active Users",
+      "routes": "Routes Planned",
+      "co2Saved": "CO₂ Saved",
+      "cities": "Cities Connected"
+    },
+    "cta": {
+      "title": "Ready to transform your travel?",
+      "subtitle": "Join thousands who have already made the switch to smarter mobility",
+      "button": "Start Your Journey"
+    }
+  }
+}

@@ -1,0 +1,275 @@
+{
+  "navigation": {
+    "journeyPlanner": "Pianificatore di Viaggio",
+    "planYourPerfectTrip": "Pianifica il tuo viaggio perfetto",
+    "savedLocations": "Posizioni Salvate",
+    "tripHistory": "Cronologia Viaggi",
+    "directions": "Indicazioni",
+    "favorites": "Preferiti",
+    "profile": "Profilo",
+    "settings": "Impostazioni"
+  },
+  "account": "Account",
+  "language": {
+    "title": "Lingua",
+    "description": "Seleziona la tua lingua preferita",
+    "italian": "Italiano",
+    "english": "Inglese",
+    "engShort": "ENG",
+    "itaShort": "ITA"
+  },
+  "settings": {
+    "title": "Impostazioni",
+    "preferences": "Preferenze",
+    "notifications": "Notifiche",
+    "privacy": "Privacy",
+    "about": "Informazioni",
+    "pushNotifications": "Notifiche Push",
+    "locationAlerts": "Avvisi di Posizione",
+    "locationSharing": "Condivisione Posizione",
+    "analytics": "Analisi"
+  },
+  "savedLocations": {
+    "title": "Le Tue Liste",
+    "noSavedLocations": "Nessuna posizione salvata ancora",
+    "addFirstLocation": "Aggiungi la tua prima posizione per iniziare",
+    "addLocation": "Aggiungi Posizione",
+    "noPlacesInList": "Nessun posto in questa lista ancora",
+    "addFirstPlace": "Aggiungi il tuo primo posto per iniziare",
+    "places": "posti",
+    "place": "posto",
+    "types": "tipi"
+  },
+  "common": {
+    "version": "Versione",
+    "currentLocation": "Posizione Attuale",
+    "current": "Attuale",
+    "save": "Salva",
+    "cancel": "Annulla",
+    "confirm": "Conferma",
+    "back": "Indietro",
+    "home": "Home",
+    "remove": "Rimuovi",
+    "close": "Chiudi",
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "loading": "Caricamento",
+    "search": "Cerca",
+    "clear": "Cancella",
+    "searching": "Ricerca in corso...",
+    "noResults": "Nessun risultato trovato",
+    "error": "Errore",
+    "success": "Successo",
+    "info": "Informazioni",
+    "warning": "Avviso",
+    "chooseYourRoute": "Scegli il Tuo Percorso",
+    "selectRouteToSeeDetails": "Seleziona un'opzione di percorso per vedere i dettagli del viaggio",
+    "mobilityManagementPlatform": "Piattaforma di Gestione della Mobilità",
+    "noJourneySteps": "Nessun passo del viaggio disponibile",
+    "minutes": "m",
+    "hours": "h",
+    "meters": "m",
+    "kilometers": "km",
+    "depart": "Partenza",
+    "arrive": "Arrivo",
+    "steps": "passi",
+    "and": "e"
+  },
+  "directions": {
+    "from": "Da",
+    "to": "A",
+    "route": "Percorso",
+    "duration": "Durata",
+    "distance": "Distanza",
+    "getDirections": "Indicazioni",
+    "routeType": "Percorso",
+    "routeDetails": "Dettagli Percorso",
+    "setStartingPointAndDestination": "Imposta il punto di partenza e la destinazione per trovare percorsi",
+    "addOriginToFindRoutes": "Aggiungi un'origine per trovare percorsi",
+    "addDestinationToFindRoutes": "Aggiungi una destinazione per trovare percorsi",
+    "noRoutesFound": "Nessun Percorso Trovato..."
+  },
+  "search": {
+    "startingPoint": "Punto di partenza (es. indirizzo, fermata autobus)",
+    "whereTo": "Dove vuoi andare?",
+    "addresses": "Indirizzi",
+    "busStops": "Fermate Autobus",
+    "busStop": "Fermata Autobus",
+    "noResultsFor": "Nessun risultato trovato per",
+    "findRoutes": "Trova Percorsi",
+    "useCurrentLocation": "Usa la Tua Posizione Attuale?",
+    "clearOriginInput": "Cancella input di partenza",
+    "clearDestinationInput": "Cancella input di destinazione",
+    "searchPlaces": "Cerca luoghi, indirizzi o punti di interesse..."
+  },
+  "auth": {
+    "login": "Accedi",
+    "logout": "Esci",
+    "signUp": "Registrati",
+    "forgotPassword": "Password Dimenticata",
+    "resetPassword": "Reimposta Password",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Conferma Password",
+    "username": "Nome Utente",
+    "enterEmail": "Inserisci la tua email",
+    "enterPassword": "Inserisci la tua password",
+    "enterUsername": "Inserisci il tuo nome utente",
+    "loginAgain": "Accedi Nuovamente",
+    "backToDashboard": "Torna alla dashboard",
+    "sendingResetRequest": "Invio richiesta di reset...",
+    "reset": "Reimposta",
+    "codiceFiscale": "Codice Fiscale",
+    "enterCodiceFiscale": "Inserisci il tuo Codice fiscale",
+    "reEnterPassword": "Reinserisci la tua password",
+    "signUpPrompt": "Inserisci la tua email e password per registrarti!",
+    "signUpButton": "Registrati",
+    "agreeToTerms": "Accetto i termini e le condizioni",
+    "signIn": "Accedi",
+    "signInPrompt": "Inserisci la tua email e password per accedere!",
+    "signInWithGoogle": "Accedi con Google",
+    "signInWithX": "Accedi con X",
+    "signUpWithGoogle": "Registrati con Google",
+    "signUpWithX": "Registrati con X",
+    "or": "Oppure",
+    "dontHaveAccount": "Non hai un account?",
+    "alreadyHaveAccount": "Hai già un account?",
+    "selectRole": "Seleziona il tuo ruolo",
+    "userRole": "Utente",
+    "adminRole": "Amministratore",
+    "agreeToTermsText": "Creando un account accetti i",
+    "termsAndConditions": "Termini e Condizioni",
+    "privacyPolicyLink": "Informativa sulla Privacy",
+    "creatingAccount": "Creazione del tuo account...",
+    "keepMeLoggedIn": "Mantieni l'accesso",
+    "forgotPasswordLink": "Password dimenticata?",
+    "signingIn": "Accesso in corso...",
+    "signInButton": "Accedi",
+    "forgotPasswordTitle": "Password Dimenticata?",
+    "forgotPasswordPrompt": "Inserisci la tua email per resettare la password!",
+    "resetButton": "Reimposta",
+    "goBackTo": "Torna a",
+    "resetPasswordTitle": "Reimposta Password",
+    "resetPasswordPrompt": "Scegli la Tua Nuova Password"
+  },
+  "profile": {
+    "title": "Profilo",
+    "editProfile": "Modifica Profilo",
+    "manageAccount": "Gestisci le impostazioni e le preferenze del tuo account",
+    "updateAccountInfo": "Aggiorna le informazioni del tuo account",
+    "accountInfo": "Informazioni e impostazioni del tuo account",
+    "quickActions": "Azioni Rapide",
+    "savedPlaces": "Luoghi Salvati",
+    "accountType": "Tipo di Account",
+    "noChangesDetected": "Nessuna modifica rilevata.",
+    "saveChanges": "Salva Modifiche"
+  },
+  "session": {
+    "expired": "Sessione Scaduta",
+    "expiredMessage": "La tua sessione è scaduta per motivi di sicurezza. Effettua nuovamente l'accesso per continuare.",
+    "redirectMessage": "Verrai reindirizzato al login automaticamente tra {countdown} secondi"
+  },
+  "toast": {
+    "currentLocationSet": "Posizione attuale impostata!",
+    "currentLocationError": "Impossibile ottenere la posizione attuale. Abilita i servizi di localizzazione.",
+    "mapNotLoaded": "Mappa non caricata. Impossibile ottenere la posizione attuale.",
+    "allFieldsRequired": "Inserisci tutti i campi obbligatori!",
+    "locationRemovedSuccessfully": "Posizione rimossa con successo",
+    "failedToRemoveLocation": "Impossibile rimuovere la posizione"
+  },
+  "placeholders": {
+    "selectDate": "Seleziona una data",
+    "cardNumber": "Numero carta",
+    "infoGmail": "info@gmail.com",
+    "selectOption": "Seleziona un'opzione",
+    "disabledEmail": "disabled@example.com",
+    "enterName": "Inserisci il tuo nome"
+  },
+  "labels": {
+    "input": "Input",
+    "inputWithPlaceholder": "Input con Placeholder",
+    "selectInput": "Input Selezione",
+    "passwordInput": "Input Password",
+    "datePickerInput": "Input Selettore Data",
+    "timePickerInput": "Input Selettore Ora",
+    "inputWithPayment": "Input con Pagamento",
+    "name": "Nome",
+    "openProfile": "Apri profilo"
+  },
+  "hints": {
+    "invalidEmail": "Questo è un indirizzo email non valido.",
+    "validEmail": "Email valida!",
+    "fieldDisabled": "Questo campo è disabilitato."
+  },
+  "footer": {
+    "privacyPolicy": "Informativa sulla Privacy",
+    "termsOfService": "Termini di servizio"
+  },
+  "locationTypes": {
+    "home": "Posizioni di casa",
+    "work": "Posizioni di lavoro", 
+    "visited": "Luoghi che hai visitato",
+    "favorites": "I tuoi luoghi preferiti",
+    "starred": "Posizioni stellate",
+    "restaurant": "Ristoranti",
+    "hotel": "Hotel",
+    "shopping": "Luoghi per lo shopping",
+    "other": "Altre posizioni"
+  },
+  "marketing": {
+    "termsOfService": "Termini di Servizio",
+    "privacyPolicy": "Informativa sulla Privacy",
+    "login": "Accedi",
+    "getAttractionForFree": "Ottieni Attraction gratuitamente",
+    "flexibleMobilityManagement": "Gestione della Mobilità FLESSIBILE",
+    "planTrackManage": "Pianifica, monitora e gestisci i tuoi viaggi",
+    "moveForward": "vai avanti.",
+    "description": "Attraction è una piattaforma flessibile di gestione della mobilità che ti aiuta a pianificare, monitorare e gestire i tuoi viaggi. Che tu sia un viaggiatore d'affari o un viaggiatore per piacere, Attraction ha gli strumenti di cui hai bisogno per rendere la tua esperienza di viaggio fluida e piacevole.",
+    "heroTitle": "Trasforma il Tuo Viaggio",
+    "heroSubtitle": "Vivi il futuro della mobilità",
+    "heroDescription": "Piattaforma rivoluzionaria che connette tutte le tue esigenze di trasporto in un'esperienza fluida. Pianifica in modo intelligente, viaggia meglio, vivi di più.",
+    "getStarted": "Inizia Ora",
+    "watchDemo": "Guarda Demo",
+    "trustedBy": "Scelto da migliaia di viaggiatori in tutto il mondo",
+    "features": {
+      "title": "Tutto ciò di cui hai bisogno per un viaggio perfetto",
+      "subtitle": "Funzionalità potenti progettate per rendere la tua esperienza di mobilità senza sforzo",
+      "smartPlanning": {
+        "title": "Pianificazione Intelligente",
+        "description": "Ottimizzazione delle rotte basata su AI che apprende le tue preferenze e suggerisce le migliori opzioni di viaggio."
+      },
+      "realTimeUpdates": {
+        "title": "Aggiornamenti in Tempo Reale",
+        "description": "Rimani informato con traffico dal vivo, ritardi e percorsi alternativi per mantenerti in movimento."
+      },
+      "multiModal": {
+        "title": "Trasporto Multi-modale",
+        "description": "Combina facilmente diversi modi di trasporto per il viaggio più efficiente."
+      },
+      "carbonFootprint": {
+        "title": "Tracciamento Carbonio",
+        "description": "Monitora e riduci il tuo impatto ambientale con analisi dettagliate dell'impronta di carbonio."
+      },
+      "offlineAccess": {
+        "title": "Accesso Offline",
+        "description": "Accedi ai tuoi piani di viaggio e mappe anche senza connessione internet."
+      },
+      "teamCollaboration": {
+        "title": "Collaborazione di Team",
+        "description": "Condividi itinerari e coordina i piani di viaggio con il tuo team o famiglia."
+      }
+    },
+    "stats": {
+      "title": "Rendere la mobilità accessibile a tutti",
+      "users": "Utenti Attivi",
+      "routes": "Percorsi Pianificati",
+      "co2Saved": "CO₂ Risparmiata",
+      "cities": "Città Connesse"
+    },
+    "cta": {
+      "title": "Pronto a trasformare i tuoi viaggi?",
+      "subtitle": "Unisciti alle migliaia che hanno già fatto il passaggio a una mobilità più intelligente",
+      "button": "Inizia il Tuo Viaggio"
+    }
+  }
+}

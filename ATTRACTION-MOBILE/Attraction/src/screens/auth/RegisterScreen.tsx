@@ -187,59 +187,52 @@ export default function RegisterScreen({ navigation }: Props) {
             />
             {codiceFiscaleError && <Text style={styles.errorText}>{codiceFiscaleError}</Text>}
 
-            {/* Tipo utente */}
-            <TouchableOpacity onPress={() => setMenuVisible(true)}>
-              <TextInput
-                label="Tipo utente"
-                value={
-                  userType === "student"
-                    ? "Studente"
-                    : userType === "worker"
-                    ? "Lavoratore"
-                    : userType === "other"
-                    ? "Altro"
-                    : ""
-                }
-                style={styles.input}
-                editable={false}
-                left={<TextInput.Icon icon="account-group" />}
-              />
-            </TouchableOpacity>
-
-            <Menu
-              visible={menuVisible}
-              onDismiss={() => setMenuVisible(false)}
-              anchor={<></>}
-            >
-              <Menu.Item
-                onPress={() => {
-                  setUserType(null);
-                  setMenuVisible(false);
-                }}
-                title="Nessuno"
-              />
-              <Menu.Item
-                onPress={() => {
-                  setUserType("student"); 
-                  setMenuVisible(false);
-                }}
-                title="Studente"
-              />
-              <Menu.Item
-                onPress={() => {
-                  setUserType("worker"); 
-                  setMenuVisible(false);
-                }}
-                title="Lavoratore"
-              />
-              <Menu.Item
-                onPress={() => {
-                  setUserType("other"); 
-                  setMenuVisible(false);
-                }}
-                title="Altro"
-              />
-            </Menu>
+                        {/* Tipo utente */}
+<Menu
+  visible={menuVisible}
+  onDismiss={() => setMenuVisible(false)}
+  anchor={
+    <TouchableOpacity onPress={() => setMenuVisible(true)}>
+      <TextInput
+        label="Tipo utente"
+        value={
+          userType === "student"
+            ? "Studente"
+            : userType === "worker"
+            ? "Lavoratore"
+            : userType === "other"
+            ? "Altro"
+            : ""
+        }
+        style={styles.input}
+        editable={false}
+        left={<TextInput.Icon icon="account-group" />}
+      />
+    </TouchableOpacity>
+  }
+>
+  <Menu.Item
+    onPress={() => {
+      setUserType("student"); 
+      setMenuVisible(false);
+    }}
+    title="Studente"
+  />
+  <Menu.Item
+    onPress={() => {
+      setUserType("worker"); 
+      setMenuVisible(false);
+    }}
+    title="Lavoratore"
+  />
+  <Menu.Item
+    onPress={() => {
+      setUserType("other"); 
+      setMenuVisible(false);
+    }}
+    title="Altro"
+  />
+</Menu>
 
 
             {/* Password */}

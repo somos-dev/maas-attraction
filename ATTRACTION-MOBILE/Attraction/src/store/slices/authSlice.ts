@@ -1,29 +1,53 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+//BOZZA
+
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+
+// Definisci un'interfaccia per l'utente
+export interface User {
+  username: string;
+  email: string;
+  type?: string; // es. "Studente" o "Lavoratore"
+  codice_fiscale?: string;
+}
 
 interface AuthState {
-  isAuthenticated: boolean;
-  user: string | null;
+  access: string | null;
+  refresh: string | null;
+  user: User | null;
 }
 
 const initialState: AuthState = {
-  isAuthenticated: false,
+  access: null,
+  refresh: null,
   user: null,
 };
 
+interface SetCredentialsPayload {
+  access: string;
+  refresh: string;
+  user?: User;
+}
+
 const authSlice = createSlice({
-  name: "auth",
+  name: 'auth',
   initialState,
   reducers: {
-    login: (state, action: PayloadAction<string>) => {
-      state.isAuthenticated = true;
-      state.user = action.payload;
+    setCredentials: (state, action: PayloadAction<SetCredentialsPayload>) => {
+      state.access = action.payload.access;
+      state.refresh = action.payload.refresh;
+      state.user = action.payload.user || null;
     },
-    logout: (state) => {
-      state.isAuthenticated = false;
+    clearAuth: (state) => {
+      state.access = null;
+      state.refresh = null;
       state.user = null;
+    },
+    updateAccessToken: (state, action: PayloadAction<string>) => {
+      state.access = action.payload;
     },
   },
 });
 
-export const { login, logout } = authSlice.actions;
+export const { setCredentials, clearAuth, updateAccessToken } = authSlice.actions;
 export default authSlice.reducer;
+

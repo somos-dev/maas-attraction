@@ -1,4 +1,3 @@
-// src/navigation/types.ts
 
 // AppNavigator (gestisce l'intero flusso: splash → onboarding → auth/main)
 export type AppNavigatorParamList = {
@@ -8,11 +7,12 @@ export type AppNavigatorParamList = {
   Main: undefined;
 };
 
-// AuthStack (login / registrazione / reset password ecc.)
+// AuthStack (login / registrazione / forgot / reset password)
 export type AuthStackParamList = {
   Login: undefined;
   Register: undefined;
-  ForgotPassword?: { email?: string }; // opzionale, per estensioni future
+  ForgotPassword?: { email?: string }; // opzionale, se vuoi precompilare
+  ResetPassword: { token: string } | undefined; // token dal link email
 };
 
 // MainStack (schermate principali dopo login o accesso ospite)
@@ -20,4 +20,5 @@ export type MainStackParamList = {
   Home: undefined;
   // aggiungeremo Search, TripPlanner, ecc. nei prossimi step
 };
+
 

@@ -13,7 +13,7 @@ import {
 import { useDispatch } from "react-redux";
 import { useLoginMutation } from "../../store/api/authApi";
 import { setCredentials } from "../../store/slices/authSlice";
-import { setUser } from "../../store/slices/userSlice"; // 👈 aggiunto
+import { setUser } from "../../store/slices/userSlice"; 
 import {
   TextInput,
   Button,
@@ -50,12 +50,12 @@ export default function LoginScreen({ navigation }: any) {
         })
       );
 
-      // 👇 nuova parte: salva anche i dati utente nello userSlice
+      //  nuova parte: salva anche i dati utente nello userSlice
       if (result.user) {
         dispatch(setUser(result.user));
       }
 
-      navigation.replace("Main");
+      navigation.replace("Tab");
     } catch (err) {
       console.error("❌ Login failed:", err);
     }
@@ -138,7 +138,7 @@ export default function LoginScreen({ navigation }: any) {
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={() => navigation.navigate("Main")}>
+              <TouchableOpacity onPress={() => navigation.navigate("Tab")}>
                 <Text style={[styles.linkText, { color: theme.colors.secondary }]}>
                   Salta (Accedi come ospite)
                 </Text>

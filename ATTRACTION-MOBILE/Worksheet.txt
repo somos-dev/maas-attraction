@@ -17,10 +17,10 @@ ATTRACTION MOBILE - WORKSHEET
    - locales/ → prepared translation files it.json and en.json (currently empty)
 
 4. Navigation (navigation/)
-   - AppNavigator.tsx → manages the overall flow (Splash → Onboarding → Auth → Main)
+   - AppNavigator.tsx → manages the overall flow (Splash → Onboarding → Auth → Tab)
    - AuthNavigator.tsx → stack for login, registration, password recovery
    - DrawerNavigator.tsx → prepared (empty)
-   - TabNavigator.tsx → prepared (empty)
+   - TabNavigator.tsx → prepared (Home, Linee, Servizi, Profilo)
    - types.ts → defines stack navigator parameter types
 
 5. Screens (screens/)

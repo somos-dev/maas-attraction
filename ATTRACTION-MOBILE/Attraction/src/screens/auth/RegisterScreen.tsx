@@ -130,7 +130,7 @@ export default function RegisterScreen({ navigation }: Props) {
         dispatch(setUser(result.user));
       }
 
-      navigation.replace("Main" as never);
+      navigation.replace("Tab" as never);
     } catch (err) {
       console.error("Registration failed:", err);
     }
@@ -187,7 +187,7 @@ export default function RegisterScreen({ navigation }: Props) {
             />
             {codiceFiscaleError && <Text style={styles.errorText}>{codiceFiscaleError}</Text>}
 
-                        {/* Tipo utente */}
+             {/* Tipo utente */}
 <Menu
   visible={menuVisible}
   onDismiss={() => setMenuVisible(false)}
@@ -295,7 +295,7 @@ export default function RegisterScreen({ navigation }: Props) {
             </TouchableOpacity>
 
             {/* Accesso ospite */}
-            <TouchableOpacity onPress={() => navigation.navigate("Main")}>
+            <TouchableOpacity onPress={() => navigation.navigate("Tab")}>
               <Text style={{ marginTop: 15, textAlign: "center", color: theme.colors.secondary }}>
                 Salta (Accedi come ospite)
               </Text>

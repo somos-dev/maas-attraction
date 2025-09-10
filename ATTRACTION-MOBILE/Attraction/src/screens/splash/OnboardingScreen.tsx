@@ -69,7 +69,7 @@ export default function OnboardingScreen() {
         style={styles.skipText}
         onPress={async () => {
           await AsyncStorage.setItem("onboardingShown", "true");
-          navigation.replace("Main");
+          navigation.replace("Tab");
         }}
       >
         Salta (ospite)

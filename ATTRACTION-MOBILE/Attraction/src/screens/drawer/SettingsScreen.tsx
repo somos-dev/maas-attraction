@@ -1,18 +1,16 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 
-export default function HomeScreen() {
+export default function SettingsScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Home Screen (ospite o autenticato)</Text>
+      <Text style={styles.title}>Schermata Impostazioni</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: "center", alignItems: "center" },
-  title: { fontSize: 22, fontWeight: "bold" },
+  title: { fontSize: 20, fontWeight: "bold" },
 });
-
-
 

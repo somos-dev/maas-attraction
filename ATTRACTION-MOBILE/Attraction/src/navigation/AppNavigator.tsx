@@ -2,13 +2,13 @@
 import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-
 import { AppNavigatorParamList } from "./types";
-
 import SplashScreen from "../screens/splash/SplashScreen";
 import OnboardingScreen from "../screens/splash/OnboardingScreen";
 import AuthStack from "../screens/auth/AuthStack";
-import TabNavigator from "./TabNavigator";
+import DrawerNavigator from "./DrawerNavigator";
+
+
 const Stack = createNativeStackNavigator<AppNavigatorParamList>();
 
 export default function AppNavigator() {
@@ -28,7 +28,7 @@ export default function AppNavigator() {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Onboarding" component={OnboardingScreen} />
         <Stack.Screen name="Auth" component={AuthStack} />
-        <Stack.Screen name="Tab" component={TabNavigator} />
+      <Stack.Screen name="Tab" component={DrawerNavigator} />
       </Stack.Navigator>
     </NavigationContainer>
   );

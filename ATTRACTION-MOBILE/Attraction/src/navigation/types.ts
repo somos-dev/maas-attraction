@@ -1,5 +1,5 @@
 
-// AppNavigator (gestisce l'intero flusso: splash → onboarding → auth/main)
+// AppNavigator (gestisce l'intero flusso: splash → onboarding → auth/tab)
 export type AppNavigatorParamList = {
   Splash: undefined;
   Onboarding: undefined;

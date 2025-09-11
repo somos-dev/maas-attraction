@@ -13,7 +13,7 @@ import {
 import { useDispatch } from "react-redux";
 import { useLoginMutation } from "../../store/api/authApi";
 import { setCredentials } from "../../store/slices/authSlice";
-import { setUser } from "../../store/slices/userSlice"; 
+import { setUser } from "../../store/slices/userSlice"; // 👈 aggiunto
 import {
   TextInput,
   Button,
@@ -50,7 +50,7 @@ export default function LoginScreen({ navigation }: any) {
         })
       );
 
-      //  nuova parte: salva anche i dati utente nello userSlice
+      // 👇 nuova parte: salva anche i dati utente nello userSlice
       if (result.user) {
         dispatch(setUser(result.user));
       }

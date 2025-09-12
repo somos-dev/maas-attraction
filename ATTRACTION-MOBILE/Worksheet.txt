@@ -1,0 +1,65 @@
+ATTRACTION MOBILE - WORKSHEET
+--------------------------------------
+
+1. Initial Configuration
+   - Created the React Native project structure with modular organization:
+     config/, i18n/, navigation/, screens/, store/, utils/
+   - Configured Redux Toolkit + RTK Query
+   - Integrated react-native-paper with a customized theme (theme.ts)
+
+2. Config/
+   - apiConfig.ts → defines BASE_URL and common headers for all APIs
+   - constants.ts → prepared for global constants (currently empty)
+   - env.ts → prepared for environment variables (currently empty)
+   - theme.ts → custom theme based on MD3LightTheme 
+
+3. i18n/
+   - locales/ → prepared translation files it.json and en.json (currently empty)
+
+4. Navigation (navigation/)
+   - AppNavigator.tsx → manages the overall flow (Splash → Onboarding → Auth → Tab)
+   - AuthNavigator.tsx → stack for login, registration, password recovery
+   - DrawerNavigator.tsx → prepared (empty)
+   - TabNavigator.tsx → prepared (Home, Linee, Servizi, Profilo)
+   - types.ts → defines stack navigator parameter types
+
+5. Screens (screens/)
+   - auth/ → implemented:
+     - LoginScreen.tsx
+     - RegisterScreen.tsx
+     - ForgotPasswordScreen.tsx
+     - ResetPasswordScreen.tsx
+   - splash/ → SplashScreen and OnboardingScreen
+   - main/, lines/, services/, profile/ → prepared but still empty
+
+6. Global State (store/)
+   - api/
+     - authApi.ts → RTK Query: login, registration, refresh token, logout, forgot/reset password
+   - slices/
+     - authSlice.ts → manages authentication state (user, tokens, logout)
+     - userSlice.ts → prepared for additional user data
+   - store.ts → Redux store configuration
+   - persistConfig.ts → prepared for Redux persistence (not yet implemented)
+
+7. Utils/
+   - Centralized error handling (e.g., parsing errors, API messages)
+
+8. Implemented Features (09/2025)
+   - Splash and Onboarding with conditional navigation
+   - User registration → POST /api/auth/register/
+   - User login → POST /api/auth/login/
+   - JWT token management (access + refresh) via Authorization header
+   - Logout and refresh token working
+   - Forgot/Reset Password integrated with backend
+   - Custom theme applied across the application
+   - AuthStack navigation operational
+
+9. Features in Development
+   - Redux persistence with AsyncStorage (persistConfig)
+   - Multilingual support (i18n)
+   - MainStack screens (Home, Search, Results, TripPlanner)
+   - ProfileStack (user profile, search history)
+   - Drawer/Tab navigator
+   - Integration with mobility APIs (search, plan-trip, stops, booking, feedback)
+
+--------------------------------------

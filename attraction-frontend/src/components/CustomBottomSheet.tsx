@@ -3,20 +3,7 @@ import { motion, useMotionValue, animate } from "framer-motion";
 import { Home, Settings, User } from "lucide-react";
 import BottomSheetFooter from "./BottomSheetFooter";
 
-/**
- * Bottom‑sheet component inspired by Google Maps mobile UI.
- *
- * ✅ Fully typed (TS)
- * ✅ Tailwind‑styled
- * ✅ Drag‑to‑snap with Framer Motion
- *
- * Snap points:  
- *   • Collapsed – only a 56 px handle & headline stay visible  
- *   • Middle   – ~40 % of viewport height  
- *   • Expanded – fills almost the whole screen (‑16 px top gutter)
- *
- * Use: <BottomSheet title="Arcavacata">…content…</BottomSheet>
- */
+
 export default function CustomBottomSheet({
   children,
   title,
@@ -36,7 +23,7 @@ export default function CustomBottomSheet({
     setVh(h);
   }, []);
 
-  // keep viewport height in sync (orientation change / resize)
+  
   useEffect(() => {
     refreshViewport();
     window.addEventListener("resize", refreshViewport);
@@ -104,7 +91,7 @@ export default function CustomBottomSheet({
           </div>
         </div>
       </motion.div>
-      {/* Fixed Footer Navigation Bar */}
+      {/*Footer Navigation Bar */}
       <BottomSheetFooter />
     </div>
   );

@@ -1,6 +1,4 @@
-import { ROOTS_LOCATIONS } from '@/routes/api_endpoints'
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
-import axios from 'axios'
+import { createApi } from '@reduxjs/toolkit/query/react'
 import { axiosBaseQuery } from '../store/axiosBaseQuery'
 
 export interface Location {

@@ -19,7 +19,7 @@ import useLocales from '@/hooks/useLocales';
 export const forgotPasswordSchema = z.object({
   email: z.string().email("Invalid email address"),
 });
-  
+
 export type ForgotPasswordInputType = z.infer<typeof forgotPasswordSchema>;
 export type ForgotPasswordReturnType = ActionState<ForgotPasswordInputType, AuthUser>;
 
@@ -30,35 +30,39 @@ export default function ForgotPassword() {
   const { translate } = useLocales();
 
 
-const sendEmail =  async (props: ForgotPasswordInputType): Promise<ForgotPasswordReturnType> =>{
-    try{
-        const response = await axios.post(ENDPOINTS_AUTH.forgotPassword, {
+  const sendEmail = async (props: ForgotPasswordInputType): Promise<ForgotPasswordReturnType> => {
+    try {
+      const response = await axios.post(ENDPOINTS_AUTH.forgotPassword, {
         email: props.email,
-        })
+      })
 
-        console.log("sent email response", response)
-        return {
-            data:response.data
-        }
-    }catch(error: any ){
+      console.log("sent email response", response)
+      return {
+        data: response.data
+      }
+    } catch (error: any) {
       console.log("error success", error)
       error = {
         details: error?.detail || "",
-        email:error?.email || "",
+        email: error?.email || "",
       }
       return {
         error: error?.detail || "Failed to reset the password",
         fieldErrors: error?.detail ? "" : error
       };
     }
-}
+  }
 
-const signUp = createSafeAction(forgotPasswordSchema, sendEmail)
+  const signUp = createSafeAction(forgotPasswordSchema, sendEmail)
 
 
-const { execute, fieldErrors, isLoading } = useAction(signUp, {
+  const { execute, fieldErrors, isLoading } = useAction(signUp, {
     onSuccess: (data) => {
-      toast.success(data?.detail || "Please Check your email to reset your password!");
+      toast.success(
+        typeof data?.detail === "string"
+          ? data.detail
+          : "Please check your email..."
+      );
       console.log("Email sent", data);
       router.push(PATH_AUTH.login);
     },
@@ -81,9 +85,9 @@ const { execute, fieldErrors, isLoading } = useAction(signUp, {
 
     if (!email) {
       toast.error(String(translate('toast.allFieldsRequired')));
-      return 
+      return
 
-      
+
     }
 
     execute({ email });
@@ -122,19 +126,19 @@ const { execute, fieldErrors, isLoading } = useAction(signUp, {
               <div className="space-y-2">
                 {/* <!-- Codice fiscale --> */}
                 <div>
-                    <Label>
-                      {String(translate('auth.email'))}<span className="text-rose-600">{" "}*</span>
-                    </Label>
-                    <Input
-                      type="email"
-                      id="email"
-                      name="email"
-                      placeholder={String(translate('auth.enterEmail'))}
-                      className="w-full max-h-10"
-                      disabled={isLoading}
-                      error={!!fieldErrors?.email} 
-                      hints={fieldErrors?.email}
-                    />
+                  <Label>
+                    {String(translate('auth.email'))}<span className="text-rose-600">{" "}*</span>
+                  </Label>
+                  <Input
+                    type="email"
+                    id="email"
+                    name="email"
+                    placeholder={String(translate('auth.enterEmail'))}
+                    className="w-full max-h-10"
+                    disabled={isLoading}
+                    error={!!fieldErrors?.email}
+                    hints={fieldErrors?.email}
+                  />
                 </div>
                 {/* <!-- Button --> */}
                 <div className="mt-10">

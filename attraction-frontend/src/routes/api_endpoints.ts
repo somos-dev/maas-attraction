@@ -25,7 +25,7 @@ export const ENDPOINTS_TRIPS = {
   searchHistory: path(ROOTS_TRIPS, '/search'),
 };
 // export const ROOTS_LOCATIONS = 'http://127.0.0.1:8000/api/auth';
-const ROOTS_LOCATIONS = 'https://attraction.somos.srl/api/auth';
+export const ROOTS_LOCATIONS = 'https://attraction.somos.srl/api/auth';
 export const ENDPOINTS_LOCATIONS = {
   getAllLocations: path(ROOTS_LOCATIONS, '/places'),
   addLocation: path(ROOTS_LOCATIONS, '/stops'),

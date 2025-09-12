@@ -29,54 +29,93 @@ const geistMono = Geist_Mono({
   adjustFontFallback: false,
 });
 
+
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
-  ],
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://maas.somos.srl"),
   title: "Attraction - Mobility Management Platform",
   description: "Plan, track, and manage your travel with Attraction",
+
+  // 🔗 Canonical URL (SEO)
+  alternates: {
+    canonical: "/",
+  },
+
+  // 📱 PWA + Mobile app support
   manifest: "/manifest.json",
+  applicationName: "Attraction",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "Attraction",
-    startupImage: "/logo.png",
   },
   formatDetection: {
     telephone: false,
   },
+
+  // Theme colors for browser UI
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+  ],
+
+  // Icons
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/logo.png",
+    other: [
+      {
+        rel: "mask-icon",
+        url: "/logo.png",
+        color: "#208BF0",
+      },
+    ],
+  },
+
+  // Open Graph (Facebook, LinkedIn, etc.)
   openGraph: {
     type: "website",
     siteName: "Attraction",
     title: "Attraction - Mobility Management Platform",
     description: "Plan, track, and manage your travel with Attraction",
-    images: ["/logo.png"],
+    url: "https://maas.somos.srl",
+    images: [
+      {
+        url: "/logo.png",
+        width: 512,
+        height: 512,
+        alt: "Attraction Logo",
+      },
+    ],
   },
+
+  // Twitter Card
   twitter: {
     card: "summary",
+    site: "@yourtwitterhandle", // optional
     title: "Attraction - Mobility Management Platform",
     description: "Plan, track, and manage your travel with Attraction",
     images: ["/logo.png"],
   },
+
+  // Windows / MS Tiles
   other: {
+    "msapplication-TileColor": "#208BF0",
+    "msapplication-config": "/browserconfig.xml",
     "mobile-web-app-capable": "yes",
     "apple-mobile-web-app-capable": "yes",
     "apple-mobile-web-app-status-bar-style": "default",
     "apple-mobile-web-app-title": "Attraction",
-    "application-name": "Attraction",
-    "msapplication-TileColor": "#208BF0",
-    "msapplication-config": "/browserconfig.xml",
   },
-}
+};
+
 
 export default function RootLayout({
   children,

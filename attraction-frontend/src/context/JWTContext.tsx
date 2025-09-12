@@ -20,7 +20,7 @@ import { useInputStateStore } from '@/store/inputsStateStore';
 
 // ----------------------------------------------------------------------
 
-enum Types {
+export enum Types {
   Initial = 'INITIALIZE',
   Login = 'LOGIN',
   Logout = 'LOGOUT',
@@ -85,14 +85,14 @@ export type SignUpReturnType = ActionState<SignUpInputType, AuthUser>;
 type JWTAuthPayload = {
   [Types.Initial]: {
     isAuthenticated: boolean;
-    user: AuthUser;
+    user: AuthUser | null;
   };
   [Types.Login]: {
-    user: AuthUser;
+    user: AuthUser | null;
   };
   [Types.Logout]: undefined;
   [Types.Register]: {
-    user: AuthUser;
+    user: AuthUser | null;
   };
 };
 

@@ -17,6 +17,7 @@ import { useSafeAction } from '@/hooks/use-safe-action';
 import { EditProfileInputType, EditProfileReturnType, editProfileSchema } from '@/components/ProfileDialog';
 import axiosInstance from '@/utils/axios';
 import { AuthUser } from '@/@types/auth';
+import { Types } from '@/context/JWTContext';
 
 interface FavoritePlace {
   id: string;
@@ -101,7 +102,7 @@ const ProfileContent: React.FC = () => {
       onSuccess: (data) => {
         toast.success(`Profile updated successfully!`);
         setIsEditing(false);
-        handleDispatch({ type: 'LOGIN', payload: { isAuthenticated: true, user: { ...user, ...formData } } });
+        handleDispatch({ type: Types.Login, payload: { user: { ...user, ...formData } } });
       },
       onError: (errorMsg) => { toast.error(errorMsg); },
       onFieldError: (error) => { },

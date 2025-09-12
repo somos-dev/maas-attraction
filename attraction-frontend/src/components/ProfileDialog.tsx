@@ -19,23 +19,7 @@ import { ActionState, useSafeAction } from '@/hooks/use-safe-action';
 import { z } from 'zod';
 import { AuthUser } from '@/@types/auth';
 import useLocales from '@/hooks/useLocales';
-
-interface FavoritePlace {
-  id: string;
-  address: string;
-  lat: number;
-  lon: number;
-  type: string;
-}
-
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  type: string;
-  codice_fiscale: string;
-  favorite_places: FavoritePlace[];
-}
+import { Types } from '@/context/JWTContext';
 
 
 export const editProfileSchema = z.object({
@@ -118,7 +102,7 @@ const ProfileDialog: React.FC = () => {
       onSuccess: (data) => {
         toast.success(`Profile updated successfully!`);
         setIsEditing(false);
-        handleDispatch({ type: 'LOGIN', payload: { isAuthenticated: true, user: { ...user, ...formData } } });
+        handleDispatch({ type: Types.Login, payload: { user: { ...user, ...formData } } });
       },
       onError: (errorMsg) => { toast.error(errorMsg); },
       onFieldError: (error) => {},

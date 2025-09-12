@@ -52,7 +52,7 @@ export const SavedContent = () => {
 
     if (isError) {
       let errorMessage = 'Unknown error';
-      if (error) {
+      if (error && typeof error === 'object' && error !== null) {
         if ('status' in error && 'data' in error) {
           errorMessage = typeof error.data === 'string'
             ? error.data
@@ -78,7 +78,7 @@ export const SavedContent = () => {
     }
   };
 
-  const handleAddPlace = (newPlace: any) => {
+  const handleAddPlace = () => {
     // This will be handled by the AddPlaceDialog mutation
     toast.success('Location added successfully');
   };

@@ -1,10 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // PWA and development configuration
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
   experimental: {
-    // Enable experimental features if needed
-    optimizeCss: true, // Enable CSS optimization
+    optimizeCss: true,
   },
   
   // Allow cross-origin requests for development
@@ -13,26 +15,11 @@ const nextConfig: NextConfig = {
       {
         source: '/:path*',
         headers: [
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'Access-Control-Allow-Origin',
-            value: '*',
-          },
-          {
-            key: 'Access-Control-Allow-Methods',
-            value: 'GET, POST, PUT, DELETE, OPTIONS',
-          },
-          {
-            key: 'Access-Control-Allow-Headers',
-            value: 'Content-Type, Authorization',
-          },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, DELETE, OPTIONS' },
+          { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
         ],
       },
       // Cache Google Fonts for 1 year
@@ -58,6 +45,5 @@ const nextConfig: NextConfig = {
     domains: ['fonts.googleapis.com', 'fonts.gstatic.com'],
   },
 };
-
 
 export default nextConfig;

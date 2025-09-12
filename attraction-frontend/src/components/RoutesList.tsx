@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowRight, Bike, Bus, Car, Navigation, Clock, MapPin, Zap } from 'lucide-react';
+import { Route } from '@/app/api/plan-trip/route';
 
 // Using the actual store hook from props
 const { useRoutesStore } = require('@/store/routesStore') || (() => ({ selectedRouteIndex: 0, routes: [] }));
@@ -135,7 +136,7 @@ const RoutesList: React.FC<RoutesListProps> = ({ onRouteSelect }) => {
   ];
 
   const getRouteCount = (mode: string) => {
-    const count = mode === 'all' ? routes.length : routes.filter(r => r.mode === mode).length;
+    const count = mode === 'all' ? routes.length : routes.filter((r: Route) => r.mode === mode).length;
     return count;
   };
 
@@ -146,7 +147,7 @@ const RoutesList: React.FC<RoutesListProps> = ({ onRouteSelect }) => {
     );
   };
 
-  const renderRouteCard = (route, originalIndex, isBest = false) => {
+  const renderRouteCard = (route : Route, originalIndex : number, isBest = false) => {
     const isSelected = selectedRouteIndex === originalIndex;
     const config = getModeConfig(route.mode);
     
@@ -251,7 +252,7 @@ const RoutesList: React.FC<RoutesListProps> = ({ onRouteSelect }) => {
   };
 
   const filterRoutes = (mode: string) => {
-    return mode === 'all' ? routes : routes.filter(r => r.mode === mode);
+    return mode === 'all' ? routes : routes.filter((r: Route) => r.mode === mode);
   };
 
   const renderEmptyState = (mode: string) => (
@@ -309,7 +310,8 @@ const RoutesList: React.FC<RoutesListProps> = ({ onRouteSelect }) => {
         {/* Tab Contents */}
         {allTabs.map((tab) => {
           const filteredRoutes = filterRoutes(tab.id);
-          const sortedRoutes = filteredRoutes.slice().sort((a, b) => a.duration - b.duration);
+            interface SortedRoute extends Route {}
+            const sortedRoutes: SortedRoute[] = filteredRoutes.slice().sort((a: Route, b: Route) => a.duration - b.duration);
           const bestRoute = getBestRoute(sortedRoutes);
           
           return (
@@ -328,8 +330,8 @@ const RoutesList: React.FC<RoutesListProps> = ({ onRouteSelect }) => {
                   
                   {/* Routes list */}
                   <div className="space-y-3">
-                    {sortedRoutes.map((route) => {
-                      const originalIndex = routes.findIndex(r => r.id === route.id);
+                    {sortedRoutes.map((route : Route) => {
+                        const originalIndex: number = routes.findIndex((r: Route) => r.id === route.id);
                       const isBest = bestRoute && route.id === bestRoute.id && filteredRoutes.length > 1;
                       return renderRouteCard(route, originalIndex, isBest);
                     })}

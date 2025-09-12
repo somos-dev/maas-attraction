@@ -18,11 +18,11 @@ import useLocales from '@/hooks/useLocales';
 
 export const resetPasswordSchema = z.object({
   password: z
-  .string({
-			required_error: "Password is required",
-			invalid_type_error: "Password must be a string",
-  })
-  .min(8, "Password must be at least 8 characters long")
+    .string({
+      required_error: "Password is required",
+      invalid_type_error: "Password must be a string",
+    })
+    .min(8, "Password must be at least 8 characters long")
     .regex(/[a-z]/, "Password must contain at least one lowercase letter")
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/\d/, "Password must contain at least one number")
@@ -30,16 +30,16 @@ export const resetPasswordSchema = z.object({
       /[!@#$%^&*(),.?":{}|<>]/,
       "Password must contain at least one special character"
     ),
-    confirmPassword: z.string({
-			required_error: "Re-enter your password to confirm",
-			invalid_type_error: "password must be a string",
-    }),
-  })
+  confirmPassword: z.string({
+    required_error: "Re-enter your password to confirm",
+    invalid_type_error: "password must be a string",
+  }),
+})
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
     path: ["confirmPassword"],
-});
-  
+  });
+
 export type ResetPasswordInputType = z.infer<typeof resetPasswordSchema>;
 export type ResetPasswordReturnType = ActionState<ResetPasswordInputType, AuthUser>;
 
@@ -53,36 +53,41 @@ export default function ResetPassword() {
   const router = useRouter()
   const { translate } = useLocales();
 
-const resetPassword =  async (props: ResetPasswordInputType): Promise<ResetPasswordReturnType> =>{
-    try{
-        const response = await axios.post(`${ENDPOINTS_AUTH.resetPassword}${params.uidb64}/${params.token}/`,{
-          uidb64: params.uid,
-          token: params.token,
-          new_password:props.password,
-        })
-        return {
-            data:response.data
-        }
-    }catch(error: any ){
+  const resetPassword = async (props: ResetPasswordInputType): Promise<ResetPasswordReturnType> => {
+    try {
+      const response = await axios.post(`${ENDPOINTS_AUTH.resetPassword}${params.uidb64}/${params.token}/`, {
+        uidb64: params.uid,
+        token: params.token,
+        new_password: props.password,
+      })
+      return {
+        data: response.data
+      }
+    } catch (error: any) {
       console.log(error)
       error = {
-        details: error?.response?.data?.detail|| "",
-        password:error?.password || "",
-        confirmPassword:error?.confirm_password || "",
+        details: error?.response?.data?.detail || "",
+        password: error?.password || "",
+        confirmPassword: error?.confirm_password || "",
       }
       return {
         error: error?.details || "Failed to reset the password",
         fieldErrors: error?.detail ? "" : error
       };
     }
-}
+  }
 
-const resetPasswordSafe = createSafeAction(resetPasswordSchema, resetPassword)
+  const resetPasswordSafe = createSafeAction(resetPasswordSchema, resetPassword)
 
 
-const { execute, fieldErrors, isLoading } = useAction(resetPasswordSafe, {
+  const { execute, fieldErrors, isLoading } = useAction(resetPasswordSafe, {
     onSuccess: (data) => {
-      toast.success(data?.detail || "Your password is successfully updated!");
+      toast.success(
+        typeof data?.detail === "string"
+          ? data.detail
+          : "Your password is successfully updated!"
+      );
+
       console.log("Email sent", data);
       router.push(PATH_AUTH.login);
     },
@@ -106,7 +111,7 @@ const { execute, fieldErrors, isLoading } = useAction(resetPasswordSafe, {
 
     if (!password || !confirmPassword) {
       toast.error(String(translate('toast.allFieldsRequired')));
-      return 
+      return
     }
 
     execute({ password, confirmPassword });
@@ -156,7 +161,7 @@ const { execute, fieldErrors, isLoading } = useAction(resetPasswordSafe, {
                       type={showPassword ? "text" : "password"}
                       className="w-full pr-10 max-h-10"
                       disabled={isLoading}
-                      error={!!fieldErrors?.password} 
+                      error={!!fieldErrors?.password}
                       hints={fieldErrors?.password}
                     />
                     <span
@@ -184,7 +189,7 @@ const { execute, fieldErrors, isLoading } = useAction(resetPasswordSafe, {
                       type={showPassword ? "text" : "password"}
                       className="w-full pr-10 max-h-10"
                       disabled={isLoading}
-                      error={!!fieldErrors?.confirmPassword} 
+                      error={!!fieldErrors?.confirmPassword}
                       hints={fieldErrors?.confirmPassword}
                     />
                     <span

@@ -4,8 +4,8 @@ function path(root: string, sublink: string) {
   return `${root}${sublink}`;
 }
 
-const ROOTS_AUTH = 'http://localhost:3000/auth';
-const ROOTS_ROUTES = 'http://localhost:3000';
+const ROOTS_AUTH = 'http://maas.somos.srl/auth';
+const ROOTS_ROUTES = 'http://maas.somos.srl';
 
 // ----------------------------------------------------------------------
 

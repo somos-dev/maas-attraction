@@ -2,64 +2,76 @@ ATTRACTION MOBILE - WORKSHEET
 --------------------------------------
 
 1. Initial Configuration
-   - Created the React Native project structure with modular organization:
+   - Creato il progetto React Native con struttura modulare:
      config/, i18n/, navigation/, screens/, store/, utils/
-   - Configured Redux Toolkit + RTK Query
-   - Integrated react-native-paper with a customized theme (theme.ts)
+   - Configurato Redux Toolkit + RTK Query
+   - Integrato react-native-paper con tema personalizzato (theme.ts)
 
 2. Config/
-   - apiConfig.ts → defines BASE_URL and common headers for all APIs
-   - constants.ts → prepared for global constants (currently empty)
-   - env.ts → prepared for environment variables (currently empty)
-   - theme.ts → custom theme based on MD3LightTheme 
+   - apiConfig.ts → definisce BASE_URL e header comuni
+   - constants.ts → predisposto per costanti globali
+   - env.ts → predisposto per variabili d’ambiente
+   - theme.ts → tema custom basato su MD3LightTheme 
 
 3. i18n/
-   - locales/ → prepared translation files it.json and en.json (currently empty)
+   - locales/ → predisposti file it.json e en.json (ancora vuoti)
 
 4. Navigation (navigation/)
-   - AppNavigator.tsx → manages the overall flow (Splash → Onboarding → Auth → Tab)
-   - AuthNavigator.tsx → stack for login, registration, password recovery
-   - DrawerNavigator.tsx → prepared (empty)
-   - TabNavigator.tsx → prepared (Home, Linee, Servizi, Profilo)
-   - types.ts → defines stack navigator parameter types
+   - AppNavigator.tsx → gestisce il flusso globale (Splash → Onboarding → Auth → Tab)
+   - AuthStack.tsx → stack autenticazione (login, registrazione, recupero/reset password)
+   - DrawerNavigator.tsx → connesso alle Tab + voce Impostazioni
+   - TabNavigator.tsx → Home, Linee, Servizi, Profilo
+   - types.ts → definisce i tipi dei parametri per gli stack navigator
 
 5. Screens (screens/)
-   - auth/ → implemented:
-     - LoginScreen.tsx
-     - RegisterScreen.tsx
+   - auth/
+     - LoginScreen.tsx → login senza navigazione forzata + tasto Salta (ospite)
+     - RegisterScreen.tsx → registrazione senza navigazione forzata + tasto Salta (ospite)
      - ForgotPasswordScreen.tsx
      - ResetPasswordScreen.tsx
-   - splash/ → SplashScreen and OnboardingScreen
-   - main/, lines/, services/, profile/ → prepared but still empty
+   - splash/
+     - SplashScreen.tsx
+     - OnboardingScreen.tsx → carosello introduttivo con bottoni Accedi, Registrati, Salta (solo dispatch, niente navigate)
+   - main/, lines/, services/, profile/ → predisposti ma vuoti
 
 6. Global State (store/)
    - api/
-     - authApi.ts → RTK Query: login, registration, refresh token, logout, forgot/reset password
+     - authApi.ts → login, registrazione, refresh token, logout, forgot/reset password
    - slices/
-     - authSlice.ts → manages authentication state (user, tokens, logout)
-     - userSlice.ts → prepared for additional user data
-   - store.ts → Redux store configuration
-   - persistConfig.ts → prepared for Redux persistence (not yet implemented)
+     - authSlice.ts → gestisce:
+       - access, refresh, user
+       - isAnonymous per accesso ospite
+       - azioni: setCredentials, clearAuth, updateAccessToken, setAnonymous
+     - userSlice.ts → dati aggiuntivi utente
+     - onboardingSlice.ts → flag completed (gestione onboarding minimale)
+   - persistConfig.ts → configurata persistenza Redux con AsyncStorage
+     - authPersistConfig → whitelist: access, refresh, user, isAnonymous
+     - onboardingPersistConfig → whitelist: completed
+   - store.ts → configurazione Redux
 
 7. Utils/
-   - Centralized error handling (e.g., parsing errors, API messages)
+   - errorHandler.ts → gestione centralizzata errori API
 
 8. Implemented Features (09/2025)
-   - Splash and Onboarding with conditional navigation
-   - User registration → POST /api/auth/register/
-   - User login → POST /api/auth/login/
-   - JWT token management (access + refresh) via Authorization header
-   - Logout and refresh token working
-   - Forgot/Reset Password integrated with backend
-   - Custom theme applied across the application
-   - AuthStack navigation operational
+   - Splash + Onboarding con logica centralizzata (nessuna navigazione manuale)
+   - Accesso anonimo/ospite via setAnonymous (persistito)
+   - Persistenza Redux con AsyncStorage (auth + onboarding)
+   - Registrazione → POST /api/auth/register/
+   - Login → POST /api/auth/login/
+   - JWT token management (access, refresh) via header Authorization
+   - Logout e refresh token funzionanti
+   - Forgot/Reset Password integrati con backend
+   - Custom theme applicato globalmente
+   - AuthStack operativo con flusso coerente
+   - Tab + Drawer configurati
 
 9. Features in Development
-   - Redux persistence with AsyncStorage (persistConfig)
    - Multilingual support (i18n)
    - MainStack screens (Home, Search, Results, TripPlanner)
-   - ProfileStack (user profile, search history)
-   - Drawer/Tab navigator
-   - Integration with mobility APIs (search, plan-trip, stops, booking, feedback)
+   - ProfileStack (profilo, storico ricerche, preferenze trasporto)
+   - Integrazione API mobilità (ricerca, pianificazione viaggio, fermate, prenotazioni, feedback)
+   - Gestione messaggi di errore lato utente (es. registrazione/login non riusciti)
+   - Gamification e rewards
+   - Gestione notifiche push
 
 --------------------------------------

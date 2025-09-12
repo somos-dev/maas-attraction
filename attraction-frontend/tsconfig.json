@@ -13,18 +13,12 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
+    "plugins": [{ "name": "next" }],
+    "baseUrl": ".",                         // ⬅️ add this
     "paths": {
       "@/*": ["./src/*"]
     },
-    "typeRoots": [
-      "./src/@types",
-      "./node_modules/@types"
-    ]
+    "typeRoots": ["./src/@types", "./node_modules/@types"]
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]

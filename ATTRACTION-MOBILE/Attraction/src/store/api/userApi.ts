@@ -1,4 +1,3 @@
-// src/store/api/userApi.ts
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { RootState } from "../store";
 import { API_CONFIG } from "../../config/apiConfig";
@@ -23,7 +22,7 @@ export const userApi = createApi({
         method: "GET",
       }),
     }),
-    updateProfile: builder.mutation<User, Partial<User>>({
+    updateProfile: builder.mutation<User, { username: string; email: string }>({
       query: (body) => ({
         url: "profile/",
         method: "PUT",
@@ -34,3 +33,4 @@ export const userApi = createApi({
 });
 
 export const { useGetProfileQuery, useUpdateProfileMutation } = userApi;
+

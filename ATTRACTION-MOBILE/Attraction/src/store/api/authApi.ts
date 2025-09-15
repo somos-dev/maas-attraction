@@ -104,14 +104,14 @@ export const authApi = createApi({
 
     forgotPassword: builder.mutation<MessageResponse, ForgotPasswordRequest>({
       query: (body) => ({
-        url: 'forgot-password/',
+        url: 'password-reset/',
         method: 'POST',
         body,
       }),
     }),
     resetPassword: builder.mutation<MessageResponse, ResetPasswordRequest>({
       query: (body) => ({
-        url: 'reset-password/',
+        url: `password-reset-confirm/${body.token}/`,
         method: 'POST',
         body,
       }),

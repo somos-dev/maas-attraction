@@ -18,11 +18,14 @@ export default function ResetPasswordScreen({ navigation, route }: any) {
   const [showPassword, setShowPassword] = useState(false);
   const [resetPassword, { isLoading, error, isSuccess }] = useResetPasswordMutation();
   const theme = useTheme();
-  const token = route.params?.token; // es: da link email
+
+  // ✅ adesso prendo token (e se vuoi anche uidb64) da route.params
+  const token = route.params?.token;
 
   const handleReset = async () => {
     if (password !== confirm) return;
     try {
+      // ✅ aggiornata la chiamata con il body corretto
       await resetPassword({ token, password }).unwrap();
       navigation.replace("Login");
     } catch (err) {
@@ -120,3 +123,4 @@ const styles = StyleSheet.create({
   linkContainer: { marginTop: 30, alignItems: "center" },
   linkText: { textDecorationLine: "underline", textAlign: "center", marginVertical: 6 },
 });
+

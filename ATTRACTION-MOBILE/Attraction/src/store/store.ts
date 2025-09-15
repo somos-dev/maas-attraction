@@ -5,12 +5,13 @@ import { authApi } from './api/authApi';
 import authReducer from './slices/authSlice';
 import userReducer from './slices/userSlice';
 import { authPersistConfig } from './persistConfig';
-
+import { userApi } from './api/userApi';
 import onboardingReducer from './slices/onboardingSlice';
 import { onboardingPersistConfig } from './persistConfig';
 
 const rootReducer = combineReducers({
   [authApi.reducerPath]: authApi.reducer,
+  [userApi.reducerPath]: userApi.reducer,
   auth: persistReducer(authPersistConfig, authReducer),
   user: userReducer,
   onboarding: persistReducer(onboardingPersistConfig, onboardingReducer),
@@ -21,7 +22,10 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: false, 
-    }).concat(authApi.middleware),
+    }).concat(
+      authApi.middleware,
+      userApi.middleware,
+    ),
 });
 
 export const persistor = persistStore(store);

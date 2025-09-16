@@ -3,7 +3,6 @@ import type { RootState } from '../store';
 import type { User } from '../slices/authSlice';
 import { API_CONFIG } from "../../config/apiConfig";
 
-
 // ---- Request types ----
 interface RegisterRequest {
   username: string;
@@ -11,7 +10,7 @@ interface RegisterRequest {
   password: string;
   confirm_password: string;
   codice_fiscale?: string;
-  type?: string; // es. "Studente" o "Lavoratore" o stringa vuota
+  type?: string;
 }
 
 interface LoginRequest {
@@ -27,13 +26,13 @@ interface LogoutRequest {
   refresh: string;
 }
 
-// aggiunte
 interface ForgotPasswordRequest {
   email: string;
 }
 
 interface ResetPasswordRequest {
-  token: string;      // inviato via link email dal backend
+  uidb64: string;
+  token: string;
   password: string;   // nuova password
 }
 
@@ -41,7 +40,7 @@ interface ResetPasswordRequest {
 interface LoginResponse {
   access: string;
   refresh: string;
-  user?: User; //  opzionale  dipende dal backend
+  user?: User;
 }
 
 interface RegisterResponse {
@@ -54,7 +53,6 @@ interface RefreshResponse {
   access: string;
 }
 
-//  risposta forgot/reset (può variare a seconda del backend DRF)
 interface MessageResponse {
   status: number;
   message: string;
@@ -104,16 +102,18 @@ export const authApi = createApi({
 
     forgotPassword: builder.mutation<MessageResponse, ForgotPasswordRequest>({
       query: (body) => ({
-        url: 'forgot-password/',
+        url: 'password-reset/',
         method: 'POST',
         body,
       }),
     }),
+
+    // corretto: uidb64 + token nell’URL
     resetPassword: builder.mutation<MessageResponse, ResetPasswordRequest>({
-      query: (body) => ({
-        url: 'reset-password/',
+      query: ({ uidb64, token, password }) => ({
+        url: `password-reset-confirm/${uidb64}/${token}/`,
         method: 'POST',
-        body,
+        body: { password },
       }),
     }),
   }),
@@ -127,4 +127,5 @@ export const {
   useForgotPasswordMutation,
   useResetPasswordMutation,
 } = authApi;
+
 

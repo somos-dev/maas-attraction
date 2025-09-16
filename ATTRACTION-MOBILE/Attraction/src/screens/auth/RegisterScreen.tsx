@@ -13,8 +13,8 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { AuthStackParamList } from "../../navigation/types";
 import { useRegisterMutation } from "../../store/api/authApi";
 import { useDispatch } from "react-redux";
-import { setCredentials } from "../../store/slices/authSlice";
-import { setUser } from "../../store/slices/userSlice"; // 👈 aggiunto
+import { setCredentials, setAnonymous } from "../../store/slices/authSlice"; // 👈 include setAnonymous
+import { setUser } from "../../store/slices/userSlice";
 import {
   TextInput,
   Button,
@@ -22,7 +22,6 @@ import {
   Appbar,
   Menu,
   ActivityIndicator,
-  Icon,
 } from "react-native-paper";
 import { mapAuthError } from "../../utils/errorHandler";
 
@@ -103,7 +102,13 @@ export default function RegisterScreen({ navigation }: Props) {
   };
 
   const handleRegister = async () => {
-    if (usernameError || emailError || passwordError || confirmError || codiceFiscaleError) {
+    if (
+      usernameError ||
+      emailError ||
+      passwordError ||
+      confirmError ||
+      codiceFiscaleError
+    ) {
       return;
     }
 
@@ -125,23 +130,32 @@ export default function RegisterScreen({ navigation }: Props) {
         })
       );
 
-      //  nuova parte: salva i dati utente nello userSlice
       if (result.user) {
         dispatch(setUser(result.user));
       }
 
-      navigation.replace("Tab" as never);
     } catch (err) {
       console.error("Registration failed:", err);
     }
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scrollContainer}>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.scrollContainer}
+      >
         <View style={styles.container}>
-          <Appbar.Header style={{ backgroundColor: "transparent", elevation: 0 }}>
-            <Appbar.Content title="Registrazione" titleStyle={{ textAlign: "center", fontSize: 24 }} />
+          <Appbar.Header
+            style={{ backgroundColor: "transparent", elevation: 0 }}
+          >
+            <Appbar.Content
+              title="Registrazione"
+              titleStyle={{ textAlign: "center", fontSize: 24 }}
+            />
           </Appbar.Header>
 
           <View style={styles.formContainer}>
@@ -185,55 +199,56 @@ export default function RegisterScreen({ navigation }: Props) {
               left={<TextInput.Icon icon="card-account-details" />}
               maxLength={16}
             />
-            {codiceFiscaleError && <Text style={styles.errorText}>{codiceFiscaleError}</Text>}
+            {codiceFiscaleError && (
+              <Text style={styles.errorText}>{codiceFiscaleError}</Text>
+            )}
 
-             {/* Tipo utente */}
-<Menu
-  visible={menuVisible}
-  onDismiss={() => setMenuVisible(false)}
-  anchor={
-    <TouchableOpacity onPress={() => setMenuVisible(true)}>
-      <TextInput
-        label="Tipo utente"
-        value={
-          userType === "student"
-            ? "Studente"
-            : userType === "worker"
-            ? "Lavoratore"
-            : userType === "other"
-            ? "Altro"
-            : ""
-        }
-        style={styles.input}
-        editable={false}
-        left={<TextInput.Icon icon="account-group" />}
-      />
-    </TouchableOpacity>
-  }
->
-  <Menu.Item
-    onPress={() => {
-      setUserType("student"); 
-      setMenuVisible(false);
-    }}
-    title="Studente"
-  />
-  <Menu.Item
-    onPress={() => {
-      setUserType("worker"); 
-      setMenuVisible(false);
-    }}
-    title="Lavoratore"
-  />
-  <Menu.Item
-    onPress={() => {
-      setUserType("other"); 
-      setMenuVisible(false);
-    }}
-    title="Altro"
-  />
-</Menu>
-
+            {/* Tipo utente */}
+            <Menu
+              visible={menuVisible}
+              onDismiss={() => setMenuVisible(false)}
+              anchor={
+                <TouchableOpacity onPress={() => setMenuVisible(true)}>
+                  <TextInput
+                    label="Tipo utente"
+                    value={
+                      userType === "student"
+                        ? "Studente"
+                        : userType === "worker"
+                        ? "Lavoratore"
+                        : userType === "other"
+                        ? "Altro"
+                        : ""
+                    }
+                    style={styles.input}
+                    editable={false}
+                    left={<TextInput.Icon icon="account-group" />}
+                  />
+                </TouchableOpacity>
+              }
+            >
+              <Menu.Item
+                onPress={() => {
+                  setUserType("student");
+                  setMenuVisible(false);
+                }}
+                title="Studente"
+              />
+              <Menu.Item
+                onPress={() => {
+                  setUserType("worker");
+                  setMenuVisible(false);
+                }}
+                title="Lavoratore"
+              />
+              <Menu.Item
+                onPress={() => {
+                  setUserType("other");
+                  setMenuVisible(false);
+                }}
+                title="Altro"
+              />
+            </Menu>
 
             {/* Password */}
             <TextInput
@@ -285,18 +300,34 @@ export default function RegisterScreen({ navigation }: Props) {
               {isLoading ? <ActivityIndicator animating={true} /> : "Registrati"}
             </Button>
 
-            {error && <Text style={{ color: theme.colors.error, marginTop: 10 }}>{mapAuthError(error, "register")}</Text>}
+            {error && (
+              <Text style={{ color: theme.colors.error, marginTop: 10 }}>
+                {mapAuthError(error, "register")}
+              </Text>
+            )}
 
             {/* Link Login */}
             <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-              <Text style={{ marginTop: 20, textAlign: "center", color: theme.colors.primary }}>
+              <Text
+                style={{
+                  marginTop: 20,
+                  textAlign: "center",
+                  color: theme.colors.primary,
+                }}
+              >
                 Hai già un account? Login
               </Text>
             </TouchableOpacity>
 
             {/* Accesso ospite */}
-            <TouchableOpacity onPress={() => navigation.navigate("Tab")}>
-              <Text style={{ marginTop: 15, textAlign: "center", color: theme.colors.secondary }}>
+            <TouchableOpacity onPress={() => dispatch(setAnonymous())}>
+              <Text
+                style={{
+                  marginTop: 15,
+                  textAlign: "center",
+                  color: theme.colors.secondary,
+                }}
+              >
                 Salta (Accedi come ospite)
               </Text>
             </TouchableOpacity>
@@ -314,3 +345,4 @@ const styles = StyleSheet.create({
   input: { marginBottom: 10 },
   errorText: { color: "red", fontSize: 12, marginBottom: 10, marginLeft: 4 },
 });
+

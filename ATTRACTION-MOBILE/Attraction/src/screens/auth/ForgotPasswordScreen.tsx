@@ -20,6 +20,7 @@ export default function ForgotPasswordScreen({ navigation }: any) {
   const handleForgot = async () => {
     if (!email) return;
     try {
+      // ✅ adesso chiama correttamente /password-reset/
       await forgotPassword({ email }).unwrap();
     } catch (err) {
       console.error("❌ Forgot password failed:", err);
@@ -101,3 +102,4 @@ const styles = StyleSheet.create({
   linkContainer: { marginTop: 30, alignItems: "center" },
   linkText: { textDecorationLine: "underline", textAlign: "center", marginVertical: 6 },
 });
+

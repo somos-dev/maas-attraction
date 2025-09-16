@@ -1,26 +1,26 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, useWindowDimensions } from "react-native";
 import AppIntroSlider from "react-native-app-intro-slider";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation } from "@react-navigation/native";
-import { Button, useTheme } from "react-native-paper";
+import { Button, useTheme, ActivityIndicator } from "react-native-paper";
 import LinearGradient from "react-native-linear-gradient";
+import { useDispatch } from "react-redux";
+import { completeOnboarding } from "../../store/slices/onboardingSlice";
+import { setAnonymous } from "../../store/slices/authSlice";
 
 export default function OnboardingScreen() {
-  const navigation = useNavigation();
+  const dispatch = useDispatch();
   const theme = useTheme();
   const { width, height } = useWindowDimensions();
   const [orientation, setOrientation] = useState("P");
   const [isReady, setIsReady] = useState(false);
+  const [loadingGuest, setLoadingGuest] = useState(false); 
 
   useEffect(() => {
     setOrientation(width > height ? "L" : "P");
   }, [width, height]);
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      setIsReady(true);
-    }, 50);
+    const timeout = setTimeout(() => setIsReady(true), 50);
     return () => clearTimeout(timeout);
   }, []);
 
@@ -30,9 +30,18 @@ export default function OnboardingScreen() {
     { key: "slide3", text: "Viaggia green 🌱\n." },
   ];
 
-  const handleDone = async () => {
-    await AsyncStorage.setItem("onboardingShown", "true");
-    navigation.replace("Auth", { screen: "Login" });
+  // Fine onboarding → aggiorna Redux
+  const handleFinish = (mode: "Login" | "Register" | "guest") => {
+    if (mode === "guest") {
+      setLoadingGuest(true); // avvia animazione
+      setTimeout(() => {
+        dispatch(completeOnboarding(null));
+        dispatch(setAnonymous());
+        setLoadingGuest(false);
+      }, 1000); // simula un piccolo delay
+    } else {
+      dispatch(completeOnboarding(mode));
+    }
   };
 
   const renderItem = ({ item }: { item: { text: string } }) => (
@@ -47,60 +56,52 @@ export default function OnboardingScreen() {
         <Button
           mode="contained"
           style={styles.loginButton}
-          onPress={async () => {
-            await AsyncStorage.setItem("onboardingShown", "true");
-            navigation.replace("Auth", { screen: "Login" });
-          }}
+          onPress={() => handleFinish("Login")}
         >
           Accedi
         </Button>
         <Button
           mode="contained"
           style={styles.signupButton}
-          onPress={async () => {
-            await AsyncStorage.setItem("onboardingShown", "true");
-            navigation.replace("Auth", { screen: "Register" });
-          }}
+          onPress={() => handleFinish("Register")}
         >
           Registrati
         </Button>
       </View>
-      <Text
-        style={styles.skipText}
-        onPress={async () => {
-          await AsyncStorage.setItem("onboardingShown", "true");
-          navigation.replace("Tab");
-        }}
-      >
-        Salta (ospite)
-      </Text>
+
+      {loadingGuest ? (
+        <ActivityIndicator
+          animating={true}
+          size="small"
+          style={{ marginTop: 30 }}
+          color={theme.colors.primary}
+        />
+      ) : (
+        <Text style={styles.skipText} onPress={() => handleFinish("guest")}>
+          Salta (ospite)
+        </Text>
+      )}
     </View>
   );
 
   if (!isReady) return null;
 
   return (
-    <LinearGradient
-      colors={["#66a6ff", "#A0EACF"]}
-      style={styles.container}
-    >
+    <LinearGradient colors={["#66a6ff", "#A0EACF"]} style={styles.container}>
       <Text style={styles.fixedTitle}>Attraction</Text>
       <AppIntroSlider
         data={slides}
         renderItem={renderItem}
-        onDone={handleDone}
+        onDone={() => handleFinish("Login")}
         showSkipButton
-        onSkip={handleDone}
+        onSkip={() => handleFinish("Login")}
         renderPagination={(activeIndex) => (
           <View style={styles.paginationContainer}>
             <View style={styles.dots}>
               {slides.map((_, i) => (
                 <View
                   key={i}
-                  style={[
-                    styles.dot,
-                    i === activeIndex ? styles.activeDot : null,
-                  ]}
+                  style={[styles.dot, i === activeIndex ? styles.activeDot : null]}
                 />
               ))}
             </View>
@@ -180,8 +181,6 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline",
   },
 });
-
-
 
 
 

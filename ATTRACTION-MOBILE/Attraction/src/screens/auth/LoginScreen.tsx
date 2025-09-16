@@ -12,8 +12,8 @@ import {
 } from "react-native";
 import { useDispatch } from "react-redux";
 import { useLoginMutation } from "../../store/api/authApi";
-import { setCredentials } from "../../store/slices/authSlice";
-import { setUser } from "../../store/slices/userSlice"; // 👈 aggiunto
+import { setCredentials, setAnonymous } from "../../store/slices/authSlice"; // 👈 aggiunto setAnonymous
+import { setUser } from "../../store/slices/userSlice"; 
 import {
   TextInput,
   Button,
@@ -55,7 +55,7 @@ export default function LoginScreen({ navigation }: any) {
         dispatch(setUser(result.user));
       }
 
-      navigation.replace("Tab");
+      //  niente navigation.replace qui: AppNavigator gestisce il redirect
     } catch (err) {
       console.error("❌ Login failed:", err);
     }
@@ -138,7 +138,12 @@ export default function LoginScreen({ navigation }: any) {
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={() => navigation.navigate("Tab")}>
+              {/* Accesso anonimo aggiornato */}
+              <TouchableOpacity
+                onPress={() => {
+                  dispatch(setAnonymous()); // imposta utente ospite
+                }}
+              >
                 <Text style={[styles.linkText, { color: theme.colors.secondary }]}>
                   Salta (Accedi come ospite)
                 </Text>

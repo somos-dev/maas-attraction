@@ -18,12 +18,15 @@ export default function ResetPasswordScreen({ navigation, route }: any) {
   const [showPassword, setShowPassword] = useState(false);
   const [resetPassword, { isLoading, error, isSuccess }] = useResetPasswordMutation();
   const theme = useTheme();
-  const token = route.params?.token; // es: da link email
+
+  // prendo uidb64 e token dai parametri
+  const uidb64 = route.params?.uidb64;
+  const token = route.params?.token;
 
   const handleReset = async () => {
     if (password !== confirm) return;
     try {
-      await resetPassword({ token, password }).unwrap();
+      await resetPassword({ uidb64, token, password }).unwrap();
       navigation.replace("Login");
     } catch (err) {
       console.error("❌ Reset password failed:", err);
@@ -120,3 +123,5 @@ const styles = StyleSheet.create({
   linkContainer: { marginTop: 30, alignItems: "center" },
   linkText: { textDecorationLine: "underline", textAlign: "center", marginVertical: 6 },
 });
+
+

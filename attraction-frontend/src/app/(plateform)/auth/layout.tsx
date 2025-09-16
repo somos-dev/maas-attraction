@@ -18,9 +18,28 @@ export default function AuthLayout({
     <div className="relative py-3 bg-white z-1 dark:bg-gray-900 sm:p-0 max-h-screen overflow-hidden">
       <ThemeProvider>
         <div className="relative flex lg:flex-row w-full h-screen justify-center flex-col  dark:bg-gray-900 sm:p-0 ">
+                {/* Language Switch Button */}
+      {/* <div className="absolute top-4 right-4 flex items-center space-x-2">
+        <button 
+          onClick={() => onChangeLang('en')} 
+          className={`border p-2 rounded-md text-sm cursor-pointer transition-colors ${
+            currentLang.value === 'en' ? 'bg-blue-500 text-white border-blue-500' : 'hover:bg-gray-50'
+          }`}
+        >
+          {String(translate('language.engShort'))}
+        </button>
+        <button 
+          onClick={() => onChangeLang('it')} 
+          className={`border p-2 rounded-md text-sm cursor-pointer transition-colors ${
+            currentLang.value === 'it' ? 'bg-blue-500 text-white border-blue-500' : 'hover:bg-gray-50'
+          }`}
+        >
+          {String(translate('language.itaShort'))}
+        </button>
+      </div> */}
           {children}
           <div className="relative lg:w-1/2 w-full bg-brand-950 dark:bg-white/5 lg:grid items-center hidden max-h-screen overflow-hidden">
-                <Link href="/" className="block mb-4">
+                <Link href='' className="block mb-4">
                   <Image
                     className="absolute b-0 w-full h-full mx-auto"
                     fill

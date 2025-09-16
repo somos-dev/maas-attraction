@@ -88,7 +88,7 @@ const { execute, fieldErrors, isLoading } = useSafeAction(signUpSchema,register,
   return (
     <div className="flex flex-col flex-1 lg:w-1/2 w-full min-h-screen bg-white dark:bg-gray-900 px-4 sm:px-0 mb-4 overflow-y-auto scrollbar-thin scrollbar-thumb-rounded-lg">
       {/* Language Switch Button */}
-      <div className="absolute top-4 right-4 flex items-center space-x-2">
+      <div className="z-50 absolute top-4 right-4 flex items-center space-x-2">
         <button 
           onClick={() => onChangeLang('en')} 
           className={`border p-2 rounded-md text-sm cursor-pointer transition-colors ${

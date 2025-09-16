@@ -37,17 +37,15 @@ export type ServicesStackParamList = {
 
 export type ProfileStackParamList = {
   Profile: undefined;
-  // EditProfile: undefined;                      // in futuro
+  EditProfile: undefined;
 };
-
-
-
 
 
 
 // MainStack (schermate principali dopo login o accesso ospite)
 export type MainStackParamList = {
   Home: undefined;
+  Search: undefined;
 };
 
 

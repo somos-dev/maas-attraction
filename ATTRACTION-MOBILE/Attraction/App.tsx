@@ -16,8 +16,8 @@ import AppNavigator from "./src/navigation/AppNavigator";
 import { appTheme } from "./src/config/theme";
 
 
-      //  import AsyncStorage from '@react-native-async-storage/async-storage';
-      //  AsyncStorage.clear();
+        //  import AsyncStorage from '@react-native-async-storage/async-storage';
+        //  AsyncStorage.clear();
 
 export default function App() {
   return (

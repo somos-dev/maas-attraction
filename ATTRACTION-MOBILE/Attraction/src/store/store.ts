@@ -8,12 +8,18 @@ import { authPersistConfig } from './persistConfig';
 import { userApi } from './api/userApi';
 import onboardingReducer from './slices/onboardingSlice';
 import { onboardingPersistConfig } from './persistConfig';
+import { searchApi } from './api/searchApi';
+import { placesApi } from './api/placesApi';
 
 const rootReducer = combineReducers({
   [authApi.reducerPath]: authApi.reducer,
   [userApi.reducerPath]: userApi.reducer,
+  [searchApi.reducerPath]: searchApi.reducer,
+  [placesApi.reducerPath]: placesApi.reducer,
   auth: persistReducer(authPersistConfig, authReducer),
   user: userReducer,
+  search: searchApi.reducer,
+  places: placesApi.reducer,
   onboarding: persistReducer(onboardingPersistConfig, onboardingReducer),
 });
 
@@ -25,6 +31,8 @@ export const store = configureStore({
     }).concat(
       authApi.middleware,
       userApi.middleware,
+      searchApi.middleware,
+      placesApi.middleware,
     ),
 });
 

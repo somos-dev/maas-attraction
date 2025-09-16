@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useDispatch } from "react-redux";
 import { useLoginMutation } from "../../store/api/authApi";
-import { setCredentials, setAnonymous } from "../../store/slices/authSlice"; // 👈 aggiunto setAnonymous
+import { setCredentials, setAnonymous } from "../../store/slices/authSlice"; //  aggiunto setAnonymous
 import { setUser } from "../../store/slices/userSlice"; 
 import {
   TextInput,

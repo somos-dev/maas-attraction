@@ -1,52 +1,83 @@
+// src/store/api/placesApi.ts
+
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { API_CONFIG } from "../../config/apiConfig";
-import type { RootState } from "../store";
-import { Place } from "../types/place";
+import { Place, PlaceRequest } from "../types/place";
 
 export const placesApi = createApi({
   reducerPath: "placesApi",
   baseQuery: fetchBaseQuery({
     baseUrl: `${API_CONFIG.BASE_URL}auth/`,
-    prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).auth.access;
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
+    prepareHeaders: (headers) => {
+      Object.entries(API_CONFIG.HEADERS).forEach(([k, v]) => {
+        headers.set(k, v as string);
+      });
       return headers;
     },
   }),
+  tagTypes: ["Place"],
   endpoints: (builder) => ({
+    // GET /places/
     getPlaces: builder.query<Place[], void>({
       query: () => "places/",
+      providesTags: ["Place"],
     }),
-    createPlace: builder.mutation<Place, Partial<Place>>({
+
+    // GET /places/{id}/
+    getPlaceById: builder.query<Place, number>({
+      query: (id) => `places/${id}/`,
+      providesTags: (result, error, id) => [{ type: "Place", id }],
+    }),
+
+    // POST /places/
+    createPlace: builder.mutation<Place, PlaceRequest>({
       query: (body) => ({
         url: "places/",
         method: "POST",
         body,
       }),
+      invalidatesTags: ["Place"],
     }),
-    updatePlace: builder.mutation<Place, { id: number; body: Partial<Place> }>({
-      query: ({ id, body }) => ({
+
+    // PUT /places/{id}/
+    updatePlace: builder.mutation<Place, { id: number; data: PlaceRequest }>({
+      query: ({ id, data }) => ({
         url: `places/${id}/`,
         method: "PUT",
-        body,
+        body: data,
       }),
+      invalidatesTags: (result, error, { id }) => [{ type: "Place", id }],
     }),
-    deletePlace: builder.mutation<{ success: boolean }, number>({
+
+    // PATCH /places/{id}/
+    patchPlace: builder.mutation<Place, { id: number; data: Partial<PlaceRequest> }>({
+      query: ({ id, data }) => ({
+        url: `places/${id}/`,
+        method: "PATCH",
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: "Place", id }],
+    }),
+
+    // DELETE /places/{id}/
+    deletePlace: builder.mutation<void, number>({
       query: (id) => ({
         url: `places/${id}/`,
         method: "DELETE",
       }),
+      invalidatesTags: (result, error, id) => [{ type: "Place", id }],
     }),
   }),
 });
 
 export const {
   useGetPlacesQuery,
+  useGetPlaceByIdQuery,
   useCreatePlaceMutation,
   useUpdatePlaceMutation,
+  usePatchPlaceMutation,
   useDeletePlaceMutation,
 } = placesApi;
+
 
 

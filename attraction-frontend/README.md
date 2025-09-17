@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ATTRACTION – Frontend (Next.js)
 
 This is the **frontend web application** of the [ATTRACTION](https://github.com/your-org/maas-attraction) platform, bootstrapped with [Next.js](https://nextjs.org) using [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
@@ -50,3 +51,6 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+=======
+# Attraction-Frontend
+>>>>>>> a85d6b1c1d2d702b1089fe67b80638c6c5c93383

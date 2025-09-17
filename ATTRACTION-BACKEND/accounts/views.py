@@ -22,19 +22,39 @@ User = get_user_model()
 # ------------------------------
 # User Registration
 # ------------------------------
+# User Registration
 class RegisterView(generics.CreateAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = RegisterSerializer
 
     def create(self, request, *args, **kwargs):
         try:
-            response = super().create(request, *args, **kwargs)
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+
+            # Create inactive user
+            user = serializer.save(is_active=False)
+
+            # Generate UID and token
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+
+            # Hardcoded domain
+            domain = "attraction.somos.srl"
+            activation_link = f"https://{domain}/api/auth/activate/{uid}/{token}/"
+
+            # Send activation email
+            subject = "Activate Your Account"
+            message = f"Hello {user.username},\n\nPlease click the link below to activate your account:\n{activation_link}"
+            send_mail(subject, message, "noreply@attraction.somos.srl", [user.email])
+
             return Response({
                 "success": True,
-                "message": "User registered successfully",
-                "data": response.data,
+                "message": "User registered successfully. Check your email to activate your account.",
+                "data": serializer.data,
                 "status_code": status.HTTP_201_CREATED
             }, status=status.HTTP_201_CREATED)
+
         except serializers.ValidationError as e:
             return Response({
                 "success": False,
@@ -46,6 +66,7 @@ class RegisterView(generics.CreateAPIView):
 # ------------------------------
 # Account Activation
 # ------------------------------
+# Account Activation
 class ActivateAccountView(APIView):
     permission_classes = [AllowAny]
 
@@ -68,7 +89,7 @@ class ActivateAccountView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         if default_token_generator.check_token(user, token):
-            if getattr(user, 'is_banned', False):
+            if getattr(user, "is_banned", False):
                 return Response({
                     "success": False,
                     "error": "User is banned.",
@@ -80,13 +101,13 @@ class ActivateAccountView(APIView):
 
             return Response({
                 "success": True,
-                "message": "Account activated successfully",
+                "message": "Account activated successfully.",
                 "status_code": status.HTTP_200_OK
             }, status=status.HTTP_200_OK)
 
         return Response({
             "success": False,
-            "error": "Activation link is invalid",
+            "error": "Activation link is invalid or expired.",
             "status_code": status.HTTP_400_BAD_REQUEST
         }, status=status.HTTP_400_BAD_REQUEST)
 
@@ -131,7 +152,7 @@ class PasswordResetRequestView(APIView):
 
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
-        reset_link = f"http://127.0.0.1:8000/api/auth/password-reset-confirm/{uid}/{token}/"
+        reset_link = f"https://attraction.somos.srl/api/auth/password-reset-confirm/{uid}/{token}/"
 
         subject = "Password Reset Requested"
         message = f"Click the link to reset your password:\n{reset_link}"

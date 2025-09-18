@@ -31,7 +31,7 @@ export default function AppHeader({ isHome = false }: AppHeaderProps) {
             style={styles.searchContainer}
             onPress={() => navigation.navigate("Search" as never)}
           >
-            <Text style={{ color: "#888", flex: 1 }}>Cerca la tua destinazione</Text>
+            <Text style={styles.searchText}>Cerca la tua destinazione</Text>
             <IconButton icon="magnify" size={20} />
           </TouchableOpacity>
 
@@ -43,7 +43,10 @@ export default function AppHeader({ isHome = false }: AppHeaderProps) {
           {navigation.canGoBack() && (
             <Appbar.BackAction onPress={() => navigation.goBack()} />
           )}
-          <Appbar.Content title={title} titleStyle={{ fontWeight: "bold" }} />
+          <Appbar.Content
+            title={title}
+            titleStyle={styles.title}
+          />
         </>
       )}
     </Appbar.Header>
@@ -60,7 +63,21 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     paddingHorizontal: 12,
   },
+  searchText: {
+    color: "#888",
+    flex: 1,
+    fontFamily: "Montserrat-Regular",
+    fontSize: 14,
+  },
+  title: {
+    fontFamily: "Montserrat-Bold",
+    fontSize: 20,
+    color: "#333",
+    letterSpacing: 0.5,
+    marginLeft: 20,
+  },
 });
+
 
 
 

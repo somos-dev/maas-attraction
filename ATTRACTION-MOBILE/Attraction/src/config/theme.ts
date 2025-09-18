@@ -4,11 +4,19 @@ export const appTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    primary: "#2E8B57",   // Verde secco (azioni principali)
-    secondary: "#1E90FF", // Blu acceso (accenti, bottoni secondari)
-    background: "#F5F9F6", // Sfondo chiaro
-    surface: "#FFFFFF",   // Card/Input
-    text: "#333333",      // Testo primario
-    error: "#D32F2F",     // Rosso per errori
+    primary: "#50b948",
+    secondary: "#45c3d6",
+    background: "#F5F9F6",
+    surface: "#FFFFFF",
+    text: "#333333",
+    error: "#D32F2F",
+  },
+  fonts: {
+    ...DefaultTheme.fonts,
+    bodyLarge: { fontFamily: "Montserrat-Regular" },
+    bodyMedium: { fontFamily: "Montserrat-Regular" },
+    bodySmall: { fontFamily: "Montserrat-Light" },
+    titleLarge: { fontFamily: "Montserrat-Bold" },
+    titleMedium: { fontFamily: "Montserrat-SemiBold" },
   },
 };

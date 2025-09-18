@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, useWindowDimensions } from "react-native";
+import { View, Text, StyleSheet, useWindowDimensions, Image } from "react-native";
 import AppIntroSlider from "react-native-app-intro-slider";
 import { Button, useTheme, ActivityIndicator } from "react-native-paper";
-import LinearGradient from "react-native-linear-gradient";
 import { useDispatch } from "react-redux";
 import { completeOnboarding } from "../../store/slices/onboardingSlice";
 import { setAnonymous } from "../../store/slices/authSlice";
@@ -13,7 +12,7 @@ export default function OnboardingScreen() {
   const { width, height } = useWindowDimensions();
   const [orientation, setOrientation] = useState("P");
   const [isReady, setIsReady] = useState(false);
-  const [loadingGuest, setLoadingGuest] = useState(false); 
+  const [loadingGuest, setLoadingGuest] = useState(false);
 
   useEffect(() => {
     setOrientation(width > height ? "L" : "P");
@@ -27,18 +26,17 @@ export default function OnboardingScreen() {
   const slides = [
     { key: "slide1", text: "Benvenuto in Attraction 🚍\nTrova il tuo viaggio in un attimo." },
     { key: "slide2", text: "Risparmia tempo ⏱\nConsulta orari e fermate in tempo reale." },
-    { key: "slide3", text: "Viaggia green 🌱\n." },
+    { key: "slide3", text: "Viaggia green 🌱\nScegli la mobilità sostenibile." },
   ];
 
-  // Fine onboarding → aggiorna Redux
   const handleFinish = (mode: "Login" | "Register" | "guest") => {
     if (mode === "guest") {
-      setLoadingGuest(true); // avvia animazione
+      setLoadingGuest(true);
       setTimeout(() => {
         dispatch(completeOnboarding(null));
         dispatch(setAnonymous());
         setLoadingGuest(false);
-      }, 1000); // simula un piccolo delay
+      }, 1000);
     } else {
       dispatch(completeOnboarding(mode));
     }
@@ -46,7 +44,7 @@ export default function OnboardingScreen() {
 
   const renderItem = ({ item }: { item: { text: string } }) => (
     <View style={styles.slide}>
-      <Text style={styles.text}>{item.text}</Text>
+      <Text style={[styles.text, { color: theme.colors.text }]}>{item.text}</Text>
     </View>
   );
 
@@ -56,13 +54,17 @@ export default function OnboardingScreen() {
         <Button
           mode="contained"
           style={styles.loginButton}
+          buttonColor={theme.colors.primary}
+          textColor="#fff"
           onPress={() => handleFinish("Login")}
         >
           Accedi
         </Button>
         <Button
-          mode="contained"
+          mode="contained-tonal"
           style={styles.signupButton}
+          buttonColor={theme.colors.secondary}
+          textColor="#fff"
           onPress={() => handleFinish("Register")}
         >
           Registrati
@@ -77,7 +79,10 @@ export default function OnboardingScreen() {
           color={theme.colors.primary}
         />
       ) : (
-        <Text style={styles.skipText} onPress={() => handleFinish("guest")}>
+        <Text
+          style={[styles.skipText, { color: theme.colors.text }]}
+          onPress={() => handleFinish("guest")}
+        >
           Salta (ospite)
         </Text>
       )}
@@ -87,8 +92,12 @@ export default function OnboardingScreen() {
   if (!isReady) return null;
 
   return (
-    <LinearGradient colors={["#66a6ff", "#A0EACF"]} style={styles.container}>
-      <Text style={styles.fixedTitle}>Attraction</Text>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <Image
+        source={require("../../assets/images/logo/Attraction.scritta.png")}
+        style={styles.logo}
+        resizeMode="contain"
+      />
       <AppIntroSlider
         data={slides}
         renderItem={renderItem}
@@ -101,7 +110,10 @@ export default function OnboardingScreen() {
               {slides.map((_, i) => (
                 <View
                   key={i}
-                  style={[styles.dot, i === activeIndex ? styles.activeDot : null]}
+                  style={[
+                    styles.dot,
+                    { backgroundColor: i === activeIndex ? theme.colors.primary : "#ccc" },
+                  ]}
                 />
               ))}
             </View>
@@ -110,20 +122,19 @@ export default function OnboardingScreen() {
         )}
         dotStyle={{ display: "none" }}
       />
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 60,
+    paddingTop: 40,
   },
-  fixedTitle: {
-    fontSize: 48,
-    fontWeight: "bold",
-    textAlign: "center",
-    color: "#222",
+  logo: {
+    width: "70%",
+    height: 200,
+    alignSelf: "center",
     marginBottom: 10,
   },
   slide: {
@@ -133,10 +144,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
   },
   text: {
-    fontSize: 22,
-    color: "#333",
+    fontSize: 20,
     textAlign: "center",
-    lineHeight: 28,
+    lineHeight: 26,
+    fontFamily: "Montserrat-Regular",
   },
   paginationContainer: {
     paddingHorizontal: 20,
@@ -145,42 +156,39 @@ const styles = StyleSheet.create({
   dots: {
     flexDirection: "row",
     justifyContent: "center",
-    marginBottom: 50,
+    marginBottom: 40,
   },
   dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#ffffff",
     marginHorizontal: 4,
-  },
-  activeDot: {
-    backgroundColor: "#008080",
   },
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingHorizontal: 60,
+    paddingHorizontal: 50,
   },
   loginButton: {
     flex: 1,
-    marginRight: 15,
+    marginRight: 10,
   },
   signupButton: {
     flex: 1,
-    marginLeft: 15,
+    marginLeft: 10,
   },
   buttonWrapper: {
     alignItems: "center",
-    paddingHorizontal: 30,
+    paddingHorizontal: 20,
   },
   skipText: {
-    marginTop: 30,
+    marginTop: 25,
     fontSize: 16,
-    color: "#333",
     textDecorationLine: "underline",
+    fontFamily: "Montserrat-Light",
   },
 });
+
 
 
 

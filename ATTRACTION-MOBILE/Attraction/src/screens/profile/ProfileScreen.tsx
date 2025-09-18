@@ -37,6 +37,12 @@ export default function ProfileScreen() {
   useEffect(() => {
     if (isSuccess && data) {
       dispatch(setUser(data));
+console.log("✅ Profilo ricevuto:", data);
+
+    // debug specifico
+    console.log("Username:", data.username);
+    console.log("Email:", data.email);
+
     }
   }, [isSuccess, data, dispatch]);
 

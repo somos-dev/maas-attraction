@@ -5,10 +5,11 @@ import React from 'react'
 import useLocales from '@/hooks/useLocales'
 import Link from 'next/link'
 import { Github, Twitter, Linkedin, Mail } from 'lucide-react'
+import Image from 'next/image'
 
 export const Footer = () => {
   const { translate } = useLocales();
-  
+
   return (
     <footer className="bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -83,8 +84,52 @@ export const Footer = () => {
               © 2025 Attraction. All rights reserved.
             </p>
             <div className="flex items-center space-x-6 mt-4 md:mt-0">
-              <span className="text-gray-400 text-sm">Made with ❤️ for better mobility</span>
+              {/* <span className="text-gray-400 text-sm">Made with ❤️ for better mobility</span> */}
             </div>
+            {/* <div className="mt-16"> */}
+            {/* <p className="text-sm text-gray-500 mb-8">
+                  {String(translate('marketing.trustedBy'))}
+                </p> */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 justify-items-center items-center opacity-60">
+              {/* Add company logos here */}
+              <Image
+                src="/images/Official-logos/ATTRACTION_IDENTITY_DEF/3.png"
+                alt='Logo'
+                className="bg-gray-300 rounded"
+                width={170}
+                height={40}
+                priority
+              />
+              <Image
+                src="/images/Official-logos/ATTRACTION_IDENTITY_DEF/4-removebg-preview.png"
+                alt='Logo'
+                className="bg-gray-300 rounded"
+                width={170}
+                height={40}
+                priority
+              />
+              <Image
+                src="/images/Official-logos/ATTRACTION_IDENTITY_DEF/5-removebg-preview.png"
+                alt='Logo'
+                className="p-1 bg-gray-300 rounded"
+                width={130}
+                height={40}
+                priority
+              />
+              <Image
+                src="/images/Official-logos/ATTRACTION_IDENTITY_DEF/6-removebg-preview-2.png"
+                alt='Logo'
+                className="bg-gray-300 rounded"
+                width={135}
+                height={40}
+                priority
+              />
+              {/* <div className="w-24 h-8 bg-gray-300 rounded"></div>
+              <div className="w-24 h-8 bg-gray-300 rounded"></div>
+              <div className="w-24 h-8 bg-gray-300 rounded"></div>
+              <div className="w-24 h-8 bg-gray-300 rounded"></div> */}
+            </div>
+            {/* </div> */}
           </div>
         </div>
       </div>

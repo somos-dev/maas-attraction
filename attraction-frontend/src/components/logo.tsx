@@ -15,13 +15,13 @@ const logo = (props: Props) => {
     <Link href='/'>
       <div className="hover:opacity-70 transition items-center gap-x-2 hidden md:flex">
             <Image
-            src="/logo.png"
+            src="/images/Official-logos/UI-detailed/logo-with-name-png.png"
             alt='Logo'
-            width={45}
+            width={170}
             height={40}
             priority
             />
-        <p className={cn("text-xl text-neutral-700 mt-2", headingFont.className)}>Attraction</p>
+        {/* <p className={cn("text-xl text-neutral-700 mt-2", headingFont.className)}>Attraction</p> */}
         </div>
     </Link>
   )

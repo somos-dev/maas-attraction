@@ -69,9 +69,9 @@ const MarketingPage = () => {
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           {/* Logo and Badge */}
           <div className="flex flex-col items-center mb-8">
-            <div className="mb-6 relative">
+            <div className="mb-6 mt-3 relative">
               <Image
-                src="/logo.png"
+                src="/images/Official-logos/UI-detailed/logo-png.png"
                 alt="Attraction Logo"
                 width={120}
                 height={120}

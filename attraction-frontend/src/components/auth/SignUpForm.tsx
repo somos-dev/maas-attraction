@@ -28,7 +28,26 @@ export default function SignUpForm() {
 
 
 
-const { execute, fieldErrors, isLoading } = useSafeAction(signUpSchema,register, {
+// const { execute, fieldErrors, isLoading } = useSafeAction(signUpSchema,register, {
+//     onSuccess: (data) => {
+//       toast.success(`Account Created, Please Check your email to activate your account!`);
+//       console.log("User Account created successfully!", data);
+//       router.push(PATH_AUTH.login);
+//     },
+
+//     onError: (error) => {
+//       toast.error(error);
+//       console.log('fieldErrors in component: ', fieldErrors)
+//     },
+//     onFieldError: (error) => {
+//       console.log('fieldErrors in fielderror component: ', fieldErrors)
+//     }
+//   })
+
+const signUp = createSafeAction(signUpSchema, register)
+
+
+const { execute, fieldErrors, isLoading } = useAction(signUp, {
     onSuccess: (data) => {
       toast.success(`Account Created, Please Check your email to activate your account!`);
       console.log("User Account created successfully!", data);
@@ -39,25 +58,9 @@ const { execute, fieldErrors, isLoading } = useSafeAction(signUpSchema,register,
       toast.error(error);
     },
     onFieldError: (error) => {
+        console.log('fieldErrors in fielderror component: ', error)
     }
   })
-
-// const signUp = createSafeAction(signUpSchema, register)
-
-
-// const { execute, fieldErrors, isLoading } = useAction(signUp, {
-//     onSuccess: (data) => {
-//       toast.success(`Account Created, Please Check your email to activate your account!`);
-//       console.log("User Account created successfully!", data);
-//       router.push(PATH_AUTH.login);
-//     },
-
-//     onError: (error) => {
-//       toast.error(error);
-//     },
-//     onFieldError: (error) => {
-//     }
-//   })
 
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

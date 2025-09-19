@@ -492,17 +492,18 @@ function AuthProvider({ children }: AuthProviderProps) {
       };
     } catch (error: any) {
       console.error('Registration error:', error);
-      const errorData = error?.response?.data || {};
+      const errorData = error?.response?.data?.error || {};
       
       const fieldErrors = {
-        email: errorData?.email?.[0] || "",
-        username: errorData?.username?.[0] || "",
-        password: errorData?.password?.[0] || "",
-        confirmPassword: errorData?.confirm_password?.[0] || "",
-        codiceFiscale: errorData?.codice_fiscale?.[0] || "",
-        role: errorData?.role?.[0] || ""
+        email: errorData?.email || [],
+        username: errorData?.username|| [],
+        password: errorData?.password|| [],
+        confirmPassword: errorData?.confirm_password|| [],
+        codiceFiscale: errorData?.codice_fiscale|| [],
+        role: errorData?.role|| []
       };
 
+      console.log("Field errors in register:", fieldErrors);
       return {
         error: errorData?.detail || "Failed to create the account",
         fieldErrors: fieldErrors

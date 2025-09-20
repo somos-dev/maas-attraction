@@ -342,15 +342,16 @@ function AuthProvider({ children }: AuthProviderProps) {
     const initialize = async () => {
       try {
         console.log("Initializing auth context");
+        console.log('moving in')
         const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : '';
         const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : '';
-
         if (accessToken && isValidToken(accessToken)) {
+          console.log('moved in')
           // Valid access token exists
           handleSession(accessToken, refreshToken);
           const response = await axiosInstance.get(ENDPOINTS_AUTH.profile);
-          const user = response.data;
-          
+          const user = response?.data?.data;
+          console.log('user before refresh', user)
           dispatch({
             type: Types.Initial,
             payload: {
@@ -372,8 +373,8 @@ function AuthProvider({ children }: AuthProviderProps) {
             handleTokenExpiring(newAccessToken);
 
             const profResponse = await axiosInstance.get(ENDPOINTS_AUTH.profile);
-            const user = profResponse?.data ?? null;
-            
+            const user = profResponse?.data?.data ?? profResponse?.data ?? null;
+            console.log('user after refresh', user)
             dispatch({
               type: Types.Initial,
               payload: {
@@ -446,8 +447,8 @@ function AuthProvider({ children }: AuthProviderProps) {
       handleSession(data?.access, data?.refresh);
 
       const profResponse = await axiosInstance.get(ENDPOINTS_AUTH.profile);
-      const user = profResponse?.data ?? null;
-      
+      const user = profResponse?.data?.data ?? profResponse?.data ?? null;
+            
       dispatch({
         type: Types.Login,
         payload: {

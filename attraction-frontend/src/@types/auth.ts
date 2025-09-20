@@ -15,6 +15,7 @@ export type ActionMap<M extends { [index: string]: unknown }> = {
 };
 
 export type AuthUser = null | any;
+
 interface FavoritePlace {
   id: string;
   address: string;

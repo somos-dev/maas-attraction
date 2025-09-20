@@ -128,13 +128,13 @@ const MarketingPage = () => {
             <p className="text-sm text-gray-500 mb-8">
               {String(translate('marketing.trustedBy'))}
             </p>
-            <div className="flex justify-center items-center space-x-8 opacity-60">
               {/* Add company logos here */}
+            {/* <div className="flex justify-center items-center space-x-8 opacity-60">
               <div className="w-24 h-8 bg-gray-300 rounded"></div>
               <div className="w-24 h-8 bg-gray-300 rounded"></div>
               <div className="w-24 h-8 bg-gray-300 rounded"></div>
               <div className="w-24 h-8 bg-gray-300 rounded"></div>
-            </div>
+            </div> */}
           </div>
         </div>
       </section>

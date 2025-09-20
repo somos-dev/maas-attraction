@@ -78,56 +78,47 @@ export const Footer = () => {
           </div>
         </div>
 
-        <div className="border-t border-gray-800 mt-12 pt-8">
+        <div className="bg-white rounded-lg border-t border-gray-800 mt-12 p-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className="text-gray-400 text-sm">
+            <p className="text-black text-sm">
               © 2025 Attraction. All rights reserved.
             </p>
-            <div className="flex items-center space-x-6 mt-4 md:mt-0">
-              {/* <span className="text-gray-400 text-sm">Made with ❤️ for better mobility</span> */}
-            </div>
-            {/* <div className="mt-16"> */}
-            {/* <p className="text-sm text-gray-500 mb-8">
-                  {String(translate('marketing.trustedBy'))}
-                </p> */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 justify-items-center items-center opacity-60">
-              {/* Add company logos here */}
+            <div className="flex flex-col sm:flex-row justify-end items-center gap-3">
               <Image
                 src="/images/Official-logos/ATTRACTION_IDENTITY_DEF/3.png"
                 alt='Logo'
-                className="bg-gray-300 rounded"
-                width={170}
+                className="object-contain mx-4"
+                width={120}
                 height={40}
                 priority
               />
+                <div className="sm:h-8 sm:border-l border-gray-700" />
               <Image
                 src="/images/Official-logos/ATTRACTION_IDENTITY_DEF/4-removebg-preview.png"
                 alt='Logo'
-                className="bg-gray-300 rounded"
-                width={170}
+                className="object-contain mx-4"
+                width={120}
                 height={40}
                 priority
               />
+                <div className="sm:h-8 sm:border-l border-gray-700" />
               <Image
                 src="/images/Official-logos/ATTRACTION_IDENTITY_DEF/5-removebg-preview.png"
                 alt='Logo'
-                className="p-1 bg-gray-300 rounded"
-                width={130}
+                className="object-contain mx-4"
+                width={100}
                 height={40}
                 priority
               />
+                <div className="sm:h-8 sm:border-l border-gray-700" />
               <Image
                 src="/images/Official-logos/ATTRACTION_IDENTITY_DEF/6-removebg-preview-2.png"
                 alt='Logo'
-                className="bg-gray-300 rounded"
-                width={135}
+                className="object-contain mx-4"
+                width={105}
                 height={40}
                 priority
               />
-              {/* <div className="w-24 h-8 bg-gray-300 rounded"></div>
-              <div className="w-24 h-8 bg-gray-300 rounded"></div>
-              <div className="w-24 h-8 bg-gray-300 rounded"></div>
-              <div className="w-24 h-8 bg-gray-300 rounded"></div> */}
             </div>
             {/* </div> */}
           </div>

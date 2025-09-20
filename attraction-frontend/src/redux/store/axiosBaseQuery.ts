@@ -20,7 +20,9 @@ export const axiosBaseQuery = (): BaseQueryFn<
     console.log(data,method, url, params, headers);
     const result = await axiosInstance({ url, method, data, params, headers });
     console.log("result",result)
-    return { data: result.data };
+    return {
+        data: result.data?.data ?? result.data ?? { success: true }
+    };
   } catch (err) {
     console.log("Error in axiosBaseQuery:", err);
     const error = err as AxiosError;

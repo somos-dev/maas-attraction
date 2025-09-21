@@ -46,9 +46,15 @@ export function useSafeAction<TInput, TOutput>(
 
         const result = await apiCall(parsed.data);
         setData(result.data);
+        console.log('result from useSafeAction', result)
         if(result.data){
             options.onSuccess?.(result.data);
         }
+        if (result.fieldErrors) {
+          setFieldErrors(result.fieldErrors);
+          options.onFieldError?.(result.fieldErrors);
+        }
+
         if(!result.data && result.error) {
           throw new Error(result.error);
         }

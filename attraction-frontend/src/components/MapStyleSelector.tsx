@@ -17,9 +17,9 @@ const MapStyleSelector: React.FC<MapStyleSelectorProps> = ({
   const mapStyles = [
     { value: 'streets', label: 'Streets', icon: Map },
     { value: 'satellite', label: 'Satellite', icon: Satellite },
-    { value: 'terrain', label: 'Terrain', icon: Mountain },
+    // { value: 'terrain', label: 'Terrain', icon: Mountain },
     { value: 'osm', label: 'OpenStreetMap', icon: Navigation },
-    { value: 'dark', label: 'Dark', icon: Moon }
+    // { value: 'dark', label: 'Dark', icon: Moon }
   ];
   const {is3D, toggle3D, mapStyle, setMapStyle} = useMapStore()
   const {setProfileOpen} = useProfileStore()

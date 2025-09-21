@@ -35,9 +35,9 @@ const MAPTILER_API_KEY = 'FcUd8A9NfAmbxojT9gM7';
 const MAP_STYLES = {
   streets: `https://api.maptiler.com/maps/streets/style.json?key=${MAPTILER_API_KEY}`,
   satellite: `https://api.maptiler.com/maps/satellite/style.json?key=${MAPTILER_API_KEY}`,
-  terrain: `https://api.maptiler.com/maps/terrain/style.json?key=${MAPTILER_API_KEY}`,
+  // terrain: `https://api.maptiler.com/maps/terrain/style.json?key=${MAPTILER_API_KEY}`,
   osm: `https://api.maptiler.com/maps/openstreetmap/style.json?key=${MAPTILER_API_KEY}`,
-  dark: `https://api.maptiler.com/maps/dark/style.json?key=${MAPTILER_API_KEY}`
+  // dark: `https://api.maptiler.com/maps/dark/style.json?key=${MAPTILER_API_KEY}`
 };
 
 const TRANSPORT_CONFIG: Record<string, TransportConfig> = {

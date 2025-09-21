@@ -30,6 +30,7 @@ export const useAction = <TInput, TOutput>(
 			setIsLoading(true);
 			try {
 				const result = await action(input);
+				console.log(result)
 
 				if (!result) {
 					return;
@@ -39,6 +40,7 @@ export const useAction = <TInput, TOutput>(
 
 				if (result.fieldErrors) {
 					options.onFieldError?.(result.fieldErrors);
+					console.log("Field errors in useAuth:", result.fieldErrors);
 				}
 
 				if (result.error) {

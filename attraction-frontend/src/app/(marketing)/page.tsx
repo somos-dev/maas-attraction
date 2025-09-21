@@ -69,9 +69,9 @@ const MarketingPage = () => {
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           {/* Logo and Badge */}
           <div className="flex flex-col items-center mb-8">
-            <div className="mb-6 relative">
+            <div className="mb-6 mt-3 relative">
               <Image
-                src="/logo.png"
+                src="/images/Official-logos/UI-detailed/logo-png.png"
                 alt="Attraction Logo"
                 width={120}
                 height={120}
@@ -128,13 +128,13 @@ const MarketingPage = () => {
             <p className="text-sm text-gray-500 mb-8">
               {String(translate('marketing.trustedBy'))}
             </p>
-            <div className="flex justify-center items-center space-x-8 opacity-60">
               {/* Add company logos here */}
+            {/* <div className="flex justify-center items-center space-x-8 opacity-60">
               <div className="w-24 h-8 bg-gray-300 rounded"></div>
               <div className="w-24 h-8 bg-gray-300 rounded"></div>
               <div className="w-24 h-8 bg-gray-300 rounded"></div>
               <div className="w-24 h-8 bg-gray-300 rounded"></div>
-            </div>
+            </div> */}
           </div>
         </div>
       </section>

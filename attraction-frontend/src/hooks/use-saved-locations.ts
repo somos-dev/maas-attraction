@@ -17,6 +17,7 @@ export interface LocationTypeGroup {
  * Provides optimized selectors and computed state
  */
 export const useSavedLocations = () => {
+  
   const {
     data: locations = [],
     isLoading,

@@ -5,10 +5,11 @@ import React from 'react'
 import useLocales from '@/hooks/useLocales'
 import Link from 'next/link'
 import { Github, Twitter, Linkedin, Mail } from 'lucide-react'
+import Image from 'next/image'
 
 export const Footer = () => {
   const { translate } = useLocales();
-  
+
   return (
     <footer className="bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -77,14 +78,49 @@ export const Footer = () => {
           </div>
         </div>
 
-        <div className="border-t border-gray-800 mt-12 pt-8">
+        <div className="bg-white rounded-lg border-t border-gray-800 mt-12 p-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className="text-gray-400 text-sm">
+            <p className="text-black text-sm">
               © 2025 Attraction. All rights reserved.
             </p>
-            <div className="flex items-center space-x-6 mt-4 md:mt-0">
-              <span className="text-gray-400 text-sm">Made with ❤️ for better mobility</span>
+            <div className="flex flex-col sm:flex-row justify-end items-center gap-3">
+              <Image
+                src="/images/Official-logos/ATTRACTION_IDENTITY_DEF/3.png"
+                alt='Logo'
+                className="object-contain mx-4"
+                width={120}
+                height={40}
+                priority
+              />
+                <div className="sm:h-8 sm:border-l border-gray-700" />
+              <Image
+                src="/images/Official-logos/ATTRACTION_IDENTITY_DEF/4-removebg-preview.png"
+                alt='Logo'
+                className="object-contain mx-4"
+                width={120}
+                height={40}
+                priority
+              />
+                <div className="sm:h-8 sm:border-l border-gray-700" />
+              <Image
+                src="/images/Official-logos/ATTRACTION_IDENTITY_DEF/5-removebg-preview.png"
+                alt='Logo'
+                className="object-contain mx-4"
+                width={100}
+                height={40}
+                priority
+              />
+                <div className="sm:h-8 sm:border-l border-gray-700" />
+              <Image
+                src="/images/Official-logos/ATTRACTION_IDENTITY_DEF/6-removebg-preview-2.png"
+                alt='Logo'
+                className="object-contain mx-4"
+                width={105}
+                height={40}
+                priority
+              />
             </div>
+            {/* </div> */}
           </div>
         </div>
       </div>

@@ -48,7 +48,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
-        activation_link = f"http://127.0.0.1:8000/api/auth/activate/{uid}/{token}/"
+        activation_link = f"https://attraction.somos.srl/api/auth/activate/{uid}/{token}/"
         subject = "Activate Your Account"
         message = f"Click the link to activate your account:\n{activation_link}"
         send_mail(subject, message, 'noreply@somos.srl', [user.email])

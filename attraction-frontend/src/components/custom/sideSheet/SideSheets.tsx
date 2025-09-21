@@ -8,6 +8,7 @@ import { SavedContent } from './SavedContent';
 import ProfileContent from './ProfileContent';
 import SettingsContent from './SettingsContent';
 import TripHistoryContent from './TripHistoryContent';
+import Logo from '@/components/logo'
 
 type Props = {
     handleRouteSelect: (index: number) => void;
@@ -55,7 +56,8 @@ const SideSheets = ({handleRouteSelect}: Props) => {
                 <SidebarTrigger>
                     <MenuIcon className="h-6 w-6 text-gray-600" />
                 </SidebarTrigger>
-                <h2 className="text-lg font-semibold text-gray-800 truncate">Trip Planner</h2>
+                <Logo/>
+                {/* <h2 className="text-lg font-semibold text-gray-800 truncate">Trip Planner</h2> */}
             </Header>
             <Content
                 // className='overflow-scroll scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100'

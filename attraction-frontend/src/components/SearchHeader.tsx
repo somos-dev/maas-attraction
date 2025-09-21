@@ -227,21 +227,34 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({ }) => {
               }}
               onFocus={() => setShowSearchResults(true)}
               onKeyDown={handleSearchKeyDown}
-              className="pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-2xl shadow focus:ring-2 focus:ring-blue-300 transition text-base h-10"
+              className="pl-10 pr-8 sm:pr-15 py-2 bg-white border border-gray-200 rounded-2xl shadow focus:ring-2 focus:ring-blue-300 transition text-base h-10"
               autoComplete="off"
               spellCheck={false}
               aria-label="Search for places"
             />
             {(searchInputText || searchLocation) && (
-              <button
-                type="button"
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                onClick={clearSearchInput}
-                tabIndex={-1}
-                aria-label="Clear search input"
-              >
-                <X size={16} />
-              </button>
+
+              isMobile
+                ?
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  onClick={clearSearchInput}
+                  tabIndex={-1}
+                  aria-label="Clear search input"
+                >
+                  <X size={16} />
+                </button>
+                :
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 pr-7"
+                  onClick={clearSearchInput}
+                  tabIndex={-1}
+                  aria-label="Clear search input"
+                >
+                  <X size={16} />
+                </button>
             )}
             {showSearchResults && (
               <div className="absolute left-0 right-0 z-50 mt-2 max-h-[20rem] overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg scrollbar-thin scrollbar-thumb-blue-100">

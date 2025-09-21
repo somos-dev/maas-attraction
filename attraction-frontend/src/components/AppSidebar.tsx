@@ -18,6 +18,7 @@ import { useCustomSideSheetStore } from '@/store/customSideSheet';
 import { useSidebarStore } from '@/store/sidebarStore';
 import useLocales from '@/hooks/useLocales';
 import { useIsMobile } from '@/hooks/use-mobile';
+import Logo from '@/components/logo'
 
 interface AppSidebarProps {
 }
@@ -84,9 +85,10 @@ const AppSidebar: React.FC<AppSidebarProps> = ({  }) => {
 
   return (
     <Sidebar className='z-30'>
-      <SidebarHeader className='flex flex-row items-center w-full justify-between'>
-        <div className="px-4 py-2">
-          <h2 className="text-lg font-semibold">{translate('navigation.journeyPlanner') || 'Journey Planner'}</h2>
+      <SidebarHeader className='flex flex-row text-center items-center w-full justify-between'>
+        <div className="px-4 py-2 flex flex-col items-center w-full">
+          <Logo/>
+          <div className='h-0.5 bg-gradient-to-r from-blue-500 to-green-600 my-1 w-full'></div>
           <p className="text-sm text-muted-foreground">{translate('navigation.planYourPerfectTrip') || 'Plan your perfect trip'}</p>
         </div>
         <SidebarTrigger>

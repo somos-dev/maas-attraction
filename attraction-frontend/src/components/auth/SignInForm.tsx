@@ -33,7 +33,7 @@ const {execute, error, fieldErrors, isLoading} = useSafeAction(signInSchema,logi
 
     onError: (errorMsg) => {
       toast.error(errorMsg);
-      console.log(fieldErrors)
+      console.log('fieldErrors in component: ', fieldErrors)
     },
     onFieldError: (error) => {
         // toast.error(`Field errors: ${Object.entries(error).map(([key, value]) => `${key}: ${value.join(', ')}`).join('; ')}`);

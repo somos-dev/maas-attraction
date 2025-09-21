@@ -5,10 +5,12 @@ import {
   Text,
   Avatar,
   Divider,
-  TouchableRipple,
+  List,
   useTheme,
   Button,
   ActivityIndicator,
+  Card,
+  IconButton,
 } from "react-native-paper";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store/store";
@@ -25,24 +27,15 @@ export default function ProfileScreen() {
   const user = useSelector((state: RootState) => state.user);
   const { access, isAnonymous } = useSelector((state: RootState) => state.auth);
 
-  // query profilo: parte solo se loggato e non anonimo
   const { data, isSuccess, isFetching } = useGetProfileQuery(undefined, {
     skip: !access || isAnonymous,
   });
 
-  // mutation logout
   const [logoutApi] = useLogoutMutation();
 
-  // aggiorno lo slice quando arrivano i dati
   useEffect(() => {
     if (isSuccess && data) {
       dispatch(setUser(data));
-console.log("✅ Profilo ricevuto:", data);
-
-    // debug specifico
-    console.log("Username:", data.username);
-    console.log("Email:", data.email);
-
     }
   }, [isSuccess, data, dispatch]);
 
@@ -51,7 +44,7 @@ console.log("✅ Profilo ricevuto:", data);
       try {
         await logoutApi(undefined).unwrap();
       } catch {
-        // se il server non risponde, il logout locale è sufficiente
+        // fallback logout locale
       }
       dispatch(clearAuth());
       dispatch(clearUser());
@@ -71,31 +64,115 @@ console.log("✅ Profilo ricevuto:", data);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {user?.avatar ? (
-        <Avatar.Image size={90} source={{ uri: user.avatar }} />
-      ) : (
-        <Avatar.Icon size={90} icon="account" />
-      )}
-      <Text style={styles.name}>{user?.username ?? "Utente"}</Text>
-      <Text style={{ marginBottom: 16 }}>{user?.email}</Text>
-      {user?.type && <Text>Tipo: {user.type}</Text>}
-      {user?.codice_fiscale && <Text>CF: {user.codice_fiscale}</Text>}
+      {/* Header utente */}
+      <View
+        style={[styles.header, { backgroundColor: theme.colors.surfaceVariant }]}
+      >
+        <View style={styles.userRow}>
+          {user?.avatar ? (
+            <Avatar.Image size={80} source={{ uri: user.avatar }} />
+          ) : (
+            <Avatar.Icon size={80} icon="account" />
+          )}
+
+          <View style={styles.userInfo}>
+            <Text style={styles.name}>{user?.username ?? "Utente"}</Text>
+            {user?.email ? (
+              <Text style={styles.email}>{user.email}</Text>
+            ) : null}
+          </View>
+
+          <IconButton
+            icon="logout"
+            size={28}
+            iconColor={theme.colors.error}
+            onPress={handleLogout}
+          />
+        </View>
+      </View>
+
+      {/* Card dati utente */}
+      <Card style={styles.card}>
+        <Card.Title
+          title="Dati utente"
+          titleStyle={styles.cardTitle}
+          left={(props) => <List.Icon {...props} icon="account-circle" />}
+        />
+        <Card.Content>
+          <List.Section>
+            <List.Item
+              title="Username"
+              description={user?.username ?? "—"}
+              left={(props) => <List.Icon {...props} icon="account-outline" />}
+            />
+            <Divider />
+            <List.Item
+              title="Email"
+              description={user?.email ?? "—"}
+              left={(props) => <List.Icon {...props} icon="email-outline" />}
+            />
+            {user?.type && (
+              <>
+                <Divider />
+                <List.Item
+                  title="Tipo utente"
+                  description={user.type}
+                  left={(props) => (
+                    <List.Icon {...props} icon="badge-account-horizontal-outline" />
+                  )}
+                />
+              </>
+            )}
+            {user?.codice_fiscale && (
+              <>
+                <Divider />
+                <List.Item
+                  title="Codice fiscale"
+                  description={user.codice_fiscale}
+                  left={(props) => (
+                    <List.Icon {...props} icon="card-account-details-outline" />
+                  )}
+                />
+              </>
+            )}
+          </List.Section>
+        </Card.Content>
+      </Card>
 
       <Button
         mode="contained"
-        style={{ marginTop: 20 }}
+        style={styles.editButton}
+        contentStyle={{ paddingVertical: 6 }}
         onPress={() => navigation.navigate("EditProfile")}
       >
         Modifica profilo
       </Button>
 
-      <Divider style={{ marginVertical: 24, width: "100%" }} />
-
-      <TouchableRipple onPress={handleLogout}>
-        <Text style={[styles.logoutText, { color: theme.colors.error }]}>
-          Esci
-        </Text>
-      </TouchableRipple>
+      {/* Sezioni extra */}
+      <Card style={styles.card}>
+        <Card.Title
+          title="Sezioni"
+          titleStyle={styles.cardTitle}
+          left={(props) => <List.Icon {...props} icon="dots-grid" />}
+        />
+        <Card.Content>
+          <List.Item
+            title="Preferenze di trasporto"
+            left={(props) => <List.Icon {...props} icon="train-car" />}
+            onPress={() => console.log("Apri Preferenze")}
+          />
+          <List.Item
+            title="Badge e Ricompense"
+            left={(props) => <List.Icon {...props} icon="star-circle-outline" />}
+            onPress={() => console.log("Apri Badge")}
+          />
+          <List.Item
+            title="Storico viaggi"
+            left={(props) => <List.Icon {...props} icon="history" />}
+            onPress={() => console.log("Apri Storico")}
+          />
+        </Card.Content>
+      </Card>
     </ScrollView>
   );
 }
@@ -103,25 +180,51 @@ console.log("✅ Profilo ricevuto:", data);
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    alignItems: "center",
-    padding: 24,
+    padding: 16,
   },
   loader: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  name: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginTop: 8,
-    marginBottom: 4,
+  header: {
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    marginBottom: 20,
   },
-  logoutText: {
-    fontSize: 16,
+  userRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  userInfo: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  name: {
+    fontSize: 22,
+    fontWeight: "700",
+  },
+  email: {
+    fontSize: 14,
+    opacity: 0.7,
+    marginTop: 2,
+  },
+  card: {
+    borderRadius: 16,
+    marginBottom: 20,
+    elevation: 1,
+  },
+  cardTitle: {
     fontWeight: "600",
-    textAlign: "center",
-    marginTop: 16,
+    fontSize: 16,
+  },
+  editButton: {
+    alignSelf: "center",
+    width: "40%",
+    marginBottom: 24,
+    borderRadius: 30,
   },
 });
 

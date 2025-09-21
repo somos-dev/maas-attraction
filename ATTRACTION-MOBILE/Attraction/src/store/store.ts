@@ -1,6 +1,7 @@
 // src/store/store.ts
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { persistReducer, persistStore } from 'redux-persist';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // API
 import { authApi } from './api/authApi';
@@ -14,9 +15,16 @@ import { planTripApi } from './api/planTripApi';
 import authReducer from './slices/authSlice';
 import userReducer from './slices/userSlice';
 import onboardingReducer from './slices/onboardingSlice';
+import themeReducer from "./slices/themeSlice";
+
 
 // Persist config
 import { authPersistConfig, onboardingPersistConfig } from './persistConfig';
+
+const themePersistConfig = {
+  key: "theme",
+  storage: AsyncStorage,
+};
 
 const rootReducer = combineReducers({
   // RTK Query APIs
@@ -31,6 +39,7 @@ const rootReducer = combineReducers({
   auth: persistReducer(authPersistConfig, authReducer),
   user: userReducer,
   onboarding: persistReducer(onboardingPersistConfig, onboardingReducer),
+  theme: persistReducer(themePersistConfig, themeReducer),
 });
 
 export const store = configureStore({

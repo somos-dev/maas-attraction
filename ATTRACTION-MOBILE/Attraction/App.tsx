@@ -5,27 +5,30 @@
  * @format
  */
 
-// App.tsx
 import React from "react";
-import { Provider } from "react-redux";
+import { Provider, useSelector } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { PaperProvider } from "react-native-paper";
 
-import { store, persistor } from "./src/store/store"; 
+import { store, persistor, RootState } from "./src/store/store"; 
 import AppNavigator from "./src/navigation/AppNavigator";
-import { appTheme } from "./src/config/theme";
+import { lightTheme, darkTheme } from "./src/config/theme";
 
+function ThemedApp() {
+  const isDark = useSelector((state: RootState) => state.theme.isDarkTheme);
 
-  // import AsyncStorage from '@react-native-async-storage/async-storage';
-  //   AsyncStorage.clear();
+  return (
+    <PaperProvider theme={isDark ? darkTheme : lightTheme}>
+      <AppNavigator />
+    </PaperProvider>
+  );
+}
 
 export default function App() {
   return (
- <Provider store={store}>
+    <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
-        <PaperProvider theme={appTheme}>
-          <AppNavigator />
-        </PaperProvider>
+        <ThemedApp />
       </PersistGate>
     </Provider>
   );

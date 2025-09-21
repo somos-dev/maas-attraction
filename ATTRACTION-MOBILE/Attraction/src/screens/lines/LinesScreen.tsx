@@ -17,10 +17,14 @@ export default function LinesScreen() {
             value: "bus",
             label: "Bus",
             style: {
-              backgroundColor: value === "bus" ? theme.colors.primary : "transparent",
+              backgroundColor:
+                value === "bus" ? theme.colors.primary : "transparent",
             },
             labelStyle: {
-              color: value === "bus" ? "#FFFFFF" : "#000000",
+              color:
+                value === "bus"
+                  ? theme.colors.onPrimary
+                  : theme.colors.onSurface, // 👈 coerente col tema
               fontWeight: "bold",
             },
           },
@@ -28,10 +32,14 @@ export default function LinesScreen() {
             value: "train",
             label: "Treni",
             style: {
-              backgroundColor: value === "train" ? theme.colors.primary : "transparent",
+              backgroundColor:
+                value === "train" ? theme.colors.primary : "transparent",
             },
             labelStyle: {
-              color: value === "train" ? "#FFFFFF" : "#000000",
+              color:
+                value === "train"
+                  ? theme.colors.onPrimary
+                  : theme.colors.onSurface, // 👈 coerente col tema
               fontWeight: "bold",
             },
           },
@@ -39,10 +47,14 @@ export default function LinesScreen() {
             value: "favorites",
             label: "Preferiti",
             style: {
-              backgroundColor: value === "favorites" ? theme.colors.primary : "transparent",
+              backgroundColor:
+                value === "favorites" ? theme.colors.primary : "transparent",
             },
             labelStyle: {
-              color: value === "favorites" ? "#FFFFFF" : "#000000",
+              color:
+                value === "favorites"
+                  ? theme.colors.onPrimary
+                  : theme.colors.onSurface, // 👈 coerente col tema
               fontWeight: "bold",
             },
           },
@@ -73,5 +85,3 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 });
-
-

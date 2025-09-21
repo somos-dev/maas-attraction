@@ -20,4 +20,5 @@ export const SCREEN_TITLES: Record<string, string> = {
 
   // Drawer
   Settings: "Impostazioni",
+  Feedback: "Valutaci",
 };

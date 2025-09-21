@@ -3,7 +3,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useSelector } from "react-redux";
 import { RootState } from "../store/store";
-
+import { useTheme } from "react-native-paper"; 
 import { AppNavigatorParamList } from "./types";
 import SplashScreen from "../screens/splash/SplashScreen";
 import OnboardingScreen from "../screens/splash/OnboardingScreen";
@@ -14,7 +14,7 @@ const Stack = createNativeStackNavigator<AppNavigatorParamList>();
 
 export default function AppNavigator() {
   const [isLoading, setIsLoading] = useState(true);
-
+  const theme = useTheme(); 
   const auth = useSelector((state: RootState) => state.auth);
   const onboarding = useSelector((state: RootState) => state.onboarding);
 
@@ -33,7 +33,7 @@ export default function AppNavigator() {
   const startScreen = onboarding.authStartScreen || "Login";
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={theme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {/* Onboarding non ancora visto */}
         {!hasSeenOnboarding && (

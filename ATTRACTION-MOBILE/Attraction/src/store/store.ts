@@ -10,6 +10,7 @@ import { searchApi } from './api/searchApi';
 import { placesApi } from './api/placesApi';
 import { stopsApi } from './api/stopsApi';
 import { planTripApi } from './api/planTripApi';
+import { feedbackApi } from './api/feedbackApi';
 
 // Reducer slices
 import authReducer from './slices/authSlice';
@@ -34,6 +35,7 @@ const rootReducer = combineReducers({
   [placesApi.reducerPath]: placesApi.reducer,
   [stopsApi.reducerPath]: stopsApi.reducer,
   [planTripApi.reducerPath]: planTripApi.reducer,
+  [feedbackApi.reducerPath]: feedbackApi.reducer,
 
   // Redux slices
   auth: persistReducer(authPersistConfig, authReducer),
@@ -54,6 +56,7 @@ export const store = configureStore({
       placesApi.middleware,
       stopsApi.middleware,
       planTripApi.middleware,
+      feedbackApi.middleware,
     ),
 });
 

@@ -1,27 +1,54 @@
 import React, { useState } from "react";
 import { View, StyleSheet, ScrollView } from "react-native";
-import { Appbar, Text, TextInput, Button, Snackbar, useTheme } from "react-native-paper";
+import {
+  Appbar,
+  TextInput,
+  Button,
+  Snackbar,
+  useTheme,
+} from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { useCreateFeedbackMutation } from "../../store/api/feedbackApi";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store/store";
 
 export default function FeedbackScreen() {
   const theme = useTheme();
+  const user = useSelector((state: RootState) => state.user);
+
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [snackbarVisible, setSnackbarVisible] = useState(false);
 
-  const handleSubmit = () => {
-    // TODO: invio feedback al backend
-    console.log("Feedback inviato:", { rating, comment });
-    setSnackbarVisible(true);
-    setRating(0);
-    setComment("");
+  const [createFeedback, { isLoading }] = useCreateFeedbackMutation();
+
+  const handleSubmit = async () => {
+    if (!user) {
+      console.error("Utente non autenticato");
+      return;
+    }
+
+    try {
+      await createFeedback({
+        user_id: user.id, // aggiunto
+        text: `⭐ ${rating}/5\n${comment}`,
+      }).unwrap();
+
+      setSnackbarVisible(true);
+      setRating(0);
+      setComment("");
+    } catch (error) {
+      console.error("Errore invio feedback:", error);
+    }
   };
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <View style={styles.container}>
         {/* Header */}
-        <Appbar.Header style={{ backgroundColor: "transparent", elevation: 0 }}>
+        <Appbar.Header
+          style={{ backgroundColor: "transparent", elevation: 0 }}
+        >
           <Appbar.Content
             title="Feedback"
             titleStyle={{ textAlign: "center", fontSize: 24 }}
@@ -55,6 +82,7 @@ export default function FeedbackScreen() {
         <Button
           mode="contained"
           onPress={handleSubmit}
+          loading={isLoading}
           disabled={rating === 0 || comment.trim() === ""}
         >
           Invia

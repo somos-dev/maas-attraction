@@ -37,8 +37,8 @@ export const darkTheme = {
   ...DefaultDarkTheme,
   colors: {
     ...DefaultDarkTheme.colors,
-    primary: "#2E8B57",     // Verde coerente brand
-    secondary: "#1E90FF",   // Blu coerente brand
+    primary: "#50b948",     // Verde coerente brand
+    secondary: "#45c3d6",   // Blu coerente brand
     background: "#121212",  // Sfondo principale scuro
     surface: "#1E1E1E",     // Card/Input scuri
     text: "#E0E0E0",        // Testo chiaro

@@ -1,8 +1,7 @@
 import React from "react";
-import { createDrawerNavigator } from "@react-navigation/drawer";
+import { createDrawerNavigator, DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import { useTheme, Appbar, Text, Divider, Icon } from "react-native-paper";
-import { View, StyleSheet } from "react-native";
-import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
+import { View, StyleSheet, Share, Image } from "react-native";
 import AppFooter from "../components/common/footer/AppFooter";
 import TabNavigator from "./TabNavigator";
 import SettingsScreen from "../screens/drawer/SettingsScreen";
@@ -21,34 +20,39 @@ function CustomDrawerContent(props: any) {
     props.navigation.closeDrawer();
   };
 
+  const handleShareApp = async () => {
+    try {
+      await Share.share({
+        title: "Fai conoscere Attraction",
+        message:
+          "Scopri Attraction \nL’app per muoverti in modo sostenibile!\nhttps://attraction-app.example.com",
+      });
+    } catch (err) {
+      console.log("Share error", err);
+    }
+  };
+
   return (
-    <View
-      style={[
-        styles.drawerContainer,
-        { backgroundColor: theme.colors.surface },
-      ]}
-    >
-      <DrawerContentScrollView
-        {...props}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: 0 }}
-      >
+    <View style={[styles.drawerContainer, { backgroundColor: theme.colors.surface }]}>
+      {/* Header con immagine a piena larghezza */}
+      <View style={[styles.headerContainer, { backgroundColor: theme.colors.primaryContainer }]}>
+        <Image
+          source={require("../assets/images/logo/header.png")}
+          style={styles.headerImage}
+           resizeMode="cover"
+        />
+      </View>
+
+      <DrawerContentScrollView {...props} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: 0 }}>
+        {/* Sezione App */}
         <View style={styles.menuSection}>
-          <Text
-            variant="labelLarge"
-            style={[
-              styles.sectionTitle,
-              { color: theme.colors.onSurface },
-            ]}
-          >
+          <Text variant="labelLarge" style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>
             Applicazione
           </Text>
 
           <DrawerItem
             label={SCREEN_TITLES.Settings}
-            icon={({ color, size }) => (
-              <Icon source="cog-outline" color={color} size={size} />
-            )}
+            icon={({ color, size }) => <Icon source="cog-outline" color={color} size={size} />}
             onPress={() => handleMenuItemPress("Settings")}
             style={styles.drawerItem}
             labelStyle={styles.drawerLabel}
@@ -56,10 +60,16 @@ function CustomDrawerContent(props: any) {
 
           <DrawerItem
             label={SCREEN_TITLES.Feedback}
-            icon={({ color, size }) => (
-              <Icon source="message-text-outline" color={color} size={size} />
-            )}
+            icon={({ color, size }) => <Icon source="message-text-outline" color={color} size={size} />}
             onPress={() => handleMenuItemPress("Feedback")}
+            style={styles.drawerItem}
+            labelStyle={styles.drawerLabel}
+          />
+
+          <DrawerItem
+            label="Fai conoscere Attraction"
+            icon={({ color, size }) => <Icon source="share-variant-outline" color={color} size={size} />}
+            onPress={handleShareApp}
             style={styles.drawerItem}
             labelStyle={styles.drawerLabel}
           />
@@ -67,22 +77,15 @@ function CustomDrawerContent(props: any) {
 
         <Divider style={styles.divider} />
 
+        {/* Sezione Supporto */}
         <View style={styles.menuSection}>
-          <Text
-            variant="labelLarge"
-            style={[
-              styles.sectionTitle,
-              { color: theme.colors.onSurface },
-            ]}
-          >
+          <Text variant="labelLarge" style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>
             Supporto
           </Text>
 
           <DrawerItem
             label="Aiuto"
-            icon={({ color, size }) => (
-              <Icon source="help-circle-outline" color={color} size={size} />
-            )}
+            icon={({ color, size }) => <Icon source="help-circle-outline" color={color} size={size} />}
             onPress={() => {
               console.log("Apri sezione aiuto");
               props.navigation.closeDrawer();
@@ -93,9 +96,7 @@ function CustomDrawerContent(props: any) {
 
           <DrawerItem
             label="Informazioni"
-            icon={({ color, size }) => (
-              <Icon source="information-outline" color={color} size={size} />
-            )}
+            icon={({ color, size }) => <Icon source="information-outline" color={color} size={size} />}
             onPress={() => {
               console.log("Apri informazioni app");
               props.navigation.closeDrawer();
@@ -106,7 +107,7 @@ function CustomDrawerContent(props: any) {
         </View>
       </DrawerContentScrollView>
 
-      {/* 👇 Footer fisso in basso */}
+      {/* Footer fisso in basso */}
       <AppFooter />
     </View>
   );
@@ -122,18 +123,14 @@ export default function DrawerNavigator() {
       screenOptions={{
         headerShown: false,
         drawerStyle: { backgroundColor: theme.colors.surface, width: "80%" },
-        drawerActiveTintColor: theme.colors.primary, // 👈 coerente
-        drawerInactiveTintColor: theme.colors.onSurface, // 👈 coerente
+        drawerActiveTintColor: theme.colors.primary,
+        drawerInactiveTintColor: theme.colors.onSurface,
         drawerType: "front",
         swipeEnabled: true,
         swipeEdgeWidth: 50,
       }}
     >
-      <Drawer.Screen
-        name="TabsRoot"
-        component={TabNavigator}
-        options={{ drawerItemStyle: { display: "none" } }}
-      />
+      <Drawer.Screen name="TabsRoot" component={TabNavigator} options={{ drawerItemStyle: { display: "none" } }} />
 
       <Drawer.Screen
         name="Settings"
@@ -143,16 +140,10 @@ export default function DrawerNavigator() {
           headerShown: true,
           header: () => (
             <Appbar.Header>
-              <Appbar.BackAction
-                color={theme.colors.onSurface}
-                onPress={() => navigation.goBack()}
-              />
+              <Appbar.BackAction color={theme.colors.onSurface} onPress={() => navigation.goBack()} />
               <Appbar.Content
                 title={SCREEN_TITLES.Settings}
-                titleStyle={[
-                  theme.typography.headerTitle,
-                  { color: theme.colors.onSurface },
-                ]}
+                titleStyle={[theme.typography?.headerTitle, { color: theme.colors.onSurface }]}
               />
             </Appbar.Header>
           ),
@@ -167,16 +158,10 @@ export default function DrawerNavigator() {
           headerShown: true,
           header: () => (
             <Appbar.Header>
-              <Appbar.BackAction
-                color={theme.colors.onSurface}
-                onPress={() => navigation.goBack()}
-              />
+              <Appbar.BackAction color={theme.colors.onSurface} onPress={() => navigation.goBack()} />
               <Appbar.Content
                 title={SCREEN_TITLES.Feedback}
-                titleStyle={[
-                  theme.typography.headerTitle,
-                  { color: theme.colors.onSurface },
-                ]}
+                titleStyle={[theme.typography?.headerTitle, { color: theme.colors.onSurface }]}
               />
             </Appbar.Header>
           ),
@@ -188,12 +173,17 @@ export default function DrawerNavigator() {
 
 const styles = StyleSheet.create({
   drawerContainer: { flex: 1 },
-  menuSection: { marginTop: 10 },
-  sectionTitle: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    fontWeight: "600",
+  headerContainer: {
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
   },
+  headerImage: {
+    width: "100%",  // riempie la larghezza del drawer
+    height: 200,     // altezza fissa, regolabile
+  },
+  menuSection: { marginTop: 10 },
+  sectionTitle: { paddingHorizontal: 20, paddingVertical: 10, fontWeight: "600" },
   drawerItem: { marginHorizontal: 10, borderRadius: 8 },
   drawerLabel: { fontSize: 15, marginLeft: 8, fontWeight: "400" },
   divider: { marginVertical: 15, marginHorizontal: 20 },

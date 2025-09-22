@@ -63,41 +63,68 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      contentContainerStyle={[
+        styles.container,
+        { backgroundColor: theme.colors.background },
+      ]}
+      showsVerticalScrollIndicator={false}
+    >
       {/* Header utente */}
-      <View
-        style={[styles.header, { backgroundColor: theme.colors.surfaceVariant }]}
-      >
-        <View style={styles.userRow}>
-          {user?.avatar ? (
-            <Avatar.Image size={80} source={{ uri: user.avatar }} />
-          ) : (
-            <Avatar.Icon size={80} icon="account" />
-          )}
-
-          <View style={styles.userInfo}>
-            <Text style={styles.name}>{user?.username ?? "Utente"}</Text>
-            {user?.email ? (
-              <Text style={styles.email}>{user.email}</Text>
-            ) : null}
-          </View>
-
-          <IconButton
-            icon="logout"
-            size={28}
-            iconColor={theme.colors.error}
-            onPress={handleLogout}
-          />
+      <Card style={styles.card} elevation={1}>
+        <View
+          style={[
+            styles.sectionHeader,
+            { backgroundColor: theme.colors.secondary },
+          ]}
+        >
+          <Text
+            variant="titleMedium"
+            style={[styles.sectionTitle, { color: theme.colors.onSecondary }]}
+          >
+            Profilo Utente
+          </Text>
         </View>
-      </View>
+        <Card.Content>
+          <View style={styles.userRow}>
+            {user?.avatar ? (
+              <Avatar.Image size={80} source={{ uri: user.avatar }} />
+            ) : (
+              <Avatar.Icon size={80} icon="account" />
+            )}
+
+            <View style={styles.userInfo}>
+              <Text style={styles.name}>{user?.username ?? "Utente"}</Text>
+              {user?.email ? (
+                <Text style={styles.email}>{user.email}</Text>
+              ) : null}
+            </View>
+
+            <IconButton
+              icon="logout"
+              size={28}
+              iconColor={theme.colors.error}
+              onPress={handleLogout}
+            />
+          </View>
+        </Card.Content>
+      </Card>
 
       {/* Card dati utente */}
-      <Card style={styles.card}>
-        <Card.Title
-          title="Dati utente"
-          titleStyle={styles.cardTitle}
-          left={(props) => <List.Icon {...props} icon="account-circle" />}
-        />
+      <Card style={styles.card} elevation={1}>
+        <View
+          style={[
+            styles.sectionHeader,
+            { backgroundColor: theme.colors.secondary },
+          ]}
+        >
+          <Text
+            variant="titleMedium"
+            style={[styles.sectionTitle, { color: theme.colors.onSecondary }]}
+          >
+            Dati utente
+          </Text>
+        </View>
         <Card.Content>
           <List.Section>
             <List.Item
@@ -118,7 +145,10 @@ export default function ProfileScreen() {
                   title="Tipo utente"
                   description={user.type}
                   left={(props) => (
-                    <List.Icon {...props} icon="badge-account-horizontal-outline" />
+                    <List.Icon
+                      {...props}
+                      icon="badge-account-horizontal-outline"
+                    />
                   )}
                 />
               </>
@@ -130,7 +160,10 @@ export default function ProfileScreen() {
                   title="Codice fiscale"
                   description={user.codice_fiscale}
                   left={(props) => (
-                    <List.Icon {...props} icon="card-account-details-outline" />
+                    <List.Icon
+                      {...props}
+                      icon="card-account-details-outline"
+                    />
                   )}
                 />
               </>
@@ -142,30 +175,40 @@ export default function ProfileScreen() {
       <Button
         mode="contained"
         style={styles.editButton}
-        contentStyle={{ paddingVertical: 6 }}
+        contentStyle={{ paddingVertical: 2 }}
         onPress={() => navigation.navigate("EditProfile")}
       >
-        Modifica profilo
+        Modifica dati del profilo
       </Button>
 
       {/* Sezioni extra */}
-      <Card style={styles.card}>
-        <Card.Title
-          title="Sezioni"
-          titleStyle={styles.cardTitle}
-          left={(props) => <List.Icon {...props} icon="dots-grid" />}
-        />
+      <Card style={styles.card} elevation={1}>
+        <View
+          style={[
+            styles.sectionHeader,
+            { backgroundColor: theme.colors.secondary },
+          ]}
+        >
+          <Text
+            variant="titleMedium"
+            style={[styles.sectionTitle, { color: theme.colors.onSecondary }]}
+          >
+            Sezioni
+          </Text>
+        </View>
         <Card.Content>
           <List.Item
             title="Preferenze di trasporto"
             left={(props) => <List.Icon {...props} icon="train-car" />}
-            onPress={() => console.log("Apri Preferenze")}
+            onPress={() => navigation.navigate("TransportPreferences")}
           />
+          <Divider />
           <List.Item
             title="Badge e Ricompense"
             left={(props) => <List.Icon {...props} icon="star-circle-outline" />}
             onPress={() => console.log("Apri Badge")}
           />
+          <Divider />
           <List.Item
             title="Storico viaggi"
             left={(props) => <List.Icon {...props} icon="history" />}
@@ -187,16 +230,24 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  header: {
-    paddingVertical: 20,
+  card: {
+    borderRadius: 12,
+    marginBottom: 24,
+    overflow: "hidden",
+  },
+  sectionHeader: {
     paddingHorizontal: 16,
-    borderRadius: 16,
-    marginBottom: 20,
+    paddingVertical: 8,
+  },
+  sectionTitle: {
+    fontWeight: "600",
   },
   userRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    marginTop: 8,
+    marginBottom: 12,
   },
   userInfo: {
     flex: 1,
@@ -211,15 +262,6 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     marginTop: 2,
   },
-  card: {
-    borderRadius: 16,
-    marginBottom: 20,
-    elevation: 1,
-  },
-  cardTitle: {
-    fontWeight: "600",
-    fontSize: 16,
-  },
   editButton: {
     alignSelf: "center",
     width: "40%",
@@ -227,5 +269,6 @@ const styles = StyleSheet.create({
     borderRadius: 30,
   },
 });
+
 
 

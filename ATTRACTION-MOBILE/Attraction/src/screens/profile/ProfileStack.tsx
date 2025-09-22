@@ -4,18 +4,19 @@ import { useTheme } from "react-native-paper"; // 👈 aggiunto
 import ProfileScreen from "./ProfileScreen";
 import type { ProfileStackParamList } from "../../navigation/types";
 import EditProfileScreen from "./EditProfileScreen";
+import TransportPreferencesScreen from "./TransportPreferencesScreen";
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
 
 export default function ProfileStack() {
-  const theme = useTheme(); // 👈 accedi al tema
+  const theme = useTheme(); 
 
   return (
     <Stack.Navigator
       screenOptions={{
         headerShadowVisible: false,
-        headerStyle: { backgroundColor: theme.colors.surface }, // 👈 sfondo coerente
-        headerTintColor: theme.colors.onSurface, // 👈 testo coerente
+        headerStyle: { backgroundColor: theme.colors.surface },
+        headerTintColor: theme.colors.onSurface, 
       }}
     >
       <Stack.Screen
@@ -27,6 +28,12 @@ export default function ProfileStack() {
         name="EditProfile"
         component={EditProfileScreen}
         options={{ title: "Modifica Profilo" }}
+      />
+
+      <Stack.Screen
+        name="TransportPreferences"
+        component={TransportPreferencesScreen}
+        options={{ title: "Preferenze di Trasporto" }}
       />
     </Stack.Navigator>
   );

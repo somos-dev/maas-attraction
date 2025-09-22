@@ -38,6 +38,7 @@ export type ServicesStackParamList = {
 export type ProfileStackParamList = {
   Profile: undefined;
   EditProfile: undefined;
+  TransportPreferences: undefined;
 };
 
 

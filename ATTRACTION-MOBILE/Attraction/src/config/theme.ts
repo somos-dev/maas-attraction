@@ -53,9 +53,13 @@ export const darkTheme = {
     bodyLarge:   { fontFamily: "Montserrat-Regular",  fontWeight: "400" },
     bodyMedium:  { fontFamily: "Montserrat-Regular",  fontWeight: "400" },
     bodySmall:   { fontFamily: "Montserrat-Light",    fontWeight: "300" },
-    titleLarge:  { fontFamily: "Montserrat-Bold",     fontWeight: "700" ,fontSize: 20},
-    titleMedium: { fontFamily: "Montserrat-SemiBold", fontWeight: "600" },
+    // titleLarge:  { fontFamily: "Montserrat-Bold",     fontWeight: "700" ,fontSize: 20},
+    // titleMedium: { fontFamily: "Montserrat-SemiBold", fontWeight: "600" },
     labelLarge:  { fontFamily: "Montserrat-Medium",   fontWeight: "500" },
+    labelMedium: { fontFamily: "Aadhunik", fontWeight: "500" },
+    titleLarge:  { fontFamily: "Isonorm", fontWeight: "700" ,fontSize: 20},
+    titleMedium: { fontFamily: "Isonorm", fontWeight: "600" },
+
   },
   typography: {
     headerTitle: {

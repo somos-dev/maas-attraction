@@ -7,12 +7,7 @@ export default function AppFooter() {
 
   return (
     <View style={[styles.container, { borderTopColor: theme.colors.outline }]}>
-      {/* Logo */}
-      <Image
-        source={require("../../../assets/images/logo/Footer.png")}
-        style={styles.logo}
-        resizeMode="contain"
-      />
+
 
       {/* Versione app */}
       <Text

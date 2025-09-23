@@ -35,11 +35,11 @@ function CustomDrawerContent(props: any) {
   return (
     <View style={[styles.drawerContainer, { backgroundColor: theme.colors.surface }]}>
       {/* Header con immagine a piena larghezza */}
-      <View style={[styles.headerContainer, { backgroundColor: theme.colors.primaryContainer }]}>
+      <View style={styles.headerContainer}>
         <Image
           source={require("../assets/images/logo/header.png")}
           style={styles.headerImage}
-           resizeMode="cover"
+          resizeMode="contain"
         />
       </View>
 
@@ -177,10 +177,11 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "transparent", // fallback se l’immagine non carica
   },
   headerImage: {
     width: "100%",  // riempie la larghezza del drawer
-    height: 200,     // altezza fissa, regolabile
+    height: 158,    // altezza fissa, regolabile
   },
   menuSection: { marginTop: 10 },
   sectionTitle: { paddingHorizontal: 20, paddingVertical: 10, fontWeight: "600" },
@@ -189,4 +190,3 @@ const styles = StyleSheet.create({
   divider: { marginVertical: 15, marginHorizontal: 20 },
   footer: { padding: 20, alignItems: "center", marginTop: "auto" },
 });
-

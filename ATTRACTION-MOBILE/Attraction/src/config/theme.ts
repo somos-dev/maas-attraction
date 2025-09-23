@@ -13,7 +13,8 @@ export const lightTheme = {
     error: "#D32F2F",
     onPrimary: "#FFFFFF",
     onSecondary: "#FFFFFF",
-    onSurface: "#333333",
+    onSurface: "#000000ff",
+    onSurfaceVariant: "#a7a9aa"
   },
   fonts: {
     ...DefaultLightTheme.fonts,
@@ -47,6 +48,7 @@ export const darkTheme = {
     onSecondary: "#FFFFFF",
     onSurface: "#E0E0E0",   // Testo su card
     outline: "#444444",     // Bordi scuri
+    onSurfaceVariant: "#a7a9aa"
   },
   fonts: {
     ...DefaultDarkTheme.fonts,

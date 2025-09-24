@@ -22,7 +22,7 @@ export default function AppFooter() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 16,
+    paddingVertical: 30,
     alignItems: "center",
     justifyContent: "center",
     borderTopWidth: StyleSheet.hairlineWidth,

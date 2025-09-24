@@ -40,12 +40,12 @@ export default function TabNavigator() {
         tabBarStyle: {
           backgroundColor: theme.colors.surface,
           borderTopWidth: 0,
-          height: 70,
+          height: 80,
           paddingTop: 8,
-          paddingBottom: 6,
+          paddingBottom: 8,
         },
         tabBarLabelStyle: { fontSize: 13 },
-        tabBarIconStyle: { marginBottom: 6 }, // spazio tra icona e testo
+        tabBarIconStyle: { marginBottom: 1 }, // spazio tra icona e testo
       }}
     >
       <Tab.Screen

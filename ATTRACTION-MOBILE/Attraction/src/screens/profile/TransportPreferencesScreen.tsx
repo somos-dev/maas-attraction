@@ -1,4 +1,3 @@
-// src/screens/profile/TransportPreferencesScreen.tsx
 import React, { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import {
@@ -6,8 +5,10 @@ import {
   RadioButton,
   Checkbox,
   useTheme,
-  Surface,
 } from "react-native-paper";
+
+// componente riutilizzabile
+import AppCard from "../../components/common/card/AppCard";
 
 export default function TransportPreferencesScreen() {
   const theme = useTheme();
@@ -45,88 +46,37 @@ export default function TransportPreferencesScreen() {
       </View>
 
       {/* Tipo di Percorso */}
-      <Surface
-        style={[styles.card, { backgroundColor: theme.colors.surface }]}
-        elevation={1}
-      >
-        <View
-          style={[
-            styles.sectionHeader,
-            { backgroundColor: theme.colors.secondary },
-          ]}
-        >
-          <Text
-            variant="titleMedium"
-            style={[styles.sectionTitle, { color: theme.colors.onSecondary }]}
-          >
-            Tipo di Percorso
-          </Text>
-        </View>
-
+      <AppCard title="Tipo di Percorso">
         <RadioButton.Group
           onValueChange={(value) => setRoutePref(value)}
           value={routePref}
         >
-          <View style={styles.optionContainer}>
-            <RadioButton.Item
-              label="Più veloce"
-              value="fastest"
-              color={theme.colors.primary}
-              labelStyle={[
-                styles.optionLabel,
-                { color: theme.colors.onSurface },
-              ]}
-              style={styles.radioItem}
-            />
-          </View>
-
-          <View style={styles.optionContainer}>
-            <RadioButton.Item
-              label="Eco-sostenibile"
-              value="eco"
-              color={theme.colors.primary}
-              labelStyle={[
-                styles.optionLabel,
-                { color: theme.colors.onSurface },
-              ]}
-              style={styles.radioItem}
-            />
-          </View>
-
-          <View style={styles.optionContainer}>
-            <RadioButton.Item
-              label="A piedi"
-              value="walk"
-              color={theme.colors.primary}
-              labelStyle={[
-                styles.optionLabel,
-                { color: theme.colors.onSurface },
-              ]}
-              style={styles.radioItem}
-            />
-          </View>
+          <RadioButton.Item
+            label="Più veloce"
+            value="fastest"
+            color={theme.colors.primary}
+            labelStyle={[styles.optionLabel, { color: theme.colors.onSurface }]}
+            style={styles.radioItem}
+          />
+          <RadioButton.Item
+            label="Eco-sostenibile"
+            value="eco"
+            color={theme.colors.primary}
+            labelStyle={[styles.optionLabel, { color: theme.colors.onSurface }]}
+            style={styles.radioItem}
+          />
+          <RadioButton.Item
+            label="A piedi"
+            value="walk"
+            color={theme.colors.primary}
+            labelStyle={[styles.optionLabel, { color: theme.colors.onSurface }]}
+            style={styles.radioItem}
+          />
         </RadioButton.Group>
-      </Surface>
+      </AppCard>
 
       {/* Mezzi di Trasporto */}
-      <Surface
-        style={[styles.card, { backgroundColor: theme.colors.surface }]}
-        elevation={1}
-      >
-        <View
-          style={[
-            styles.sectionHeader,
-            { backgroundColor: theme.colors.secondary },
-          ]}
-        >
-          <Text
-            variant="titleMedium"
-            style={[styles.sectionTitle, { color: theme.colors.onSecondary }]}
-          >
-            Mezzi di Trasporto
-          </Text>
-        </View>
-
+      <AppCard title="Mezzi di Trasporto">
         {/* Trasporti Pubblici */}
         <View style={styles.categorySection}>
           <Text
@@ -135,34 +85,22 @@ export default function TransportPreferencesScreen() {
           >
             Trasporti Pubblici
           </Text>
-
-          <View style={styles.optionContainer}>
-            <Checkbox.Item
-              label="Autobus"
-              status={transportPrefs.bus ? "checked" : "unchecked"}
-              onPress={() => toggleTransport("bus")}
-              color={theme.colors.primary}
-              labelStyle={[
-                styles.optionLabel,
-                { color: theme.colors.onSurface },
-              ]}
-              style={styles.checkboxItem}
-            />
-          </View>
-
-          <View style={styles.optionContainer}>
-            <Checkbox.Item
-              label="Treno"
-              status={transportPrefs.train ? "checked" : "unchecked"}
-              onPress={() => toggleTransport("train")}
-              color={theme.colors.primary}
-              labelStyle={[
-                styles.optionLabel,
-                { color: theme.colors.onSurface },
-              ]}
-              style={styles.checkboxItem}
-            />
-          </View>
+          <Checkbox.Item
+            label="Autobus"
+            status={transportPrefs.bus ? "checked" : "unchecked"}
+            onPress={() => toggleTransport("bus")}
+            color={theme.colors.primary}
+            labelStyle={[styles.optionLabel, { color: theme.colors.onSurface }]}
+            style={styles.checkboxItem}
+          />
+          <Checkbox.Item
+            label="Treno"
+            status={transportPrefs.train ? "checked" : "unchecked"}
+            onPress={() => toggleTransport("train")}
+            color={theme.colors.primary}
+            labelStyle={[styles.optionLabel, { color: theme.colors.onSurface }]}
+            style={styles.checkboxItem}
+          />
         </View>
 
         {/* Mobilità Sostenibile */}
@@ -173,34 +111,22 @@ export default function TransportPreferencesScreen() {
           >
             Mobilità Sostenibile
           </Text>
-
-          <View style={styles.optionContainer}>
-            <Checkbox.Item
-              label="Bicicletta"
-              status={transportPrefs.bike ? "checked" : "unchecked"}
-              onPress={() => toggleTransport("bike")}
-              color={theme.colors.primary}
-              labelStyle={[
-                styles.optionLabel,
-                { color: theme.colors.onSurface },
-              ]}
-              style={styles.checkboxItem}
-            />
-          </View>
-
-          <View style={styles.optionContainer}>
-            <Checkbox.Item
-              label="Monopattino elettrico"
-              status={transportPrefs.scooter ? "checked" : "unchecked"}
-              onPress={() => toggleTransport("scooter")}
-              color={theme.colors.primary}
-              labelStyle={[
-                styles.optionLabel,
-                { color: theme.colors.onSurface },
-              ]}
-              style={styles.checkboxItem}
-            />
-          </View>
+          <Checkbox.Item
+            label="Bicicletta"
+            status={transportPrefs.bike ? "checked" : "unchecked"}
+            onPress={() => toggleTransport("bike")}
+            color={theme.colors.primary}
+            labelStyle={[styles.optionLabel, { color: theme.colors.onSurface }]}
+            style={styles.checkboxItem}
+          />
+          <Checkbox.Item
+            label="Monopattino elettrico"
+            status={transportPrefs.scooter ? "checked" : "unchecked"}
+            onPress={() => toggleTransport("scooter")}
+            color={theme.colors.primary}
+            labelStyle={[styles.optionLabel, { color: theme.colors.onSurface }]}
+            style={styles.checkboxItem}
+          />
         </View>
 
         {/* Veicoli Privati */}
@@ -211,36 +137,24 @@ export default function TransportPreferencesScreen() {
           >
             Veicoli Privati
           </Text>
-
-          <View style={styles.optionContainer}>
-            <Checkbox.Item
-              label="Scooter/Motocicletta"
-              status={transportPrefs.moped ? "checked" : "unchecked"}
-              onPress={() => toggleTransport("moped")}
-              color={theme.colors.primary}
-              labelStyle={[
-                styles.optionLabel,
-                { color: theme.colors.onSurface },
-              ]}
-              style={styles.checkboxItem}
-            />
-          </View>
-
-          <View style={styles.optionContainer}>
-            <Checkbox.Item
-              label="Automobile"
-              status={transportPrefs.car ? "checked" : "unchecked"}
-              onPress={() => toggleTransport("car")}
-              color={theme.colors.primary}
-              labelStyle={[
-                styles.optionLabel,
-                { color: theme.colors.onSurface },
-              ]}
-              style={styles.checkboxItem}
-            />
-          </View>
+          <Checkbox.Item
+            label="Scooter/Motocicletta"
+            status={transportPrefs.moped ? "checked" : "unchecked"}
+            onPress={() => toggleTransport("moped")}
+            color={theme.colors.primary}
+            labelStyle={[styles.optionLabel, { color: theme.colors.onSurface }]}
+            style={styles.checkboxItem}
+          />
+          <Checkbox.Item
+            label="Automobile"
+            status={transportPrefs.car ? "checked" : "unchecked"}
+            onPress={() => toggleTransport("car")}
+            color={theme.colors.primary}
+            labelStyle={[styles.optionLabel, { color: theme.colors.onSurface }]}
+            style={styles.checkboxItem}
+          />
         </View>
-      </Surface>
+      </AppCard>
 
       <View style={styles.bottomSpacer} />
     </ScrollView>
@@ -261,19 +175,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontWeight: "600",
   },
-  card: {
-    marginBottom: 24,
-    borderRadius: 12,
-    paddingBottom: 16,
-    overflow: "hidden", 
-  },
-  sectionHeader: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  sectionTitle: {
-    fontWeight: "600",
-  },
   categorySection: {
     marginTop: 20,
   },
@@ -282,10 +183,6 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     fontWeight: "500",
     opacity: 0.8,
-  },
-  optionContainer: {
-    marginHorizontal: 8,
-    marginVertical: 2,
   },
   radioItem: {
     paddingVertical: 4,
@@ -301,6 +198,9 @@ const styles = StyleSheet.create({
     height: 40,
   },
 });
+
+
+
 
 
 

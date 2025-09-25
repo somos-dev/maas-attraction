@@ -1,14 +1,12 @@
-// src/screens/profile/ProfileScreen.tsx
 import React, { useEffect } from "react";
 import { View, StyleSheet, ScrollView, Alert } from "react-native";
 import {
   Text,
   Avatar,
   Divider,
-  TouchableRipple,
   useTheme,
-  Button,
   ActivityIndicator,
+  IconButton,
 } from "react-native-paper";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store/store";
@@ -18,6 +16,11 @@ import { useGetProfileQuery, userApi } from "../../store/api/userApi";
 import { useLogoutMutation } from "../../store/api/authApi";
 import { useNavigation } from "@react-navigation/native";
 
+// componenti riutilizzabili
+import AppCard from "../../components/common/card/AppCard";
+import AppButton from "../../components/common/buttom/AppButton";
+import AppListItem from "../../components/common/list/AppListItem";
+
 export default function ProfileScreen() {
   const theme = useTheme();
   const dispatch = useDispatch();
@@ -25,24 +28,15 @@ export default function ProfileScreen() {
   const user = useSelector((state: RootState) => state.user);
   const { access, isAnonymous } = useSelector((state: RootState) => state.auth);
 
-  // query profilo: parte solo se loggato e non anonimo
   const { data, isSuccess, isFetching } = useGetProfileQuery(undefined, {
     skip: !access || isAnonymous,
   });
 
-  // mutation logout
   const [logoutApi] = useLogoutMutation();
 
-  // aggiorno lo slice quando arrivano i dati
   useEffect(() => {
     if (isSuccess && data) {
       dispatch(setUser(data));
-console.log("✅ Profilo ricevuto:", data);
-
-    // debug specifico
-    console.log("Username:", data.username);
-    console.log("Email:", data.email);
-
     }
   }, [isSuccess, data, dispatch]);
 
@@ -51,7 +45,7 @@ console.log("✅ Profilo ricevuto:", data);
       try {
         await logoutApi(undefined).unwrap();
       } catch {
-        // se il server non risponde, il logout locale è sufficiente
+        // fallback logout locale
       }
       dispatch(clearAuth());
       dispatch(clearUser());
@@ -70,32 +64,100 @@ console.log("✅ Profilo ricevuto:", data);
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {user?.avatar ? (
-        <Avatar.Image size={90} source={{ uri: user.avatar }} />
-      ) : (
-        <Avatar.Icon size={90} icon="account" />
-      )}
-      <Text style={styles.name}>{user?.username ?? "Utente"}</Text>
-      <Text style={{ marginBottom: 16 }}>{user?.email}</Text>
-      {user?.type && <Text>Tipo: {user.type}</Text>}
-      {user?.codice_fiscale && <Text>CF: {user.codice_fiscale}</Text>}
+    <ScrollView
+      contentContainerStyle={[
+        styles.container,
+        { backgroundColor: theme.colors.background },
+      ]}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Card unica: Dati utente */}
+      <AppCard title="Dati utente">
+        {/* Riga con avatar, nome, email + logout */}
+        <View style={styles.userRow}>
+          {user?.avatar ? (
+            <Avatar.Image size={80} source={{ uri: user.avatar }} />
+          ) : (
+            <Avatar.Icon size={80} icon="account" />
+          )}
 
-      <Button
-        mode="contained"
-        style={{ marginTop: 20 }}
-        onPress={() => navigation.navigate("EditProfile")}
-      >
-        Modifica profilo
-      </Button>
+          <View style={styles.userInfo}>
+            <Text style={styles.name}>{user?.username ?? "Utente"}</Text>
+            {user?.email && <Text style={styles.email}>{user.email}</Text>}
+          </View>
 
-      <Divider style={{ marginVertical: 24, width: "100%" }} />
+          <IconButton
+            icon="logout"
+            size={28}
+            iconColor={theme.colors.error}
+            onPress={handleLogout}
+          />
+        </View>
 
-      <TouchableRipple onPress={handleLogout}>
-        <Text style={[styles.logoutText, { color: theme.colors.error }]}>
-          Esci
-        </Text>
-      </TouchableRipple>
+        {/* Lista dati utente */}
+        <AppListItem
+          icon="account-outline"
+          title="Username"
+          description={user?.username ?? "—"}
+        />
+        <Divider />
+        <AppListItem
+          icon="email-outline"
+          title="Email"
+          description={user?.email ?? "—"}
+        />
+        {user?.type && (
+          <>
+            <Divider />
+            <AppListItem
+              icon="badge-account-horizontal-outline"
+              title="Tipo utente"
+              description={user.type}
+            />
+          </>
+        )}
+        {user?.codice_fiscale && (
+          <>
+            <Divider />
+            <AppListItem
+              icon="card-account-details-outline"
+              title="Codice fiscale"
+              description={user.codice_fiscale}
+            />
+          </>
+        )}
+
+        {/* Pulsante Modifica */}
+        <AppButton
+          label="Modifica"
+          onPress={() => navigation.navigate("EditProfile")}
+          style={{ marginTop: 16 }}
+        />
+      </AppCard>
+
+      {/* Sezioni extra */}
+      <AppCard title="Sezioni">
+        <AppListItem
+          icon="train-car"
+          title="Preferenze di trasporto"
+          onPress={() => navigation.navigate("TransportPreferences")}
+          rightIcon="chevron-right"
+        />
+        <Divider />
+        <AppListItem
+          icon="star-circle-outline"
+          title="Badge e Ricompense"
+          onPress={() => console.log("Apri Badge")}
+          rightIcon="chevron-right"
+        />
+        <Divider />
+        <AppListItem
+          icon="history"
+          title="Storico viaggi"
+          onPress={() => console.log("Apri Storico")}
+          rightIcon="chevron-right"
+        />
+      </AppCard>
     </ScrollView>
   );
 }
@@ -103,26 +165,31 @@ console.log("✅ Profilo ricevuto:", data);
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    alignItems: "center",
-    padding: 24,
+    padding: 16,
   },
   loader: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  name: {
-    fontSize: 20,
-    fontWeight: "bold",
+  userRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginTop: 8,
-    marginBottom: 4,
+    marginBottom: 12,
   },
-  logoutText: {
-    fontSize: 16,
-    fontWeight: "600",
-    textAlign: "center",
-    marginTop: 16,
+  userInfo: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  name: {
+    fontSize: 22,
+    fontWeight: "700",
+  },
+  email: {
+    fontSize: 14,
+    opacity: 0.7,
+    marginTop: 2,
   },
 });
-
-

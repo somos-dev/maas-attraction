@@ -1,6 +1,7 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Icon, useTheme } from "react-native-paper";
+import { useTheme } from "react-native-paper";
+import { Image } from "react-native";
 
 import MainStack from "../screens/main/MainStack";
 import LinesStack from "../screens/lines/LinesStack";
@@ -14,6 +15,21 @@ const Tab = createBottomTabNavigator<TabNavigatorParamList>();
 export default function TabNavigator() {
   const theme = useTheme();
 
+  const renderIcon = (
+    focused: boolean,
+    activeSource: any,
+    inactiveSource: any
+  ) => (
+    <Image
+      source={focused ? activeSource : inactiveSource}
+      style={{
+        width: 40,
+        height: 40,
+        resizeMode: "cover",
+      }}
+    />
+  );
+
   return (
     <Tab.Navigator
       initialRouteName="HomeTab"
@@ -24,11 +40,12 @@ export default function TabNavigator() {
         tabBarStyle: {
           backgroundColor: theme.colors.surface,
           borderTopWidth: 0,
-          height: 60,
-          paddingTop: 6,
-          paddingBottom: 6,
+          height: 80,
+          paddingTop: 8,
+          paddingBottom: 8,
         },
-        tabBarLabelStyle: { fontSize: 12 },
+        tabBarLabelStyle: { fontSize: 13 },
+        tabBarIconStyle: { marginBottom: 1 }, // spazio tra icona e testo
       }}
     >
       <Tab.Screen
@@ -36,7 +53,12 @@ export default function TabNavigator() {
         component={MainStack}
         options={{
           title: "Home",
-          tabBarIcon: ({ color, size }) => <Icon source="home-variant" color={color} size={size} />,
+          tabBarIcon: ({ focused }) =>
+            renderIcon(
+              focused,
+              require("../assets/images/icons/map.png"),
+              require("../assets/images/icons/map-grey.png")
+            ),
         }}
       />
       <Tab.Screen
@@ -44,7 +66,12 @@ export default function TabNavigator() {
         component={LinesStack}
         options={{
           title: "Linee",
-          tabBarIcon: ({ color, size }) => <Icon source="bus-multiple" color={color} size={size} />,
+          tabBarIcon: ({ focused }) =>
+            renderIcon(
+              focused,
+              require("../assets/images/icons/trip.png"),
+              require("../assets/images/icons/trip-grey.png")
+            ),
         }}
       />
       <Tab.Screen
@@ -52,7 +79,12 @@ export default function TabNavigator() {
         component={ServicesStack}
         options={{
           title: "Servizi",
-          tabBarIcon: ({ color, size }) => <Icon source="toolbox-outline" color={color} size={size} />,
+          tabBarIcon: ({ focused }) =>
+            renderIcon(
+              focused,
+              require("../assets/images/icons/car.png"),
+              require("../assets/images/icons/car-grey.png")
+            ),
         }}
       />
       <Tab.Screen
@@ -60,9 +92,15 @@ export default function TabNavigator() {
         component={ProfileStack}
         options={{
           title: "Profilo",
-          tabBarIcon: ({ color, size }) => <Icon source="account-circle-outline" color={color} size={size} />,
+          tabBarIcon: ({ focused }) =>
+            renderIcon(
+              focused,
+              require("../assets/images/icons/a.png"),
+              require("../assets/images/icons/a-grey.png")
+            ),
         }}
       />
     </Tab.Navigator>
   );
 }
+

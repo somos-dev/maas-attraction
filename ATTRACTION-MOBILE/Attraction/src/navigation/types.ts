@@ -38,6 +38,7 @@ export type ServicesStackParamList = {
 export type ProfileStackParamList = {
   Profile: undefined;
   EditProfile: undefined;
+  TransportPreferences: undefined;
 };
 
 
@@ -48,4 +49,9 @@ export type MainStackParamList = {
   Search: undefined;
 };
 
-
+// DrawerNavigator (menu laterale)
+export type DrawerParamList = {
+  TabsRoot: undefined;  // nasconde le Tab nel drawer
+  Settings: undefined;
+  Feedback: undefined;  
+};

@@ -17,7 +17,10 @@ export const SCREEN_TITLES: Record<string, string> = {
 
   // Profile
   Profile: "Profilo",
+  EditProfile: "Modifica Profilo",
+  TransportPreferences: "Preferenze di Trasporto",
 
   // Drawer
   Settings: "Impostazioni",
+  Feedback: "Valutaci",
 };

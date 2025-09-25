@@ -95,28 +95,36 @@ const {execute, error, fieldErrors, isLoading} = useSafeAction(signInSchema,logi
         </button>
       </div>
       
+      {/* Back tp dashboard */}
       <div className="w-full max-w-md mx-auto  pt-2 pt-5">
         <Link
           href="/"
           className="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
         >
           <ChevronLeftIcon />
-          <span className="ml-1">{String(translate('auth.backToDashboard'))}</span>
+          <span className="description ml-1">{String(translate('auth.backToDashboard'))}</span>
         </Link>
       </div>
+
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
         <div>
+
+          {/* SignIn Heading */}
           <div className="mb-3 sm:mb-4">
-            <h1 className="mb-2 font-semibold text-gray-800 text-4xl dark:text-white/90 sm:text-title-md">
+            <h1 className="mb-2 text-gray-800 text-4xl dark:text-white/90 sm:text-title-md">
               {String(translate('auth.signIn'))}
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {String(translate('auth.signInPrompt'))}
             </p>
           </div>
+
+          {/* Form */}
           <div>
+
+          {/* Social Buttons */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5">
-              <button className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-4 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10">
+              <button className="font-body inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-4 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10">
                 <svg
                   width="20"
                   height="20"
@@ -170,7 +178,7 @@ const {execute, error, fieldErrors, isLoading} = useSafeAction(signInSchema,logi
             <form ref={formRef} onSubmit={onSubmit} className="space-y-4">
               <div className="space-y-4">
                 <div>
-                  <Label>
+                  <Label className="font-body">
                     {String(translate('auth.email'))} <span className="text-rose-500">*</span>{" "}
                   </Label>
                   <Input 

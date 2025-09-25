@@ -1,29 +1,31 @@
 import type { Config } from "tailwindcss"
 
-const config = {
-  darkMode: ["class"],
+const config:Config = {
+  darkMode: "class",
   content: [
     './pages/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
     './app/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
-	],
+  ],
   prefix: "",
   theme: {
     container: {
       center: true,
       padding: "2rem",
       screens: {
-      sm: '500px',
-      md: '768px',
-      lg: '1024px',
-      xl: '1280px',
-      '2xl': '1536px',
-      // '2xl': '1400px',
+        sm: '500px',
+        md: '768px',
+        lg: '1024px',
+        xl: '1280px',
+        '2xl': '1536px',
+        // '2xl': '1400px',
       },
     },
     extend: {
       colors: {
+        brandGreen: '#2ecc71',
+        brandBlue: '#1abc9c',
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -58,7 +60,25 @@ const config = {
           foreground: "hsl(var(--card-foreground))",
         },
       },
-      
+      fontFamily: {
+        // Headings - Isonorm
+        'heading': ['var(--font-isonorm)', 'system-ui', 'sans-serif'],
+
+        // Body text - Aadhunik
+        'body': ['var(--font-aadhunik)', 'system-ui', 'sans-serif'],
+
+        // Light descriptions - Montserrat
+        'description': ['var(--font-montserrat)', 'system-ui', 'sans-serif'],
+
+        // Alternative direct font access
+        'isonorm': ['var(--font-isonorm)', 'system-ui', 'sans-serif'],
+        'aadhunik': ['var(--font-aadhunik)', 'system-ui', 'sans-serif'],
+        'montserrat': ['var(--font-montserrat)', 'system-ui', 'sans-serif'],
+      },
+
+      backgroundImage: {
+        'brand-gradient': 'linear-gradient(to top right, #00c853, #00bcd4)',
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
@@ -72,26 +92,26 @@ const config = {
         "accordion-up": {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
-           wave: {
-          '0%':   { backgroundPosition: '0 0' },
-          '100%': { backgroundPosition: '-200px 0' },
-        },
-        skyFlow: {
-          '0%':   { backgroundPosition: '0 0' },
-          '100%': { backgroundPosition: '-200px 0' },
-        },
-        float: {
-          '0%, 100%': { transform: 'translateY(0)' },
-          '50%':      { transform: 'translateY(-5px)' },
-        },
+          wave: {
+            '0%': { backgroundPosition: '0 0' },
+            '100%': { backgroundPosition: '-200px 0' },
+          },
+          skyFlow: {
+            '0%': { backgroundPosition: '0 0' },
+            '100%': { backgroundPosition: '-200px 0' },
+          },
+          float: {
+            '0%, 100%': { transform: 'translateY(0)' },
+            '50%': { transform: 'translateY(-5px)' },
+          },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        'wave':    'wave 5s linear infinite',
+        'wave': 'wave 5s linear infinite',
         'skyFlow': 'skyFlow 20s linear infinite',
-        'float':   'float 2s ease-in-out infinite',
+        'float': 'float 2s ease-in-out infinite',
       },
     },
   },

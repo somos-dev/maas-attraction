@@ -1,5 +1,6 @@
 {
   "navigation": {
+    "navigation": "Navigation",
     "journeyPlanner": "Journey Planner",
     "planYourPerfectTrip": "Plan your perfect trip",
     "savedLocations": "Saved Locations",

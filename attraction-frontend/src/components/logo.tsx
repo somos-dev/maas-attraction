@@ -13,7 +13,7 @@ const headingFont = localFont({
 const logo = (props: Props) => {
   return (
     <Link href='/'>
-      <div className="hover:opacity-70 transition items-center gap-x-2 hidden md:flex">
+      <div className="hover:opacity-70 transition items-center gap-x-2 md:flex">
             <Image
             src="/images/Official-logos/UI-detailed/logo-with-name-png.png"
             alt='Logo'

@@ -1,12 +1,53 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 @plugin 'tailwind-scrollbar';
 
 @custom-variant dark (&:is(.dark *));
 
-html , body, :root{
-    height: 100%;
+
+html {
+  scroll-behavior: smooth;
 }
+
+html, body, :root {
+  height: 100%;
+}
+
+/* Prevent invisible text during font load */
+/* body {
+  font-family: var(--font-inter-fallback);
+  font-display: swap;
+} */
+
+/* Font loading states */
+/* Use system fonts immediately while custom fonts load */
+/* body:not(.fonts-loaded) {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+} */
+
+/* Switch to custom fonts once loaded */
+/* body.fonts-loaded {
+  font-family: var(--font-inter-fallback);
+} */
+
+@layer base {
+  body, .aadhunik {
+    font-family: var(--font-body, 'Aadhunik', sans-serif);
+  }
+
+  h1, h2, h2, h3, h4, h5, h6, .isonorm {
+    font-family: var(--font-heading, 'Isonorm', sans-serif);
+  }
+
+  small, .description, .montserrat, [class*="text-gray-500"], [class*="text-gray-400"], [class*="text-gray-300"], [class*="text-gray-200"], [class*="text-muted-foreground"] {
+    font-family: var(--font-description, 'Montserrat', sans-serif);
+  }
+}
+
+
 
 /* Font fallbacks for offline/poor connectivity */
 :root {
@@ -15,23 +56,7 @@ html , body, :root{
   --font-geist-mono-fallback: 'Geist Mono', ui-monospace, 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
 }
 
-/* Ensure body uses fallback fonts */
-body {
-  font-family: var(--font-inter-fallback);
-  /* Prevent invisible text during font load */
-  font-display: swap;
-}
 
-/* Font loading states */
-body:not(.fonts-loaded) {
-  /* Use system fonts immediately while custom fonts load */
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-}
-
-body.fonts-loaded {
-  /* Switch to custom fonts once loaded */
-  font-family: var(--font-inter-fallback);
-}
 
 /* Hide scrollbar while keeping scroll functionality */
 .scrollbar-hide::-webkit-scrollbar {

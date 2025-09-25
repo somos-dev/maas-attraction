@@ -44,6 +44,7 @@ export const useFetchRoutes = () => {
             mode: travelMode,
             travelType: travelType,
         };
+        console.log('postdata', postData)
 
         try {
             const response = await axios.post<{ routes: Route[] }>("/api/plan-trip", postData);

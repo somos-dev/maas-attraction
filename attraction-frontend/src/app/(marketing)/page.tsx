@@ -9,24 +9,6 @@ import Image from "next/image";
 import useLocales from '@/hooks/useLocales';
 
 
-const headingFont = localFont({
-  src: "../../../public/fonts/font.woff2"
-})
-
-const textFonts = Poppins({
-  subsets:["latin"],
-  weight:[
-    "100",
-    "200",
-    "300",
-    "400",
-    "500",
-    "600",
-    "700",
-    "800",
-    "900",
-  ]
-})
 
 
 const MarketingPage = () => {
@@ -78,14 +60,14 @@ const MarketingPage = () => {
                 className="drop-shadow-2xl"
               />
             </div>
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 font-medium text-sm border border-amber-200 shadow-lg">
+            <div className="font-description inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 font-medium text-sm border border-amber-200 shadow-lg">
               <Medal className="h-4 w-4 mr-2" />
               {String(translate('marketing.flexibleMobilityManagement'))}
             </div>
           </div>
 
           {/* Main Heading */}
-          <div className={cn("space-y-6", headingFont.className)}>
+          <div className={cn("space-y-6")}>
             <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-gray-900 leading-tight">
               {String(translate('marketing.heroTitle'))}
               <br />
@@ -95,7 +77,7 @@ const MarketingPage = () => {
             </h1>
           </div>
 
-          <div className={cn("max-w-3xl mx-auto mt-8", textFonts.className)}>
+          <div className={cn("max-w-3xl mx-auto mt-8")}>
             <p className="text-xl text-gray-600 leading-relaxed">
               {String(translate('marketing.heroDescription'))}
             </p>
@@ -144,7 +126,7 @@ const MarketingPage = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-indigo-50 opacity-50"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className={cn("text-3xl lg:text-4xl font-bold text-gray-900 mb-4", headingFont.className)}>
+            <h2 className={cn("text-3xl lg:text-4xl font-bold text-gray-900 mb-4")}>
               {String(translate('marketing.stats.title'))}
             </h2>
           </div>
@@ -173,10 +155,10 @@ const MarketingPage = () => {
       <section id="features" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className={cn("text-3xl lg:text-4xl font-bold text-gray-900 mb-4", headingFont.className)}>
+            <h2 className={cn("text-3xl lg:text-4xl font-bold text-gray-900 mb-4")}>
               {String(translate('marketing.features.title'))}
             </h2>
-            <p className={cn("text-xl text-gray-600 max-w-3xl mx-auto", textFonts.className)}>
+            <p className={cn("text-xl text-gray-600 max-w-3xl mx-auto")}>
               {String(translate('marketing.features.subtitle'))}
             </p>
           </div>
@@ -267,10 +249,10 @@ const MarketingPage = () => {
       <section className="py-20 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 relative overflow-hidden">
         <div className="absolute inset-0 bg-black opacity-10"></div>
         <div className="relative max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className={cn("text-3xl lg:text-5xl font-bold text-white mb-6", headingFont.className)}>
+          <h2 className={cn("text-3xl lg:text-5xl font-bold text-white mb-6")}>
             {String(translate('marketing.cta.title'))}
           </h2>
-          <p className={cn("text-xl text-blue-100 mb-10", textFonts.className)}>
+          <p className={cn("text-xl text-blue-100 mb-10")}>
             {String(translate('marketing.cta.subtitle'))}
           </p>
           <Button 

@@ -1,34 +1,39 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Montserrat } from "next/font/google";
 import { Inter } from "next/font/google";
 import FontLoader from "@/components/FontLoader";
 import I18nProvider from "@/components/I18nProvider";
+import localFont from 'next/font/local'
 import "./globals.css";
 
+const headingFont = localFont({
+  src: "../../public/fonts/font.woff2"
+})
+
+
+const montserrat = Montserrat({
+  subsets: ['latin'],
+  variable: '--font-montserrat',
+})
+
+const isonorm = localFont({
+  src: '../fonts/isonorm-Regular.woff2',
+  variable: '--font-isonorm',
+})
+
+const aadhunik = localFont({
+  src: '../fonts/aadhunik.woff2',
+  variable: '--font-aadhunik',
+})
+
 // Configure fonts with fallbacks and error handling
-const inter = Inter({ 
+const inter = Inter({
   subsets: ["latin"],
   fallback: ['system-ui', 'arial', 'sans-serif'],
+  variable: "--font-inter",
   display: 'swap',
   adjustFontFallback: false, // Disable to prevent loading issues
 });
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-  fallback: ['system-ui', 'arial', 'sans-serif'],
-  display: 'swap',
-  adjustFontFallback: false,
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-  fallback: ['ui-monospace', 'monospace'],
-  display: 'swap',
-  adjustFontFallback: false,
-});
-
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -123,16 +128,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html
+      lang="en">
       <head>
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/logo.png" />
         <link rel="mask-icon" href="/logo.png" color="#208BF0" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased w-full`}
+          className={`${aadhunik.variable} ${isonorm.variable} ${montserrat.variable} ${inter.variable} antialiased`}
       >
-        <FontLoader />
+        {/* <FontLoader /> */}
         <I18nProvider>
           {children}
         </I18nProvider>

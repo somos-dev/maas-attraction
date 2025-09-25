@@ -97,7 +97,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({  }) => {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel className='text-muted-foreground'>{translate('navigation.navigation') || 'Navigation'}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {
@@ -125,7 +125,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({  }) => {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>{translate('account') || 'Account'}</SidebarGroupLabel>
+          <SidebarGroupLabel className='text-muted-foreground'>{translate('account') || 'Account'}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {accountItems.map((item) => (

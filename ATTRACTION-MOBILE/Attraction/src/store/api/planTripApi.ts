@@ -1,5 +1,4 @@
 // src/store/api/planTripApi.ts
-
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { API_CONFIG } from "../../config/apiConfig";
 import { PlanTripRequest, PlanTripResponse } from "../types/planTrip";
@@ -17,15 +16,17 @@ export const planTripApi = createApi({
   }),
   tagTypes: ["PlanTrip"],
   endpoints: (builder) => ({
-    // POST /plan-trip/
+    // POST /api/auth/plan-trip/
     planTrip: builder.mutation<PlanTripResponse, PlanTripRequest>({
       query: (body) => ({
         url: "plan-trip/",
         method: "POST",
         body,
       }),
+      invalidatesTags: ["PlanTrip"],
     }),
   }),
 });
 
 export const { usePlanTripMutation } = planTripApi;
+

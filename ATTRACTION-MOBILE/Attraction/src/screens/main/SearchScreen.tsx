@@ -1,294 +1,192 @@
-import React, { useState, useEffect, useCallback } from "react";
-import {
-  View,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  ActivityIndicator,
-} from "react-native";
-import { TextInput, Text, useTheme } from "react-native-paper";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import React, { useState } from "react";
+import { SafeAreaView, StyleSheet, View } from "react-native";
+import { Text, Button, Checkbox, useTheme } from "react-native-paper";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
-//  Tipo per i risultati
-interface Place {
-  name: string;
-  address?: string;
-  lat: number;
-  lon: number;
-  category: "Università" | "Stazione" | "Città" | "Altro";
-}
+import PlaceButton from "../../components/search/PlaceButton";
+import SwapButton from "../../components/search/SwapButton";
+import DateTimeSelector from "../../components/search/DateTimeSelector";
+import PlaceSearchModal from "../../components/search/PlaceSearchModal";
 
-interface SearchScreenProps {
-  navigation: any;
-}
+import { useTrip } from "../../hooks/useTrip";
+import { usePlaces, Place } from "../../hooks/usePlaces";
 
-export default function SearchScreen({ navigation }: SearchScreenProps) {
+export default function SearchScreen({ navigation }: any) {
   const theme = useTheme();
+  const { routes, loading, error, fetchTrip } = useTrip();
+  const { results, loading: searching, error: searchError, search } = usePlaces();
+
+  const [from, setFrom] = useState<Place | null>(null);
+  const [to, setTo] = useState<Place | null>(null);
+  const [roundTrip, setRoundTrip] = useState(false);
+  const [dateTime, setDateTime] = useState(new Date());
+
+  const [showPicker, setShowPicker] = useState<"date" | "time" | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalType, setModalType] = useState<"from" | "to">("from");
   const [query, setQuery] = useState("");
-  const [osmResults, setOsmResults] = useState<Place[]>([]);
-  const [localResults, setLocalResults] = useState<Place[]>([]); //  fallback dataset interno
-  const [isLoading, setIsLoading] = useState(false);
 
-  //  Ricerca OSM
-  const searchOSM = useCallback(
-    debounce(async (text: string) => {
-      if (text.length < 3) {
-        setOsmResults([]);
-        setIsLoading(false);
-        return;
-      }
+  // helper per formattare date/ora
+  const pad = (n: number) => (n < 10 ? "0" + n : n);
+  const formattedDate = `${dateTime.getFullYear()}-${pad(dateTime.getMonth() + 1)}-${pad(dateTime.getDate())}`;
+  const formattedTime = `${pad(dateTime.getHours())}:${pad(dateTime.getMinutes())}:${pad(dateTime.getSeconds())}`;
 
-      setIsLoading(true);
-      try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-            text
-          )}&format=json&limit=10&countrycodes=it&addressdetails=1&extratags=1&namedetails=1`,
-          {
-            headers: {
-              "User-Agent": "attraction-app/1.0 (info@somos.srl)",
-              Accept: "application/json",
-            },
-          }
-        );
+  const handleSearch = async () => {
+    if (!from || !to) return;
 
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        const formatted = data.map(formatSearchResult);
-        setOsmResults(formatted);
-      } catch (err) {
-        console.error("Errore ricerca OSM:", err);
-        setOsmResults([]);
-      } finally {
-        setIsLoading(false);
-      }
-    }, 400),
-    []
-  );
-
-  //  Mock dataset interno (università / stazioni locali)
-  const fetchLocalResults = (text: string) => {
-    const dataset: Place[] = [
-      {
-        name: "Università della Calabria",
-        address: "Arcavacata di Rende (CS)",
-        category: "Università",
-        lat: 39.3642,
-        lon: 16.2266,
-      },
-      {
-        name: "Stazione Cosenza Vaglio Lise",
-        address: "Cosenza",
-        category: "Stazione",
-        lat: 39.309,
-        lon: 16.258,
-      },
-    ];
-
-    return dataset.filter((item) =>
-      item.name.toLowerCase().includes(text.toLowerCase())
-    );
-  };
-
-  useEffect(() => {
-    if (query.trim()) {
-      searchOSM(query.trim());
-      setLocalResults(fetchLocalResults(query.trim()));
-    } else {
-      setOsmResults([]);
-      setLocalResults([]);
-      setIsLoading(false);
-    }
-  }, [query, searchOSM]);
-
-  //  Selezione risultato
-  const handleSelectPlace = (place: Place) => {
-    navigation.navigate("Results", { place });
-  };
-
-  const clearSearch = () => {
-    setQuery("");
-    setOsmResults([]);
-    setLocalResults([]);
-  };
-
-  //  Formattazione risultati OSM
-  const formatSearchResult = (item: any): Place => {
-    const parts = item.display_name.split(", ");
-    const name = item.namedetails?.name || parts[0];
-    const address = parts.slice(1, 3).join(", ");
-
-    let category: Place["category"] = "Altro";
-    if (item.class === "amenity" && item.type === "university") category = "Università";
-    if (item.class === "railway") category = "Stazione";
-    if (item.class === "place" && ["city", "town", "village"].includes(item.type))
-      category = "Città";
-
-    return {
-      name,
-      address,
-      category,
-      lat: parseFloat(item.lat),
-      lon: parseFloat(item.lon),
+    const params = {
+      fromLat: from.lat,
+      fromLon: from.lon,
+      toLat: to.lat,
+      toLon: to.lon,
+      date: formattedDate,
+      time: formattedTime,
+      requested_date: formattedDate,
+      requested_time: formattedTime,
+      mode: "all" as const,
     };
-  };
 
-  //  Icona per categoria
-  const getCategoryIcon = (category: Place["category"]) => {
-    switch (category) {
-      case "Università":
-        return "school-outline";
-      case "Stazione":
-        return "train";
-      case "Città":
-        return "city";
-      default:
-        return "map-marker";
+    console.log("fetchTrip params:", params);
+    await fetchTrip(params);
+
+    if (routes && routes.length > 0) {
+      navigation.navigate("Results", { routes });
     }
   };
 
-  //  Merge risultati (priorità categorie)
-  const mergedResults = [...localResults, ...osmResults].sort((a, b) => {
-    const order = { Università: 0, Stazione: 1, Città: 2, Altro: 3 };
-    return order[a.category] - order[b.category];
-  });
+  const openModal = (type: "from" | "to") => {
+    setModalType(type);
+    setQuery("");
+    setModalVisible(true);
+  };
 
-  //  Render risultato
-  const renderSearchResult = ({ item }: { item: Place }) => (
-    <TouchableOpacity
-      style={[styles.listItem, { backgroundColor: theme.colors.surface }]}
-      onPress={() => handleSelectPlace(item)}
-    >
-      <View style={styles.row}>
-        <Icon
-          name={getCategoryIcon(item.category)}
-          size={22}
-          color={theme.colors.primary}
-          style={styles.icon}
-        />
-        <View style={styles.textContainer}>
-          <Text style={[styles.primaryText, { color: theme.colors.onSurface }]}>
-            {item.name}
-          </Text>
-          {item.address ? (
-            <Text
-              style={[
-                styles.secondaryText,
-                { color: theme.colors.onSurfaceVariant },
-              ]}
-            >
-              {item.address}
-            </Text>
-          ) : null}
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
+  const handleSelectPlace = (place: Place) => {
+    if (modalType === "from") {
+      setFrom(place);
+    } else {
+      setTo(place);
+    }
+    setModalVisible(false);
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {/*  Barra di ricerca */}
-      <View style={styles.searchContainer}>
-        <TextInput
-          placeholder="Dove vuoi andare?"
-          value={query}
-          onChangeText={setQuery}
-          style={styles.searchInput}
-          mode="outlined"
-          left={<TextInput.Icon icon="magnify" />}
-          right={
-            query ? <TextInput.Icon icon="close" onPress={clearSearch} /> : undefined
-          }
-          autoFocus
-          returnKeyType="search"
+      <Text style={styles.title}>Calcola Percorso</Text>
+
+      <PlaceButton
+        label="Partenza"
+        value={from?.name}
+        address={from?.address}
+        icon="arrow-up-circle-outline"
+        onPress={() => openModal("from")}
+      />
+
+      <SwapButton
+        onPress={() => {
+          const temp = from;
+          setFrom(to);
+          setTo(temp);
+        }}
+        disabled={!from && !to}
+      />
+
+      <PlaceButton
+        label="Destinazione"
+        value={to?.name}
+        address={to?.address}
+        icon="arrow-down-circle-outline"
+        onPress={() => openModal("to")}
+      />
+
+      {/* Andata/Ritorno */}
+      <View style={styles.checkboxRow}>
+        <Checkbox
+          status={roundTrip ? "checked" : "unchecked"}
+          onPress={() => setRoundTrip(!roundTrip)}
         />
+        <Text style={styles.checkboxLabel}>Andata/Ritorno</Text>
       </View>
 
-      {/*  Lista risultati */}
-      <View style={styles.content}>
-        {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text
-              style={[styles.loadingText, { color: theme.colors.onSurfaceVariant }]}
-            >
-              Ricerca in corso...
-            </Text>
-          </View>
-        ) : (
-          <FlatList
-            data={mergedResults}
-            keyExtractor={(_, index) => `result-${index}`}
-            renderItem={renderSearchResult}
-            showsVerticalScrollIndicator={false}
-            ListEmptyComponent={
-              query.length >= 3 ? (
-                <View style={styles.emptyContainer}>
-                  <Text
-                    style={[styles.emptyText, { color: theme.colors.onSurfaceVariant }]}
-                  >
-                    Nessun risultato trovato
-                  </Text>
-                </View>
-              ) : (
-                <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>
-                    Inizia a digitare per cercare una destinazione
-                  </Text>
-                </View>
-              )
-            }
-          />
-        )}
-      </View>
+      <DateTimeSelector
+        date={dateTime}
+        onSelectDate={() => setShowPicker("date")}
+        onSelectTime={() => setShowPicker("time")}
+      />
+
+      {showPicker && (
+        <DateTimePicker
+          value={dateTime}
+          mode={showPicker}
+          display="default"
+          onChange={(e, d) => {
+            setShowPicker(null);
+            if (d) setDateTime(d);
+          }}
+        />
+      )}
+
+      <Button
+        mode="contained"
+        style={styles.cta}
+        onPress={handleSearch}
+        disabled={!from || !to || loading}
+      >
+        {loading ? "Ricerca in corso..." : "Cerca Soluzioni"}
+      </Button>
+
+      {error && (
+        <Text style={[styles.errorText, { color: theme.colors.error }]}>
+          Errore durante la ricerca. Riprova.
+        </Text>
+      )}
+
+      <PlaceSearchModal
+        visible={modalVisible}
+        type={modalType}
+        query={query}
+        onClose={() => setModalVisible(false)}
+        onQueryChange={(q) => {
+          setQuery(q);
+          search(q);
+        }}
+        results={results}
+        loading={searching}
+        error={searchError}
+        onSelect={handleSelectPlace}
+      />
     </SafeAreaView>
   );
 }
 
-//  Debounce utility
-function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout;
-  return function executedFunction(...args: Parameters<T>) {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-}
-
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  searchContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  searchInput: { backgroundColor: "transparent" },
-  content: { flex: 1 },
-  loadingContainer: { padding: 32, alignItems: "center" },
-  loadingText: { marginTop: 16, fontSize: 16 },
-  listItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderColor: "#eee",
-  },
-  row: { flexDirection: "row", alignItems: "center" },
-  icon: { marginRight: 12 },
-  textContainer: { flex: 1 },
-  primaryText: { fontSize: 16, fontWeight: "500" },
-  secondaryText: { fontSize: 14 },
-  emptyContainer: {
+  container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 64,
+    padding: 16,
   },
-  emptyText: { fontSize: 15, textAlign: "center" },
+  title: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 16,
+  },
+  checkboxRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 8,
+  },
+  checkboxLabel: {
+    fontSize: 16,
+  },
+  cta: {
+    marginTop: 16,
+    borderRadius: 8,
+    paddingVertical: 8,
+  },
+  errorText: {
+    marginTop: 8,
+    textAlign: "center",
+    fontSize: 14,
+  },
 });
-
-
 
 
 

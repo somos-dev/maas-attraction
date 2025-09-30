@@ -8,6 +8,7 @@ export const SCREEN_TITLES: Record<string, string> = {
   // Main
   Home: "Home",
   Search: "Cerca destinazione",
+  Results: "Risultati della ricerca",
 
   // Lines
   Lines: "Linee",

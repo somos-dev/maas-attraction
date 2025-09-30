@@ -5,11 +5,16 @@ import Geolocation from "react-native-geolocation-service";
 import { request, PERMISSIONS, RESULTS } from "react-native-permissions";
 
 import StopMarker from "./StopMarker";
+import Marker from "./Marker";
 import { useGetSearchesQuery } from "../../store/api/searchApi";
 
 MapLibreGL.setAccessToken(null);
 
-export default function MapView() {
+interface MapViewProps {
+  route?: any; // percorso selezionato dalla ResultsScreen
+}
+
+export default function MapView({ route }: MapViewProps) {
   const [location, setLocation] = useState<[number, number] | null>(null);
   const { data: searches = [] } = useGetSearchesQuery();
 
@@ -19,11 +24,11 @@ export default function MapView() {
       const result = await request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
       if (result === RESULTS.GRANTED) {
         Geolocation.getCurrentPosition(
-          pos => {
+          (pos) => {
             const { longitude, latitude } = pos.coords;
-            setLocation([longitude, latitude]);
+            setLocation([longitude, latitude]); // [lon, lat]
           },
-          err => console.error("Geolocation error:", err),
+          (err) => console.error("Geolocation error:", err),
           { enableHighAccuracy: true }
         );
       }
@@ -33,47 +38,73 @@ export default function MapView() {
 
   return (
     <MapLibreGL.MapView style={styles.map}>
-      {/* RasterSource OSM → elimina sfondo giallo */}
+      {/* Raster OSM */}
       <MapLibreGL.RasterSource
         id="osm"
-        tileUrlTemplates={[
-          "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        ]}
+        tileUrlTemplates={["https://a.tile.openstreetmap.org/{z}/{x}/{y}.png"]}
         tileSize={256}
       >
-        <MapLibreGL.RasterLayer
-          id="osmLayer"
-          sourceID="osm"
-          style={{ rasterOpacity: 1 }}
-        />
+        <MapLibreGL.RasterLayer id="osmLayer" sourceID="osm" />
       </MapLibreGL.RasterSource>
 
-      {/* Camera centrata su posizione utente o default Arcavacata */}
+      {/* Camera centrata su rotta o posizione */}
       <MapLibreGL.Camera
         zoomLevel={14}
-        centerCoordinate={location || [16.22727, 39.35589]}
+        centerCoordinate={
+          route
+            ? [
+                route.steps[0].geometry[0].lon,
+                route.steps[0].geometry[0].lat,
+              ]
+            : location || [16.22727, 39.35589] // fallback Arcavacata
+        }
       />
 
-      {/* marker utente */}
+      {/* Marker posizione utente */}
       {location && (
-        <MapLibreGL.PointAnnotation id="me" coordinate={location} />
+        <Marker
+          id="user-location"
+          coordinate={location}
+          color="#2196F3" // blu per distinguere l'utente
+        />
       )}
 
-      {/* marker da API /search/ */}
-      {searches.map(s => (
+      {/* Marker origine/destinazione da API /search/ */}
+      {searches.map((s) => (
         <React.Fragment key={s.id}>
           <StopMarker
             id={`from-${s.id}`}
             coordinate={[s.from_lon, s.from_lat]}
-            title={`Origine ${s.id}`}
+            title="Origine"
           />
           <StopMarker
             id={`to-${s.id}`}
             coordinate={[s.to_lon, s.to_lat]}
-            title={`Destinazione ${s.id}`}
+            title="Destinazione"
           />
         </React.Fragment>
       ))}
+
+      {/* Polyline percorso selezionato */}
+      {route && (
+        <MapLibreGL.ShapeSource
+          id="routeLine"
+          shape={{
+            type: "Feature",
+            geometry: {
+              type: "LineString",
+              coordinates: route.steps.flatMap((s: any) =>
+                (s.geometry || []).map((p: any) => [p.lon, p.lat])
+              ),
+            },
+          }}
+        >
+          <MapLibreGL.LineLayer
+            id="routeLayer"
+            style={{ lineColor: "#4CAF50", lineWidth: 4 }}
+          />
+        </MapLibreGL.ShapeSource>
+      )}
     </MapLibreGL.MapView>
   );
 }
@@ -83,4 +114,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
+
+
+
+
 

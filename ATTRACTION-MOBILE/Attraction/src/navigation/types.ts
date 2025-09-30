@@ -47,6 +47,8 @@ export type ProfileStackParamList = {
 export type MainStackParamList = {
   Home: undefined;
   Search: undefined;
+  Results: { searchId: number } | undefined; // id della ricerca salvata
+
 };
 
 // DrawerNavigator (menu laterale)

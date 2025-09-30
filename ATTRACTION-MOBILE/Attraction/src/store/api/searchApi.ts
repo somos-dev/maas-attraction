@@ -1,5 +1,4 @@
 // src/store/api/searchApi.ts
-
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { API_CONFIG } from "../../config/apiConfig";
 import { Search, SearchRequest } from "../types/search";
@@ -7,15 +6,15 @@ import { Search, SearchRequest } from "../types/search";
 export const searchApi = createApi({
   reducerPath: "searchApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: `${API_CONFIG.BASE_URL}auth/`, 
+    baseUrl: `${API_CONFIG.BASE_URL}auth/`, // es: "/api/auth/"
     prepareHeaders: (headers) => {
-      Object.entries(API_CONFIG.HEADERS).forEach(([k, v]) => {
-        headers.set(k, v as string);
-      });
+      Object.entries(API_CONFIG.HEADERS).forEach(([k, v]) =>
+        headers.set(k, v as string)
+      );
       return headers;
     },
   }),
-  tagTypes: ["Search"], // utile per invalidare cache
+  tagTypes: ["Search"],
   endpoints: (builder) => ({
     // GET /api/auth/search/
     getSearches: builder.query<Search[], void>({
@@ -36,6 +35,7 @@ export const searchApi = createApi({
 });
 
 export const { useGetSearchesQuery, useCreateSearchMutation } = searchApi;
+
 
 
 

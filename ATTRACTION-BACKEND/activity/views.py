@@ -69,7 +69,7 @@ class SearchListCreateView(AuthenticatedMixin, generics.ListCreateAPIView):
                 "data": serializer.data
             }, status=status.HTTP_201_CREATED)
         return Response({"success": False, "error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-    
+
 
 # ------------------------------
 # Favorite Places
@@ -113,7 +113,7 @@ class FavoritePlaceDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         return FavoritePlace.objects.filter(user=self.request.user)
-    
+
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
@@ -157,7 +157,7 @@ class BookingListCreateView(AuthenticatedMixin, generics.ListCreateAPIView):
                 "data": serializer.data
             }, status=status.HTTP_201_CREATED)
         return Response({"success": False, "error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-    
+
 # ------------------------------
 # Track User Activity
 # ------------------------------
@@ -293,6 +293,7 @@ class PlanTripView(APIView):
                 time: $time
               ) {
                 itineraries {
+                  distance
                   duration
                   legs {
                     mode

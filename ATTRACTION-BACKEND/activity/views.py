@@ -293,12 +293,13 @@ class PlanTripView(APIView):
                 time: $time
               ) {
                 itineraries {
-                  distance
                   duration
+                  walkDistance
                   legs {
                     mode
                     startTime
                     endTime
+                    distance
                     from {
                       name
                     }

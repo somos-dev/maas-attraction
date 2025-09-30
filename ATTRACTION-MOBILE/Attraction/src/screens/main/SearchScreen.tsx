@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { SafeAreaView, StyleSheet, View } from "react-native";
-import { Text, Button, Checkbox, useTheme } from "react-native-paper";
+import { Text, Button, Checkbox, useTheme, Snackbar } from "react-native-paper";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
 import PlaceButton from "../../components/search/PlaceButton";
@@ -26,7 +26,7 @@ export default function SearchScreen({ navigation }: any) {
   const [modalType, setModalType] = useState<"from" | "to">("from");
   const [query, setQuery] = useState("");
 
-  // helper per formattare date/ora
+  // helper
   const pad = (n: number) => (n < 10 ? "0" + n : n);
   const formattedDate = `${dateTime.getFullYear()}-${pad(dateTime.getMonth() + 1)}-${pad(dateTime.getDate())}`;
   const formattedTime = `${pad(dateTime.getHours())}:${pad(dateTime.getMinutes())}:${pad(dateTime.getSeconds())}`;
@@ -47,11 +47,10 @@ export default function SearchScreen({ navigation }: any) {
     };
 
     console.log("fetchTrip params:", params);
-    await fetchTrip(params);
+    const foundRoutes = await fetchTrip(params);
 
-    if (routes && routes.length > 0) {
-      navigation.navigate("Results", { routes });
-    }
+    // 👇 naviga subito, anche se lista vuota
+    navigation.navigate("Results", { routes: foundRoutes });
   };
 
   const openModal = (type: "from" | "to") => {
@@ -134,11 +133,10 @@ export default function SearchScreen({ navigation }: any) {
         {loading ? "Ricerca in corso..." : "Cerca Soluzioni"}
       </Button>
 
-      {error && (
-        <Text style={[styles.errorText, { color: theme.colors.error }]}>
-          Errore durante la ricerca. Riprova.
-        </Text>
-      )}
+      {/* Snackbar errori */}
+      <Snackbar visible={!!error} onDismiss={() => {}}>
+        Errore durante la ricerca. Riprova.
+      </Snackbar>
 
       <PlaceSearchModal
         visible={modalVisible}
@@ -181,17 +179,4 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 8,
   },
-  errorText: {
-    marginTop: 8,
-    textAlign: "center",
-    fontSize: 14,
-  },
 });
-
-
-
-
-
-
-
-

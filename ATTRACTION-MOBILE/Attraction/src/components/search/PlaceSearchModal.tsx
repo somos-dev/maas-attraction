@@ -147,7 +147,7 @@ export default function PlaceSearchModal({
               placeholder="Cerca città, indirizzi o punti di interesse"
               onChangeText={handleQueryChange}
               placeholderTextColor="#666"
-              inputStyle={{ color: "#000" }}
+              inputStyle={{ color: theme.colors.onSurface }}
               value={localQuery}
               style={styles.searchbar}
               autoFocus

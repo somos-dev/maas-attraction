@@ -1,0 +1,195 @@
+// src/components/search/QuickSearchBottomSheet.tsx
+import React, { useState } from "react";
+import { View, StyleSheet } from "react-native";
+import { Button, Checkbox, Text, useTheme, Snackbar } from "react-native-paper";
+import DateTimePicker from "@react-native-community/datetimepicker";
+
+import PlaceButton from "./PlaceButton";
+import SwapButton from "./SwapButton";
+import DateTimeSelector from "./DateTimeSelector";
+import PlaceSearchModal from "./PlaceSearchModal";
+
+import { useTrip } from "../../hooks/useTrip";
+import { usePlaces, Place } from "../../hooks/usePlaces";
+
+interface Props {
+  navigation: any;
+}
+
+export default function QuickSearchBottomSheet({ navigation }: Props) {
+  const theme = useTheme();
+  const { routes, loading, error, fetchTrip } = useTrip();
+  const { results, loading: searching, error: searchError, search } = usePlaces();
+
+  const [from, setFrom] = useState<Place | null>(null);
+  const [to, setTo] = useState<Place | null>(null);
+  const [roundTrip, setRoundTrip] = useState(false);
+  const [dateTime, setDateTime] = useState(new Date());
+
+  const [showPicker, setShowPicker] = useState<"date" | "time" | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalType, setModalType] = useState<"from" | "to">("from");
+  const [query, setQuery] = useState("");
+
+  // Helpers
+  const pad = (n: number) => (n < 10 ? "0" + n : n);
+  const formattedDate = `${dateTime.getFullYear()}-${pad(dateTime.getMonth() + 1)}-${pad(dateTime.getDate())}`;
+  const formattedTime = `${pad(dateTime.getHours())}:${pad(dateTime.getMinutes())}:${pad(dateTime.getSeconds())}`;
+
+  const handleSearch = async () => {
+    if (!from || !to) return;
+
+    const params = {
+      fromLat: from.lat,
+      fromLon: from.lon,
+      toLat: to.lat,
+      toLon: to.lon,
+      date: formattedDate,
+      time: formattedTime,
+      requested_date: formattedDate,
+      requested_time: formattedTime,
+      roundTrip,
+      mode: "all" as const,
+    };
+
+    console.log("fetchTrip params:", params);
+    const foundRoutes = await fetchTrip(params);
+    navigation.navigate("Results", { routes: foundRoutes });
+  };
+
+  const openModal = (type: "from" | "to") => {
+    setModalType(type);
+    setQuery("");
+    setModalVisible(true);
+  };
+
+  const handleSelectPlace = (place: Place) => {
+    if (modalType === "from") {
+      setFrom(place);
+    } else {
+      setTo(place);
+    }
+    setModalVisible(false);
+  };
+
+  return (
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <Text style={styles.title}>Trova il tuo percorso</Text>
+
+      <PlaceButton
+        label="Partenza"
+        value={from?.name}
+        address={from?.address}
+        icon="arrow-up-circle-outline"
+        onPress={() => openModal("from")}
+      />
+
+      <SwapButton
+        onPress={() => {
+          const temp = from;
+          setFrom(to);
+          setTo(temp);
+        }}
+        disabled={!from && !to}
+      />
+
+      <PlaceButton
+        label="Destinazione"
+        value={to?.name}
+        address={to?.address}
+        icon="arrow-down-circle-outline"
+        onPress={() => openModal("to")}
+      />
+
+      {/* Andata/Ritorno */}
+      <View style={styles.checkboxRow}>
+        <Checkbox
+          status={roundTrip ? "checked" : "unchecked"}
+          onPress={() => setRoundTrip(!roundTrip)}
+        />
+        <Text style={styles.checkboxLabel}>Andata/Ritorno</Text>
+      </View>
+
+      {/* Data/Ora */}
+      <DateTimeSelector
+        date={dateTime}
+        onSelectDate={() => setShowPicker("date")}
+        onSelectTime={() => setShowPicker("time")}
+      />
+
+      {showPicker && (
+        <DateTimePicker
+          value={dateTime}
+          mode={showPicker}
+          display="default"
+          onChange={(e, d) => {
+            setShowPicker(null);
+            if (d) setDateTime(d);
+          }}
+        />
+      )}
+
+      {/* Bottone ricerca */}
+      <Button
+        mode="contained"
+        style={styles.cta}
+        onPress={handleSearch}
+        disabled={!from || !to || loading}
+      >
+        {loading ? "Ricerca in corso..." : "Cerca Soluzioni"}
+      </Button>
+
+      {/* Snackbar errori */}
+      <Snackbar visible={!!error} onDismiss={() => {}}>
+        Errore durante la ricerca. Riprova.
+      </Snackbar>
+
+      {/* Modal ricerca luoghi */}
+      <PlaceSearchModal
+        visible={modalVisible}
+        type={modalType}
+        query={query}
+        onClose={() => setModalVisible(false)}
+        onQueryChange={(q) => {
+          setQuery(q);
+          search(q);
+        }}
+        results={results}
+        loading={searching}
+        error={searchError}
+        onSelect={handleSelectPlace}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 12,
+  },
+  checkboxRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 8,
+  },
+  checkboxLabel: {
+    fontSize: 16,
+  },
+  cta: {
+    marginTop: 16,
+    borderRadius: 8,
+    paddingVertical: 8,
+  },
+});
+
+

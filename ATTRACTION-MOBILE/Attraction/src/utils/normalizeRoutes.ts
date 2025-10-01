@@ -1,6 +1,4 @@
-// src/utils/normalizeRoutes.ts
 type Coordinates = { lat: number; lon: number };
-
 // Decode polyline Valhalla
 export function decodeRoutePolyline(encoded: string): Coordinates[] {
   let index = 0, lat = 0, lon = 0;
@@ -26,7 +24,7 @@ export function decodeRoutePolyline(encoded: string): Coordinates[] {
     const dlon = (result & 1) ? ~(result >> 1) : (result >> 1);
     lon += dlon;
 
-    coordinates.push({ lat: lat / 1e5, lon: lon / 1e5 });
+    coordinates.push({ lat: lat / 1e5, lon: lon / 1e5 }); // ✅ precisione corretta
   }
 
   return coordinates;
@@ -47,11 +45,17 @@ export function normalizeRouteOptionsToRoutes(response: any, request?: any) {
     if (Array.isArray(modeRoutes)) {
       modeRoutes.forEach((opt: any, index: number) => {
         // decodifica ogni step
-        const decodedSteps = opt.steps.map((step: any) => {
+        const decodedSteps = opt.steps.map((step: any, stepIndex: number) => {
           const decodedGeometry =
             typeof step.geometry === "string"
               ? decodeRoutePolyline(step.geometry)
               : step.geometry;
+
+          // Quanti punti arrivano da ogni step
+          console.log(
+            `[normalizeRoutes] mode=${mode}, step=${stepIndex}, type=${step.type}, punti=${decodedGeometry.length}`
+          );
+
           return { ...step, geometry: decodedGeometry };
         });
 
@@ -74,7 +78,6 @@ export function normalizeRouteOptionsToRoutes(response: any, request?: any) {
           mode,
           duration: totalDuration,
           steps: decodedSteps,
-          // 👇 aggiungiamo anche le coordinate origine/destinazione usate nella richiesta
           fromLat: request?.fromLat,
           fromLon: request?.fromLon,
           toLat: request?.toLat,
@@ -85,4 +88,5 @@ export function normalizeRouteOptionsToRoutes(response: any, request?: any) {
   }
   return routes;
 }
+
 

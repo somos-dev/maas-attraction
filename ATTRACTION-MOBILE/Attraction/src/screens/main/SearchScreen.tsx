@@ -48,6 +48,7 @@ export default function SearchScreen({ navigation }: any) {
 
     console.log("fetchTrip params:", params);
     const foundRoutes = await fetchTrip(params);
+    console.log("foundRoutes:", foundRoutes);
 
     // 👇 naviga subito, anche se lista vuota
     navigation.navigate("Results", { routes: foundRoutes });
@@ -180,3 +181,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
 });
+
+
+
+
+
+
+
+
+

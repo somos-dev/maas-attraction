@@ -1,5 +1,5 @@
 // src/screens/main/ResultsScreen.tsx
-import React, { useState } from "react";
+import React, { use, useState, useEffect } from "react";
 import { View, StyleSheet, FlatList } from "react-native";
 import { Text, Card } from "react-native-paper";
 import MapView from "../../components/maps/MapView";
@@ -7,6 +7,10 @@ import MapView from "../../components/maps/MapView";
 export default function ResultsScreen({ route }: any) {
   const { routes } = route.params;
   const [selectedRoute, setSelectedRoute] = useState<any | null>(null);
+
+  useEffect(() => {
+    console.log(routes)
+  }, [routes]);
 
   return (
     <View style={styles.container}>

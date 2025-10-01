@@ -1,3 +1,4 @@
+// src/components/maps/MapView.tsx
 import React, { useEffect, useState } from "react";
 import { StyleSheet } from "react-native";
 import MapLibreGL from "@maplibre/maplibre-react-native";
@@ -6,7 +7,6 @@ import { request, PERMISSIONS, RESULTS } from "react-native-permissions";
 
 import StopMarker from "./StopMarker";
 import Marker from "./Marker";
-import { useGetSearchesQuery } from "../../store/api/searchApi";
 
 MapLibreGL.setAccessToken(null);
 
@@ -16,9 +16,8 @@ interface MapViewProps {
 
 export default function MapView({ route }: MapViewProps) {
   const [location, setLocation] = useState<[number, number] | null>(null);
-  const { data: searches = [] } = useGetSearchesQuery();
 
-  // chiedi permessi + ottieni posizione
+  // chiedi permessi + ottieni posizione utente
   useEffect(() => {
     const requestLocation = async () => {
       const result = await request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
@@ -36,6 +35,12 @@ export default function MapView({ route }: MapViewProps) {
     requestLocation();
   }, []);
 
+  // estrai origine/destinazione dalla rotta (ora sempre disponibili se fetchTrip ha passato params)
+  const fromCoord =
+    route?.fromLat && route?.fromLon ? [route.fromLon, route.fromLat] : null;
+  const toCoord =
+    route?.toLat && route?.toLon ? [route.toLon, route.toLat] : null;
+
   return (
     <MapLibreGL.MapView style={styles.map}>
       {/* Raster OSM */}
@@ -47,15 +52,12 @@ export default function MapView({ route }: MapViewProps) {
         <MapLibreGL.RasterLayer id="osmLayer" sourceID="osm" />
       </MapLibreGL.RasterSource>
 
-      {/* Camera centrata su rotta o posizione */}
+      {/* Camera centrata su origine o posizione */}
       <MapLibreGL.Camera
         zoomLevel={14}
         centerCoordinate={
-          route
-            ? [
-                route.steps[0].geometry[0].lon,
-                route.steps[0].geometry[0].lat,
-              ]
+          fromCoord
+            ? fromCoord
             : location || [16.22727, 39.35589] // fallback Arcavacata
         }
       />
@@ -65,28 +67,20 @@ export default function MapView({ route }: MapViewProps) {
         <Marker
           id="user-location"
           coordinate={location}
-          color="#2196F3" // blu per distinguere l'utente
+          color="#2196F3"
         />
       )}
 
-      {/* Marker origine/destinazione da API /search/ */}
-      {searches.map((s) => (
-        <React.Fragment key={s.id}>
-          <StopMarker
-            id={`from-${s.id}`}
-            coordinate={[s.from_lon, s.from_lat]}
-            title="Origine"
-          />
-          <StopMarker
-            id={`to-${s.id}`}
-            coordinate={[s.to_lon, s.to_lat]}
-            title="Destinazione"
-          />
-        </React.Fragment>
-      ))}
+      {/* Marker origine/destinazione */}
+      {fromCoord && (
+        <StopMarker id="origin" coordinate={fromCoord} title="Origine" />
+      )}
+      {toCoord && (
+        <StopMarker id="destination" coordinate={toCoord} title="Destinazione" />
+      )}
 
       {/* Polyline percorso selezionato */}
-      {route && (
+      {route && route.steps && (
         <MapLibreGL.ShapeSource
           id="routeLine"
           shape={{
@@ -114,6 +108,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
+
+
+
 
 
 

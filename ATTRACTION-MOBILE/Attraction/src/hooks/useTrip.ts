@@ -10,13 +10,16 @@ export function useTrip() {
   async function fetchTrip(params: PlanTripRequest) {
     try {
       const result = await planTrip(params).unwrap();
-      const normalized = normalizeRouteOptionsToRoutes(result);
+      console.log("PlanTrip API result:", JSON.stringify(result, null, 2));
+
+      //  passo anche params, così i marker hanno le coordinate
+      const normalized = normalizeRouteOptionsToRoutes(result, params);
       setRoutes(normalized);
-      return normalized; //  restituisce i risultati
+      return normalized;
     } catch (e) {
       console.error("Errore in fetchTrip:", e);
       setRoutes([]);
-      return []; //  evita undefined
+      return [];
     }
   }
 
@@ -27,3 +30,4 @@ export function useTrip() {
     fetchTrip,
   };
 }
+

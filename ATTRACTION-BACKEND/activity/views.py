@@ -255,7 +255,7 @@ class PlanTripView(APIView):
 
             try:
                 stops_response = requests.post(
-                    "http://server.somos.srl:8080/otp/routers/default/index/graphql",
+                    "https://otp.somos.srl/otp/routers/default/index/graphql",
                     json={"query": stops_query},
                     headers=headers,
                     timeout=10
@@ -286,36 +286,36 @@ class PlanTripView(APIView):
             # Query OTP plan
             plan_query = """
             query PlanTrip(
-  $fromLat: Float!, $fromLon: Float!,
-  $toLat: Float!, $toLon: Float!,
-  $date: String!, $time: String!
-) {
-  plan(
-    from: { lat: $fromLat, lon: $fromLon },
-    to: { lat: $toLat, lon: $toLon },
-    date: $date,
-    time: $time
-  ) {
-    itineraries {
-      duration              # secondi
-      walkDistance          # metri (solo tratti WALK)
-      legs {
-        mode
-        startTime           # epoch ms
-        endTime             # epoch ms
-        distance            # <-- metri per ogni leg
-        from { name }
-        to { name }
-        trip { routeShortName }
-        legGeometry { points }
-        steps {             # opzionale: dettaglio pedonale
-          distance
-          streetName
-        }
-      }
-    }
-  }
-}
+                $fromLat: Float!, $fromLon: Float!,
+                $toLat: Float!, $toLon: Float!,
+                $date: String!, $time: String!
+                ) {
+                plan(
+                    from: { lat: $fromLat, lon: $fromLon },
+                    to: { lat: $toLat, lon: $toLon },
+                    date: $date,
+                    time: $time
+                ) {
+                    itineraries {
+                    duration
+                    walkDistance               # metri (solo tratti WALK dell’itinerario)
+                    legs {
+                        mode
+                        startTime
+                        endTime
+                        distance                 # <-- metri per ogni leg (WALK/TRANSIT/BICYCLE, ecc.)
+                        from { name }
+                        to { name }
+                        trip { routeShortName }
+                        legGeometry { points }
+                        steps {                  # opzionale: solo per WALK
+                        distance               # metri per step pedonale
+                        streetName
+                        }
+                    }
+                    }
+                }
+                }
             """
 
             variables = {

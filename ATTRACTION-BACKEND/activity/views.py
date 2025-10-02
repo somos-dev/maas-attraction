@@ -354,10 +354,10 @@ class PlanTripView(APIView):
             }
 
             for idx, itinerary in enumerate(itineraries, start=1):
-                legs = itinerary.get("legs", [])
-                modes_in_itinerary = {leg.get("mode", "").upper() for leg in legs}
+                legs = itinerary.get("legs", []) or []
+                modes_in_itinerary = { (leg.get("mode") or "").upper() for leg in legs }
 
-                # Filtering according to mode_filter:
+                # Filtro per mode come già fai
                 if mode_filter != "ALL":
                     if mode_filter == "WALK":
                         if modes_in_itinerary != {"WALK"}:
@@ -375,21 +375,20 @@ class PlanTripView(APIView):
                         if mode_filter not in modes_in_itinerary:
                             continue
 
-                # Build steps list for this option
+                # >>> NOVITÀ: totali dall’output di OTP <<<
+                itinerary_total_m = int(round(sum((leg.get("distance") or 0) for leg in legs)))
+                walk_total_m = int(round(itinerary.get("walkDistance") or 0))
+
+                # Build steps (aggiungiamo anche distance_m e, per WALK, gli step pedonali con distanza)
                 steps = []
                 for leg in legs:
-                    mode = leg.get("mode", "UNKNOWN").lower()
+                    mode = (leg.get("mode") or "UNKNOWN").lower()
                     start_ts = leg.get("startTime")
                     end_ts = leg.get("endTime")
-                    from_name = leg.get("from", {}).get("name", "Unknown stop")
-                    to_name = leg.get("to", {}).get("name", "Unknown stop")
-                    geometry = leg.get("legGeometry", {}).get("points")
-
-                    # Replace generic origin/destination names with closest stops if available
-                    if from_name == "Origin" and from_stop:
-                        from_name = from_stop['name']
-                    if to_name == "Destination" and to_stop:
-                        to_name = to_stop['name']
+                    from_name = leg.get("from", {}).get("name") or "Unknown stop"
+                    to_name = leg.get("to", {}).get("name") or "Unknown stop"
+                    geometry = (leg.get("legGeometry") or {}).get("points")
+                    leg_distance_m = int(round(leg.get("distance") or 0))
 
                     if start_ts and end_ts:
                         start_dt = datetime.fromtimestamp(start_ts / 1000)
@@ -398,7 +397,6 @@ class PlanTripView(APIView):
                         minutes = int(duration_sec // 60)
                         seconds = int(duration_sec % 60)
                         duration_str = f"{minutes}m {seconds}s"
-
                         start_time_iso = start_dt.isoformat()
                         end_time_iso = end_dt.isoformat()
                     else:
@@ -413,33 +411,46 @@ class PlanTripView(APIView):
                         "duration": duration_str,
                         "start_time": start_time_iso,
                         "end_time": end_time_iso,
-                        "geometry": geometry
+                        "geometry": geometry,
+                        # >>> NOVITÀ: distanza del leg calcolata da OTP <<<
+                        "distance_m": leg_distance_m,
                     }
 
-                    # Add route for bus legs
+                    # Route per BUS
                     if mode == "bus":
-                        bus_route = leg.get("trip", {}).get("routeShortName")
+                        bus_route = (leg.get("trip") or {}).get("routeShortName")
                         if bus_route:
                             step["route"] = bus_route
 
+                    # Per WALK, esponi anche gli step pedonali con distanza (se forniti da OTP)
+                    if mode == "walk" and leg.get("steps"):
+                        step["walk_steps"] = [
+                            {
+                                "streetName": st.get("streetName"),
+                                "distance_m": int(round(st.get("distance") or 0))
+                            } for st in (leg.get("steps") or [])
+                        ]
+
                     steps.append(step)
 
-                if steps:
-                    # Determine primary mode for classification in options keys
-                    primary_mode = "other"
-                    if modes_in_itinerary == {"WALK"}:
-                        primary_mode = "walk"
-                    elif "BUS" in modes_in_itinerary:
-                        primary_mode = "bus"
-                    elif "BICYCLE" in modes_in_itinerary:
-                        primary_mode = "bicycle"
-                    elif "SCOOTER" in modes_in_itinerary:
-                        primary_mode = "scooter"
+                # Classificazione primaria per la chiave di options
+                primary_mode = "other"
+                if modes_in_itinerary == {"WALK"}:
+                    primary_mode = "walk"
+                elif "BUS" in modes_in_itinerary:
+                    primary_mode = "bus"
+                elif "BICYCLE" in modes_in_itinerary:
+                    primary_mode = "bicycle"
+                elif "SCOOTER" in modes_in_itinerary:
+                    primary_mode = "scooter"
 
-                    options[primary_mode].append({
-                        "option": idx,
-                        "steps": steps
-                    })
+                # >>> NOVITÀ: inseriamo i totali nel payload <<<
+                options[primary_mode].append({
+                    "option": idx,
+                    "total_distance_m": itinerary_total_m,   # somma di tutti i legs, by OTP
+                    "walk_distance_m": walk_total_m,         # solo tratti a piedi, by OTP
+                    "steps": steps
+                })
 
             user = request.user if request.user.is_authenticated else None
 

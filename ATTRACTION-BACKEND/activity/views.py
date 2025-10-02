@@ -412,8 +412,7 @@ class PlanTripView(APIView):
                         "start_time": start_time_iso,
                         "end_time": end_time_iso,
                         "geometry": geometry,
-                        # >>> NOVITÀ: distanza del leg calcolata da OTP <<<
-                        "distance_m": leg_distance_m,
+                        # "distance_m": leg_distance_m,
                     }
 
                     # Route per BUS

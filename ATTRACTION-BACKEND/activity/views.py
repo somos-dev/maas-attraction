@@ -379,8 +379,8 @@ class PlanTripView(APIView):
                 itinerary_total_m = int(round(sum((leg.get("distance") or 0) for leg in legs)))
                 walk_total_m = int(round(itinerary.get("walkDistance") or 0))
 
-                # Build steps (aggiungiamo anche distance_m e, per WALK, gli step pedonali con distanza)
-                steps = []
+                # ---- LEGS (dettaglio singolo tratto) ----
+                legs_out = []
                 for leg in legs:
                     mode = (leg.get("mode") or "UNKNOWN").lower()
                     start_ts = leg.get("startTime")
@@ -393,46 +393,73 @@ class PlanTripView(APIView):
                     if start_ts and end_ts:
                         start_dt = datetime.fromtimestamp(start_ts / 1000)
                         end_dt = datetime.fromtimestamp(end_ts / 1000)
-                        duration_sec = (end_ts - start_ts) / 1000
-                        minutes = int(duration_sec // 60)
-                        seconds = int(duration_sec % 60)
+                        duration_s = int((end_ts - start_ts) / 1000)
+                        minutes = duration_s // 60
+                        seconds = duration_s % 60
                         duration_str = f"{minutes}m {seconds}s"
                         start_time_iso = start_dt.isoformat()
                         end_time_iso = end_dt.isoformat()
                     else:
+                        duration_s = 0
                         duration_str = "N/A"
                         start_time_iso = None
                         end_time_iso = None
 
-                    step = {
-                        "type": mode,
+                    leg_obj = {
+                        "type": mode,                 # walk, bus, bicycle, ...
                         "from": from_name,
                         "to": to_name,
                         "duration": duration_str,
+                        "duration_s": duration_s,
                         "start_time": start_time_iso,
                         "end_time": end_time_iso,
                         "geometry": geometry,
-                        # "distance_m": leg_distance_m,
+                        "distance_m": leg_distance_m  # <-- distanza del leg calcolata da OTP
                     }
-
-                    # Route per BUS
                     if mode == "bus":
                         bus_route = (leg.get("trip") or {}).get("routeShortName")
                         if bus_route:
-                            step["route"] = bus_route
+                            leg_obj["route"] = bus_route
 
-                    # Per WALK, esponi anche gli step pedonali con distanza (se forniti da OTP)
+                    # opzionale: mantieni gli step pedonali con distanza
                     if mode == "walk" and leg.get("steps"):
-                        step["walk_steps"] = [
+                        leg_obj["walk_steps"] = [
                             {
                                 "streetName": st.get("streetName"),
-                                # "distance_m": int(round(st.get("distance") or 0))
+                                "distance_m": int(round(st.get("distance") or 0))
                             } for st in (leg.get("steps") or [])
                         ]
 
-                    steps.append(step)
+                    legs_out.append(leg_obj)
 
-                # Classificazione primaria per la chiave di options
+                # ---- SEGMENTS (raggruppo contigui per mode: es. walk → bus → walk) ----
+                segments = []
+                for lg in legs_out:
+                    if not segments or segments[-1]["mode"] != lg["type"]:
+                        seg = {
+                            "mode": lg["type"],
+                            "from": lg["from"],
+                            "to": lg["to"],
+                            "distance_m": lg["distance_m"],
+                            "duration_s": lg["duration_s"],
+                            "legs_count": 1
+                        }
+                        # per BUS accumulo anche le linee coinvolte
+                        if lg["type"] == "bus":
+                            seg["routes"] = [lg.get("route")] if lg.get("route") else []
+                        segments.append(seg)
+                    else:
+                        # stesso mode del segmento precedente: aggrego
+                        segments[-1]["to"] = lg["to"]
+                        segments[-1]["distance_m"] += lg["distance_m"]
+                        segments[-1]["duration_s"] += lg["duration_s"]
+                        segments[-1]["legs_count"] += 1
+                        if lg["type"] == "bus" and lg.get("route"):
+                            routes = segments[-1].setdefault("routes", [])
+                            if lg["route"] not in routes:
+                                routes.append(lg["route"])
+
+                # ---- CLASSIFICAZIONE PRIMARIA (come già facevi) ----
                 primary_mode = "other"
                 if modes_in_itinerary == {"WALK"}:
                     primary_mode = "walk"
@@ -443,12 +470,13 @@ class PlanTripView(APIView):
                 elif "SCOOTER" in modes_in_itinerary:
                     primary_mode = "scooter"
 
-                # >>> NOVITÀ: inseriamo i totali nel payload <<<
+                # ---- OUTPUT OPZIONE ----
                 options[primary_mode].append({
                     "option": idx,
-                    "total_distance_m": itinerary_total_m,   # somma di tutti i legs, by OTP
-                    "walk_distance_m": walk_total_m,         # solo tratti a piedi, by OTP
-                    "steps": steps
+                    "total_distance_m": itinerary_total_m,   # somma di tutti i leg, by OTP
+                    "walk_distance_m": walk_total_m,         # solo pedonale (OTP)
+                    "legs": legs_out,                        # distanza per ogni leg
+                    "segments": segments                     # distanza aggregata per “cambio” mode contiguo
                 })
 
             user = request.user if request.user.is_authenticated else None

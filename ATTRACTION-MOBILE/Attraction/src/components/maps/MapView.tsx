@@ -17,7 +17,6 @@ interface MapViewProps {
 export default function MapView({ route }: MapViewProps) {
   const [location, setLocation] = useState<[number, number] | null>(null);
 
-  // chiedi permessi + ottieni posizione utente
   useEffect(() => {
     const requestLocation = async () => {
       const result = await request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
@@ -35,14 +34,19 @@ export default function MapView({ route }: MapViewProps) {
     requestLocation();
   }, []);
 
-  // estrai origine/destinazione dalla rotta (ora sempre disponibili se fetchTrip ha passato params)
   const fromCoord =
     route?.fromLat && route?.fromLon ? [route.fromLon, route.fromLat] : null;
   const toCoord =
     route?.toLat && route?.toLon ? [route.toLon, route.toLat] : null;
 
+  // ✅ usa legs.geometry (array di {lat, lon}) già normalizzato
+  const lineCoords =
+    route?.legs?.flatMap((leg: any) =>
+      (leg.geometry || []).map((p: any) => [p.lon, p.lat])
+    ) || [];
+
   return (
-    <MapLibreGL.MapView style={styles.map}>
+    <MapLibreGL.MapView style={StyleSheet.absoluteFillObject}>
       {/* Raster OSM */}
       <MapLibreGL.RasterSource
         id="osm"
@@ -52,23 +56,19 @@ export default function MapView({ route }: MapViewProps) {
         <MapLibreGL.RasterLayer id="osmLayer" sourceID="osm" />
       </MapLibreGL.RasterSource>
 
-      {/* Camera centrata su origine o posizione */}
+      {/* Camera centrata su origine → fallback utente → Arcavacata */}
       <MapLibreGL.Camera
         zoomLevel={14}
         centerCoordinate={
           fromCoord
             ? fromCoord
-            : location || [16.22727, 39.35589] // fallback Arcavacata
+            : location || [16.22727, 39.35589]
         }
       />
 
-      {/* Marker posizione utente */}
+      {/* Marker utente */}
       {location && (
-        <Marker
-          id="user-location"
-          coordinate={location}
-          color="#2196F3"
-        />
+        <Marker id="user-location" coordinate={location} color="#2196F3" />
       )}
 
       {/* Marker origine/destinazione */}
@@ -79,23 +79,26 @@ export default function MapView({ route }: MapViewProps) {
         <StopMarker id="destination" coordinate={toCoord} title="Destinazione" />
       )}
 
-      {/* Polyline percorso selezionato */}
-      {route && route.steps && (
+      {/* ✅ Polyline dai legs */}
+      {lineCoords.length > 0 && (
         <MapLibreGL.ShapeSource
           id="routeLine"
           shape={{
             type: "Feature",
             geometry: {
               type: "LineString",
-              coordinates: route.steps.flatMap((s: any) =>
-                (s.geometry || []).map((p: any) => [p.lon, p.lat])
-              ),
+              coordinates: lineCoords,
             },
           }}
         >
           <MapLibreGL.LineLayer
             id="routeLayer"
-            style={{ lineColor: "#4CAF50", lineWidth: 4 }}
+            style={{
+              lineColor: "#4CAF50",
+              lineWidth: 4,
+              lineJoin: "round",
+              lineCap: "round",
+            }}
           />
         </MapLibreGL.ShapeSource>
       )}
@@ -103,11 +106,9 @@ export default function MapView({ route }: MapViewProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  map: {
-    flex: 1,
-  },
-});
+
+
+
 
 
 

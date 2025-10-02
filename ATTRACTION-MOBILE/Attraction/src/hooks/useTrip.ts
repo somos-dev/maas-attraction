@@ -1,33 +1,36 @@
 import { useState } from "react";
-import { usePlanTripMutation } from "../store/api/planTripApi";
-import { PlanTripRequest } from "../store/types/planTrip";
-import { normalizeRouteOptionsToRoutes } from "../utils/normalizeRoutes";
+import { planTripApi } from "../store/api/planTripApi";
+import { normalizeRoutes } from "../utils/normalizeRoutes";
 
 export function useTrip() {
-  const [planTrip, { isLoading, isError, error }] = usePlanTripMutation();
-  const [routes, setRoutes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  async function fetchTrip(params: PlanTripRequest) {
+  // RTK mutation
+  const [planTrip] = planTripApi.usePlanTripMutation();
+
+  const fetchTrip = async (params: any) => {
+    setLoading(true);
+    setError(null);
     try {
-      const result = await planTrip(params).unwrap();
-      console.log("PlanTrip API result:", JSON.stringify(result, null, 2));
+      const res: any = await planTrip(params).unwrap();
+      console.log("PlanTrip API result:", res);
 
-      //  passo anche params, così i marker hanno le coordinate
-      const normalized = normalizeRouteOptionsToRoutes(result, params);
-      setRoutes(normalized);
-      return normalized;
-    } catch (e) {
-      console.error("Errore in fetchTrip:", e);
-      setRoutes([]);
+      // ✅ Normalizza qui, non altrove
+      const normalized = normalizeRoutes(res, params);
+      console.log("Normalized routes in useTrip:", normalized);
+
+      return normalized; // 👈 già array di rotte
+    } catch (err: any) {
+      console.error("Errore in fetchTrip:", err);
+      setError(err.message || "Errore generico");
       return [];
+    } finally {
+      setLoading(false);
     }
-  }
-
-  return {
-    routes,
-    loading: isLoading,
-    error: isError ? error : null,
-    fetchTrip,
   };
+
+  return { fetchTrip, loading, error };
 }
+
 

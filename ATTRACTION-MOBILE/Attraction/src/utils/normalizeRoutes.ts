@@ -1,5 +1,7 @@
+// src/utils/normalizeRoutes.ts
 type Coordinates = { lat: number; lon: number };
-// Decode polyline Valhalla
+
+// Decode polyline OTP/Valhalla
 export function decodeRoutePolyline(encoded: string): Coordinates[] {
   let index = 0, lat = 0, lon = 0;
   const coordinates: Coordinates[] = [];
@@ -24,7 +26,7 @@ export function decodeRoutePolyline(encoded: string): Coordinates[] {
     const dlon = (result & 1) ? ~(result >> 1) : (result >> 1);
     lon += dlon;
 
-    coordinates.push({ lat: lat / 1e5, lon: lon / 1e5 }); // ✅ precisione corretta
+    coordinates.push({ lat: lat / 1e5, lon: lon / 1e5 });
   }
 
   return coordinates;
@@ -32,10 +34,8 @@ export function decodeRoutePolyline(encoded: string): Coordinates[] {
 
 /**
  * Normalizza la risposta di plan-trip in un array di rotte
- * @param response risposta del backend
- * @param request  parametri usati per la chiamata (fromLat/fromLon/toLat/toLon)
  */
-export function normalizeRouteOptionsToRoutes(response: any, request?: any) {
+export function normalizeRoutes(response: any, request?: any) {
   const routes: any[] = [];
   const options = response?.options;
   if (!options) return [];
@@ -44,40 +44,36 @@ export function normalizeRouteOptionsToRoutes(response: any, request?: any) {
     const modeRoutes = options[mode];
     if (Array.isArray(modeRoutes)) {
       modeRoutes.forEach((opt: any, index: number) => {
-        // decodifica ogni step
-        const decodedSteps = opt.steps.map((step: any, stepIndex: number) => {
+        // ✅ usa legs invece di steps
+        const decodedLegs = (opt.legs || []).map((leg: any, legIndex: number) => {
           const decodedGeometry =
-            typeof step.geometry === "string"
-              ? decodeRoutePolyline(step.geometry)
-              : step.geometry;
+            typeof leg.geometry === "string"
+              ? decodeRoutePolyline(leg.geometry)
+              : leg.geometry || [];
 
-          // Quanti punti arrivano da ogni step
-          console.log(
-            `[normalizeRoutes] mode=${mode}, step=${stepIndex}, type=${step.type}, punti=${decodedGeometry.length}`
-          );
-
-          return { ...step, geometry: decodedGeometry };
+          return { ...leg, geometry: decodedGeometry };
         });
 
-        // calcolo durata totale in minuti
-        const totalDuration = decodedSteps.reduce((sum: number, step: any) => {
-          if (typeof step.duration === "string") {
-            const match = step.duration.match(/(\d+)m/);
-            return sum + (match ? parseInt(match[1], 10) : 0);
-          }
-          if (typeof step.duration === "number") {
-            return sum + step.duration;
+        // durata totale in minuti
+        const totalDuration = decodedLegs.reduce((sum: number, leg: any) => {
+          if (typeof leg.duration_s === "number") {
+            return sum + Math.round(leg.duration_s / 60);
           }
           return sum;
         }, 0);
 
+        // distanza totale in km
+        const totalDistanceKm = (opt.total_distance_m || 0) / 1000;
+
         routes.push({
           id: `${mode}-${opt.option ?? index}`,
-          fromStationName: response.fromStationName ?? response.fromStation,
-          toStationName: response.toStationName ?? response.toStation,
+          fromStationName: response.fromStationName,
+          toStationName: response.toStationName,
           mode,
           duration: totalDuration,
-          steps: decodedSteps,
+          distance: Math.round(totalDistanceKm * 10) / 10,
+          legs: decodedLegs,            // 👈 per MapView
+          segments: opt.segments || [], // 👈 info aggregate
           fromLat: request?.fromLat,
           fromLon: request?.fromLon,
           toLat: request?.toLat,
@@ -86,7 +82,6 @@ export function normalizeRouteOptionsToRoutes(response: any, request?: any) {
       });
     }
   }
+
   return routes;
 }
-
-

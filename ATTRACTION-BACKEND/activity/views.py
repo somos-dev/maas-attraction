@@ -426,7 +426,7 @@ class PlanTripView(APIView):
                         step["walk_steps"] = [
                             {
                                 "streetName": st.get("streetName"),
-                                "distance_m": int(round(st.get("distance") or 0))
+                                # "distance_m": int(round(st.get("distance") or 0))
                             } for st in (leg.get("steps") or [])
                         ]
 

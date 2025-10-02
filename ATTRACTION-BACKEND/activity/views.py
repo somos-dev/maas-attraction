@@ -286,35 +286,42 @@ class PlanTripView(APIView):
             # Query OTP plan
             plan_query = """
             query PlanTrip($fromLat: Float!, $fromLon: Float!, $toLat: Float!, $toLon: Float!, $date: String!, $time: String!) {
-              plan(
-                from: { lat: $fromLat, lon: $fromLon },
-                to: { lat: $toLat, lon: $toLon },
-                date: $date,
+            plan(
+                from: { lat: $fromLat, lon: $fromLon }
+                to: { lat: $toLat, lon: $toLon }
+                date: $date
                 time: $time
-              ) {
+            ) {
                 itineraries {
-                  duration
-                  walkDistance
-                  legs {
+                duration
+                walkDistance            # Classic (se esiste)
+                nonTransitDistance      # OTP2 (piedi+bici)
+                legs {
                     mode
                     startTime
                     endTime
+                    from { name }
+                    to { name }
+                    legGeometry { points }
+                    __typename
+
+                    # Distanze sui tipi concreti (OTP2)
+                    ... on StreetLeg {
+                    distanceMeters
+                    distance            # fallback per build che usano ancora "distance"
+                    steps { distance }
+                    }
+                    ... on TransitLeg {
+                    distanceMeters
                     distance
-                    from {
-                      name
+                    trip { routeShortName }
                     }
-                    to {
-                      name
-                    }
-                    trip {
-                      routeShortName
-                    }
-                    legGeometry {
-                      points
-                    }
-                  }
+
+                    # Fallback per Classic: alcune build espongono "distance" direttamente sul leg
+                    distance
                 }
-              }
+                }
+            }
             }
             """
 
@@ -329,7 +336,7 @@ class PlanTripView(APIView):
 
             try:
                 plan_response = requests.post(
-                    "http://server.somos.srl:8080/otp/routers/default/index/graphql",
+                    "https://otp.somos.srl/otp/routers/default/index/graphql",
                     json={"query": plan_query, "variables": variables},
                     headers=headers,
                     timeout=10

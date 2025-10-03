@@ -1,12 +1,15 @@
 // src/screens/main/SearchScreen.tsx
 import React, { useState, useEffect } from "react";
 import {
-  SafeAreaView,
   StyleSheet,
   View,
   ScrollView,
   TouchableOpacity,
+  Platform,
+  KeyboardAvoidingView,
+  Dimensions,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, Button, Checkbox, useTheme, Snackbar } from "react-native-paper";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
@@ -22,18 +25,29 @@ import {
   useCreateSearchMutation,
 } from "../../store/api/searchApi";
 
-// Funzione helper per fare reverse geocoding con Nominatim
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const HORIZONTAL_PADDING = 16;
+const MAX_CONTENT_WIDTH = 600; // Massima larghezza per tablet
+
+// 🔹 Cache per reverse geocoding
+const reverseCache = new Map<string, string>();
+
 async function reverseGeocode(lat: number, lon: number): Promise<string> {
+  const key = `${lat.toFixed(5)},${lon.toFixed(5)}`;
+  if (reverseCache.has(key)) return reverseCache.get(key)!;
+
   try {
     const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`;
     const res = await fetch(url, {
       headers: { "User-Agent": "AttractionApp/1.0" },
     });
     const data = await res.json();
-    return data?.display_name || `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
+    const name = data?.display_name || key;
+    reverseCache.set(key, name);
+    return name;
   } catch (err) {
     console.error("Reverse geocoding error:", err);
-    return `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
+    return key;
   }
 }
 
@@ -63,7 +77,7 @@ export default function SearchScreen({ navigation }: any) {
     Record<number, { from: string; to: string }>
   >({});
 
-  // Quando arrivano le ricerche, risolvi i nomi tramite Nominatim (ottimizzato con Promise.all)
+  // 🔹 Risolvi nomi tramite Nominatim (ottimizzato con Promise.all + cache)
   useEffect(() => {
     const resolveAll = async () => {
       try {
@@ -91,11 +105,10 @@ export default function SearchScreen({ navigation }: any) {
     dateTime.getMinutes()
   )}:${pad(dateTime.getSeconds())}`;
 
-  // nuova ricerca
+  // 🔹 nuova ricerca
   const handleSearch = async () => {
     if (!from || !to) return;
 
-    // salva nello storico backend
     await createSearch({
       from_lat: from.lat,
       from_lon: from.lon,
@@ -107,7 +120,6 @@ export default function SearchScreen({ navigation }: any) {
       modes: "all",
     }).unwrap();
 
-    // calcola itinerario
     const params = {
       fromLat: from.lat,
       fromLon: from.lon,
@@ -124,41 +136,18 @@ export default function SearchScreen({ navigation }: any) {
     navigation.navigate("Results", { routes: foundRoutes });
   };
 
-  // usa tratta dallo storico
-  const handleUseRecent = async (item: any) => {
-    console.log("▶️ handleUseRecent - item:", item);
-
-    // Normalizza la data come in handleSearch
-    const tripDate = new Date(item.trip_date);
-    const pad = (n: number) => (n < 10 ? "0" + n : n);
-    const formattedDate = `${tripDate.getFullYear()}-${pad(
-      tripDate.getMonth() + 1
-    )}-${pad(tripDate.getDate())}`;
-    const formattedTime = `${pad(tripDate.getHours())}:${pad(
-      tripDate.getMinutes()
-    )}:${pad(tripDate.getSeconds())}`;
-
-    const params = {
-      fromLat: item.from_lat,
-      fromLon: item.from_lon,
-      toLat: item.to_lat,
-      toLon: item.to_lon,
-      date: formattedDate,
-      time: formattedTime,
-      requested_date: formattedDate,
-      requested_time: formattedTime,
-      mode: item.modes?.toLowerCase() || "all",
-    };
-
-    console.log("▶️ handleUseRecent - params inviati:", params);
-
-    try {
-      const foundRoutes = await fetchTrip(params);
-      console.log("▶️ handleUseRecent - routes trovate:", foundRoutes);
-      navigation.navigate("Results", { routes: foundRoutes });
-    } catch (err) {
-      console.error("❌ Errore handleUseRecent:", err);
-    }
+  // 🔹 usa tratta dallo storico → riempie i campi, NON va subito ai risultati
+  const handleUseRecent = (item: any) => {
+    setFrom({
+      lat: item.from_lat,
+      lon: item.from_lon,
+      name: resolvedNames[item.id]?.from || "",
+    });
+    setTo({
+      lat: item.to_lat,
+      lon: item.to_lon,
+      name: resolvedNames[item.id]?.to || "",
+    });
   };
 
   const openModal = (type: "from" | "to") => {
@@ -176,100 +165,133 @@ export default function SearchScreen({ navigation }: any) {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
+      edges={["top", "left", "right"]}
     >
-      <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
-        <Text style={styles.title}>Calcola Percorso</Text>
-
-        <PlaceButton
-          label="Partenza"
-          value={from?.name}
-          address={from?.address}
-          icon="arrow-up-circle-outline"
-          onPress={() => openModal("from")}
-        />
-
-        <SwapButton
-          onPress={() => {
-            const temp = from;
-            setFrom(to);
-            setTo(temp);
-          }}
-          disabled={!from && !to}
-        />
-
-        <PlaceButton
-          label="Destinazione"
-          value={to?.name}
-          address={to?.address}
-          icon="arrow-down-circle-outline"
-          onPress={() => openModal("to")}
-        />
-
-        {/* Andata/Ritorno */}
-        <View style={styles.checkboxRow}>
-          <Checkbox
-            status={roundTrip ? "checked" : "unchecked"}
-            onPress={() => setRoundTrip(!roundTrip)}
-          />
-          <Text style={styles.checkboxLabel}>Andata/Ritorno</Text>
-        </View>
-
-        <DateTimeSelector
-          date={dateTime}
-          onSelectDate={() => setShowPicker("date")}
-          onSelectTime={() => setShowPicker("time")}
-        />
-
-        {showPicker && (
-          <DateTimePicker
-            value={dateTime}
-            mode={showPicker}
-            display="default"
-            onChange={(e, d) => {
-              setShowPicker(null);
-              if (d) setDateTime(d);
-            }}
-          />
-        )}
-
-        <Button
-          mode="contained"
-          style={styles.cta}
-          onPress={handleSearch}
-          disabled={!from || !to || loading}
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {loading ? "Ricerca in corso..." : "Cerca Soluzioni"}
-        </Button>
+          <View style={styles.contentWrapper}>
+            <View style={styles.inner}>
+              <Text style={styles.title}>Calcola Percorso</Text>
 
-        {/* Storico */}
-        <View style={styles.recentSection}>
-          <Text style={styles.recentTitle}>Tratte recenti</Text>
-          {loadingSearches ? (
-            <Text>Caricamento...</Text>
-          ) : recentSearches.length === 0 ? (
-            <Text>Nessuna ricerca salvata</Text>
-          ) : (
-            recentSearches.map((item) => (
-              <TouchableOpacity
-                key={item.id}
-                style={styles.recentItem}
-                onPress={() => handleUseRecent(item)}
+              <PlaceButton
+                label="Partenza"
+                value={from?.name}
+                address={from?.address}
+                icon="arrow-up-circle-outline"
+                onPress={() => openModal("from")}
+              />
+
+              <SwapButton
+                onPress={() => {
+                  const temp = from;
+                  setFrom(to);
+                  setTo(temp);
+                }}
+                disabled={!from && !to}
+              />
+
+              <PlaceButton
+                label="Destinazione"
+                value={to?.name}
+                address={to?.address}
+                icon="arrow-down-circle-outline"
+                onPress={() => openModal("to")}
+              />
+
+              {/* Andata/Ritorno */}
+              <View style={styles.checkboxRow}>
+                <Checkbox
+                  status={roundTrip ? "checked" : "unchecked"}
+                  onPress={() => setRoundTrip(!roundTrip)}
+                />
+                <Text style={styles.checkboxLabel}>Andata/Ritorno</Text>
+              </View>
+
+              <DateTimeSelector
+                date={dateTime}
+                onSelectDate={() => setShowPicker("date")}
+                onSelectTime={() => setShowPicker("time")}
+              />
+
+              {showPicker && (
+                <DateTimePicker
+                  value={dateTime}
+                  mode={showPicker}
+                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  onChange={(e, d) => {
+                    // Su Android il picker si chiude automaticamente
+                    if (Platform.OS === "android") {
+                      setShowPicker(null);
+                    }
+                    if (d) setDateTime(d);
+                  }}
+                  // Su iOS aggiungiamo un bottone di conferma
+                  {...(Platform.OS === "ios" && {
+                    style: styles.iosDatePicker,
+                  })}
+                />
+              )}
+
+              <Button
+                mode="contained"
+                style={styles.cta}
+                onPress={handleSearch}
+                disabled={!from || !to || loading}
+                labelStyle={styles.ctaLabel}
               >
-                <Text style={styles.fromText}>
-                  ↑ {resolvedNames[item.id]?.from || "Caricamento..."}
-                </Text>
-                <Text style={styles.toText}>
-                  ↓ {resolvedNames[item.id]?.to || "Caricamento..."}
-                </Text>
-                <Text style={styles.dateText}>{item.trip_date}</Text>
-              </TouchableOpacity>
-            ))
-          )}
-        </View>
-      </ScrollView>
+                {loading ? "Ricerca in corso..." : "Cerca Soluzioni"}
+              </Button>
+
+              {/* Storico */}
+              <View style={styles.recentSection}>
+                <Text style={styles.recentTitle}>Tratte recenti</Text>
+                {loadingSearches ? (
+                  <View style={styles.loadingContainer}>
+                    <Text style={styles.loadingText}>Caricamento...</Text>
+                  </View>
+                ) : recentSearches.length === 0 ? (
+                  <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>Nessuna ricerca salvata</Text>
+                  </View>
+                ) : (
+                  recentSearches.map((item) => (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={styles.recentItem}
+                      onPress={() => handleUseRecent(item)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.fromText} numberOfLines={1}>
+                        ↑ {resolvedNames[item.id]?.from || "Caricamento..."}
+                      </Text>
+                      <Text style={styles.toText} numberOfLines={1}>
+                        ↓ {resolvedNames[item.id]?.to || "Caricamento..."}
+                      </Text>
+                      <Text style={styles.dateText}>{item.trip_date}</Text>
+                    </TouchableOpacity>
+                  ))
+                )}
+              </View>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Snackbar errori */}
-      <Snackbar visible={!!error} onDismiss={() => {}}>
+      <Snackbar
+        visible={!!error}
+        onDismiss={() => {}}
+        duration={3000}
+        style={styles.snackbar}
+      >
         Errore durante la ricerca. Riprova.
       </Snackbar>
 
@@ -292,23 +314,129 @@ export default function SearchScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  title: { fontSize: 18, fontWeight: "bold", marginBottom: 16 },
-  checkboxRow: { flexDirection: "row", alignItems: "center", marginVertical: 8 },
-  checkboxLabel: { fontSize: 16 },
-  cta: { marginTop: 16, borderRadius: 8, paddingVertical: 8 },
-  recentSection: { marginTop: 24 },
-  recentTitle: { fontSize: 16, fontWeight: "bold", marginBottom: 8 },
-  recentItem: {
-    padding: 12,
-    backgroundColor: "#f9f9f9",
-    borderRadius: 8,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: "#eee",
+  container: {
+    flex: 1,
   },
-  fromText: { fontWeight: "600", color: "green", marginBottom: 2 },
-  toText: { fontWeight: "600", color: "red", marginBottom: 4 },
-  dateText: { fontSize: 12, color: "gray" },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: Platform.OS === "ios" ? 20 : 32,
+  },
+  contentWrapper: {
+    flex: 1,
+    alignItems: "center",
+    paddingHorizontal: HORIZONTAL_PADDING,
+  },
+  inner: {
+    width: "100%",
+    maxWidth: MAX_CONTENT_WIDTH,
+    paddingTop: Platform.OS === "android" ? 8 : 0,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 20,
+    marginTop: Platform.OS === "android" ? 8 : 4,
+  },
+  checkboxRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 12,
+    marginLeft: -8, // Allinea meglio la checkbox
+  },
+  checkboxLabel: {
+    fontSize: 16,
+    marginLeft: 4,
+  },
+  cta: {
+    marginTop: 20,
+    marginBottom: 8,
+    borderRadius: 8,
+    elevation: Platform.OS === "android" ? 2 : 0,
+    shadowColor: Platform.OS === "ios" ? "#000" : undefined,
+    shadowOffset: Platform.OS === "ios" ? { width: 0, height: 2 } : undefined,
+    shadowOpacity: Platform.OS === "ios" ? 0.1 : undefined,
+    shadowRadius: Platform.OS === "ios" ? 4 : undefined,
+  },
+  ctaLabel: {
+    paddingVertical: Platform.OS === "android" ? 4 : 8,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  recentSection: {
+    marginTop: 32,
+    marginBottom: 16,
+  },
+  recentTitle: {
+    fontSize: 17,
+    fontWeight: "bold",
+    marginBottom: 12,
+  },
+  recentItem: {
+    padding: 14,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 10,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#e8e8e8",
+    width: "100%",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
+  },
+  fromText: {
+    fontWeight: "600",
+    color: "#2e7d32",
+    marginBottom: 4,
+    fontSize: 15,
+  },
+  toText: {
+    fontWeight: "600",
+    color: "#c62828",
+    marginBottom: 6,
+    fontSize: 15,
+  },
+  dateText: {
+    fontSize: 13,
+    color: "#666",
+    marginTop: 2,
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "#666",
+    fontSize: 15,
+  },
+  emptyContainer: {
+    padding: 20,
+    alignItems: "center",
+  },
+  emptyText: {
+    color: "#999",
+    fontSize: 15,
+    fontStyle: "italic",
+  },
+  iosDatePicker: {
+    backgroundColor: "#fff",
+    marginHorizontal: HORIZONTAL_PADDING,
+    marginVertical: 10,
+  },
+  snackbar: {
+    marginBottom: Platform.OS === "ios" ? 0 : 16,
+  },
 });
+
+
 

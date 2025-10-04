@@ -35,8 +35,9 @@ const RoutesList: React.FC<RoutesListProps> = ({ onRouteSelect }) => {
     return `${hours}h ${mins > 0 ? `${mins}m` : ''}`;
   };
 
-  const formatDistance = (km: number) => {
-    return km < 1 ? `${(km * 1000).toFixed(0)}m` : `${km.toFixed(1)}km`;
+
+    const formatDistance = (m: number) => {
+    return m < 1000 ? `${m.toFixed(0)}m` : `${(m / 1000).toFixed(1)}km`
   };
 
   const getModeIcon = (mode: string) => {

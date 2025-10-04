@@ -171,6 +171,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
+    paddingBottom: 30,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
   },
   title: {
     fontSize: 16,

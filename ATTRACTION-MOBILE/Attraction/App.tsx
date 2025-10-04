@@ -14,8 +14,8 @@ import { store, persistor, RootState } from "./src/store/store";
 import AppNavigator from "./src/navigation/AppNavigator";
 import { lightTheme, darkTheme } from "./src/config/theme";
 
-//  import AsyncStorage from '@react-native-async-storage/async-storage';
-//     AsyncStorage.clear();
+  // import AsyncStorage from '@react-native-async-storage/async-storage';
+  // AsyncStorage.clear();
 
   function ThemedApp() {
   const isDark = useSelector((state: RootState) => state.theme.isDarkTheme);

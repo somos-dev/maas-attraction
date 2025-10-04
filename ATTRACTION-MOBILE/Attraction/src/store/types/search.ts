@@ -1,18 +1,17 @@
-// src/store/types/search.ts
-
 // Request per creare una ricerca
 export interface SearchRequest {
-  anonymous_session_key?: string; // opzionale (utenti anonimi)
+  anonymous_session_key?: string | null; // presente se utente anonimo
   from_lat: number;
   from_lon: number;
   to_lat: number;
   to_lon: number;
-  trip_date: string; // es. "2025-09-17" o "2025-09-17T10:30:00Z"
-  modes: "walk" | "bus" | "bicycle" | "scooter" | "all";
-  user?: number; // opzionale (utenti loggati)
+  trip_date: string;      // ISO date-time es. "2025-10-02T15:17:20Z"
+  requested_at: string;   // ISO date-time (sempre incluso)
+  modes: string;          // "all", "ALL", "bus", "BUS", ecc.
+  user?: number | null;   // id utente loggato, se presente
 }
 
-// Risposta dal backend (GET o POST)
+// Risposta dal backend
 export interface Search {
   id: number;
   anonymous_session_key?: string | null;
@@ -20,11 +19,14 @@ export interface Search {
   from_lon: number;
   to_lat: number;
   to_lon: number;
-  trip_date: string;     // data richiesta
-  requested_at: string;  // timestamp generato dal backend
-  modes: string;         // backend può restituire "BUS", "WALK" ecc.
+  trip_date: string;      // ISO date-time
+  requested_at: string;   // ISO date-time
+  modes: string;
   user?: number | null;
 }
+
+
+
 
 
 

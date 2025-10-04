@@ -12,32 +12,35 @@ import {
 } from 'lucide-react';
 import useLocales from '@/hooks/useLocales';
 
+import {Route, Legs, Coordinates} from '@/app/api/plan-trip/route';
+
+
 // Types based on your API structure
-type Coordinates = {
-  lat: number;
-  lon: number;
-};
+// type Coordinates = {
+//   lat: number;
+//   lon: number;
+// };
 
-type Step = {
-  type: string;
-  from: string;
-  to: string;
-  duration: string;
-  start_time: string;
-  end_time: string;
-  geometry: string | Coordinates[];
-  route?: string;
-};
+// type Step = {
+//   type: string;
+//   from: string;
+//   to: string;
+//   duration: string;
+//   start_time: string;
+//   end_time: string;
+//   geometry: string | Coordinates[];
+//   route?: string;
+// };
 
-type Route = {
-  id: string;
-  fromStationName: string;
-  toStationName: string;
-  mode: string;
-  duration: number;
-  distance: number;
-  steps: Step[];
-};
+// type Route = {
+//   id: string;
+//   fromStationName: string;
+//   toStationName: string;
+//   mode: string;
+//   duration: number;
+//   distance: number;
+//   steps: Step[];
+// };
 
 interface JourneyDetailsProps {
   selectedRoute: Route | null;
@@ -58,15 +61,17 @@ const JourneyDetails: React.FC<JourneyDetailsProps> = ({ selectedRoute }) => {
     );
   }
 
-  const formatTime = (minutes: number) => {
+  const formatTime = (sec: number) => {
+    const minutes = Math.round(sec / 60);
     if (minutes < 60) return `${minutes}${String(translate('common.minutes'))}`;
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return `${hours}${String(translate('common.hours'))}${mins > 0 ? ` ${mins}${String(translate('common.minutes'))}` : ''}`;
   };
 
-  const formatDistance = (km: number) => {
-    return km < 1 ? `${(km * 1000).toFixed(0)}${String(translate('common.meters'))}` : `${km.toFixed(1)}${String(translate('common.kilometers'))}`;
+
+  const formatDistance = (m: number) => {
+    return m < 1000 ? `${m.toFixed(0)}${String(translate('common.meters'))}` : `${(m / 1000).toFixed(1)}${String(translate('common.kilometers'))}`
   };
 
   const getModeIcon = (mode: string) => {
@@ -136,8 +141,9 @@ const JourneyDetails: React.FC<JourneyDetailsProps> = ({ selectedRoute }) => {
             </div>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold">{formatTime(selectedRoute.duration)}</div>
-            <div className="text-white/80 text-sm">{formatDistance(selectedRoute.distance)}</div>
+            <div className="text-2xl font-bold">{formatTime(selectedRoute.totalDuration)}</div>
+            <div className="text-white/80 text-sm">{formatDistance(selectedRoute.totalDistance)}</div>
+            {/* <div className="text-white/80 text-sm">{selectedRoute.totalDistance}</div> */}
           </div>
         </div>
       </div>

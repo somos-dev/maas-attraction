@@ -25,7 +25,8 @@ const RoutesList: React.FC<RoutesListProps> = ({ onRouteSelect }) => {
     );
   }
 
-  const formatTime = (minutes: number) => {
+  const formatTime = (sec: number) => {
+    const minutes = Math.round(sec / 60);
     if (minutes < 60) {
       return `${minutes} min`;
     }
@@ -201,9 +202,9 @@ const RoutesList: React.FC<RoutesListProps> = ({ onRouteSelect }) => {
                     </div>
                   )}
                 </div>
-                {route.distance && (
+                {route.totalDistance && (
                   <p className="text-sm text-gray-500 mt-1">
-                    Distance: {formatDistance(route.distance)}
+                    Distance: {formatDistance(route.totalDistance)}
                   </p>
                 )}
               </div>
@@ -214,7 +215,7 @@ const RoutesList: React.FC<RoutesListProps> = ({ onRouteSelect }) => {
                 px-2 py-1 rounded-lg font-bold text-lg text-black
                  
               `}>
-                {formatTime(route.duration)}
+                {formatTime(route.totalDuration)}
               </div>
             </div>
           </div>
@@ -311,7 +312,7 @@ const RoutesList: React.FC<RoutesListProps> = ({ onRouteSelect }) => {
         {allTabs.map((tab) => {
           const filteredRoutes = filterRoutes(tab.id);
             interface SortedRoute extends Route {}
-            const sortedRoutes: SortedRoute[] = filteredRoutes.slice().sort((a: Route, b: Route) => a.duration - b.duration);
+            const sortedRoutes: SortedRoute[] = filteredRoutes.slice().sort((a: Route, b: Route) => a.totalDuration - b.totalDuration);
           const bestRoute = getBestRoute(sortedRoutes);
           
           return (

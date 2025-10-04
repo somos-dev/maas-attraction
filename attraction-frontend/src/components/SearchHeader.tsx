@@ -341,7 +341,7 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({ }) => {
         variant="outline"
         size="icon"
         onClick={setProfileOpen}
-        className="bg-gradient-to-tr from-blue-600 to-blue-400 hover:from-blue-500 hover:to-blue-300 border-none rounded-full shadow transition"
+        className="bg-gradient-to-tr from-blue-300 to-green-500 hover:from-blue-500 hover:to-blue-300 border-none rounded-full shadow transition"
         title={String(translate("labels.openProfile"))}
       >
         <User className="h-5 w-5 text-white" />

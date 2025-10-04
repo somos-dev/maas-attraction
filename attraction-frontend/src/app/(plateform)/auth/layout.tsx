@@ -1,10 +1,9 @@
-import AnimatedIllustration from "@/components/AnimatedIllustration";
+// import AnimatedIllustration from "@/components/AnimatedIllustration";
 import ThemeTogglerTwo from "@/components/common/ThemeTogglerTwo";
 
 import { ThemeProvider } from "@/context/ThemeContext";
 import GuestGuard from "@/guards/GuestGuard";
 import Image from "next/image";
-import Link from "next/link";
 import React from "react";
 
 export default function AuthLayout({

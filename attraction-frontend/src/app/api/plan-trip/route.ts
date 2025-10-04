@@ -1,32 +1,45 @@
 import { ENDPOINTS_TRIPS } from '@/routes/api_endpoints';
 import { NextRequest, NextResponse } from 'next/server';
-import polyline from '@mapbox/polyline';
-import axios from 'axios';
 import axiosInstance from '@/utils/axios';
 
 
-type Coordinates = {
+export type Coordinates = {
   lat: number;
   lon: number;
 };
 
-type Step = {
+export type Legs = {
   type: string;
   from: string;
   to: string;
   duration: string;
+  duration_s: string;
   start_time: string;
   end_time: string;
   geometry: string | Coordinates[];
+  distance_m:number;
+  walk_steps:[];
   route?: string;
 };
 
-type Option = {
+export type Segments = {
+  mode: string;
+  from: string;
+  to: string;
+  distance_m: number;
+  duration_s: number;
+  legs_count: number
+}
+
+export type Option = {
   option: number;
-  steps: Step[];
+  total_distance_m:number;
+  walk_distance_m:number;
+  legs: Legs[];
+  segments?: Segments[];
 };
 
-type OptionsMap = {
+export type OptionsMap = {
   walk: Option[];
   bus: Option[];
   bicycle: Option[];
@@ -34,23 +47,26 @@ type OptionsMap = {
   other: Option[];
 };
 
-type TransportMode = keyof OptionsMap;
-
-export type Route = {
-  id: string;
-  fromStationName: string;
-  toStationName: string;
-  mode: TransportMode;
-  duration: number;
-  distance: number;
-  steps: Step[];
-};
+export type TransportMode = keyof OptionsMap;
 
 export type RouteResponse = {
   fromStationName: string;
   toStationName: string;
   options: OptionsMap;
 };
+
+export type Route = {
+  id: string;
+  fromStationName: string;
+  toStationName: string;
+  mode: TransportMode;
+  totalDuration: number;
+  totalDistance: number;
+  walkDistance: number;
+  steps: Legs[];
+  segments?: Segments[];
+};
+
 
 
 
@@ -82,7 +98,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ routes });
   } catch (e) {
     // console.error(e);
-    console.log("error:", e)
+    console.log("error in api:", e)
     return NextResponse.json({ error: 'Failed to fetch route' }, { status: 500 });
   }
 }
@@ -147,41 +163,52 @@ function normalizeRouteOptionsToRoutes(response: RouteResponse): Route[] | undef
 
     if (Array.isArray(modeRoutes)) {
       modeRoutes.forEach((opt, index) => {
-        const decodedSteps = opt.steps.map((step) => {
-          const decodedGeometry = typeof step.geometry === 'string'
-            ? decodeRoutePolyline(step.geometry)
-            : step.geometry;
+        const decodedLegs = opt.legs.map((leg) => {
+          const decodedGeometry = typeof leg.geometry === 'string'
+            ? decodeRoutePolyline(leg.geometry)
+            : leg.geometry;
 
           return {
-            ...step,
+            ...leg,
             geometry: decodedGeometry,
           };
         });
 
-        const totalDuration = decodedSteps.reduce((sum, step) => {
-          const match = step.duration.match(/(\d+)m/);
-          return sum + (match ? parseInt(match[1], 10) : 0);
-        }, 0);
+        // const totalDuration = decodedLegs.reduce((sum, leg) => {
+        //   const match = leg.duration.match(/(\d+)m/);
+        //   return sum + (match ? parseInt(match[1], 10) : 0);
+        // }, 0);
 
-        const totalDistance = decodedSteps.reduce((sum, step) => {
-          const coords = step.geometry as Coordinates[];
-          let stepDistance = 0;
+        // const totalDistance = decodedLegs.reduce((sum, leg) => {
+        //   const coords = leg.geometry as Coordinates[];
+        //   let legDistance = 0;
 
-          for (let i = 1; i < coords.length; i++) {
-            stepDistance += haversineDistance(coords[i - 1], coords[i]);
-          }
+        //   for (let i = 1; i < coords.length; i++) {
+        //     legDistance += haversineDistance(coords[i - 1], coords[i]);
+        //   }
 
-          return sum + stepDistance;
-        }, 0);
+        //   return sum + legDistance;
+        // }, 0);
 
+        // routes.push({
+        //   id: `${mode}-${opt.option ?? index}`,
+        //   fromStationName: response.fromStationName,
+        //   toStationName: response.toStationName,
+        //   mode: mode as TransportMode,
+        //   duration: totalDuration,
+        //   distance: parseFloat(totalDistance.toFixed(2)), // km, rounded
+        //   steps: decodedLegs,
+        // });
         routes.push({
           id: `${mode}-${opt.option ?? index}`,
           fromStationName: response.fromStationName,
           toStationName: response.toStationName,
           mode: mode as TransportMode,
-          duration: totalDuration,
-          distance: parseFloat(totalDistance.toFixed(2)), // km, rounded
-          steps: decodedSteps,
+          walkDistance: opt.walk_distance_m,
+          totalDistance: opt.total_distance_m,
+          totalDuration: opt.legs.reduce((sum, leg) => sum + parseInt(leg.duration_s), 0),
+          steps: decodedLegs,
+          segments: opt.segments
         });
       });
     }
@@ -189,3 +216,4 @@ function normalizeRouteOptionsToRoutes(response: RouteResponse): Route[] | undef
 
   return routes;
 }
+

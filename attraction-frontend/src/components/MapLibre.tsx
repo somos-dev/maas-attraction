@@ -677,8 +677,19 @@ const MapLibre: React.FC<MapLibreProps> = ({
       marker.current.remove();
       marker.current = null;
     }
+    
+      // const iconPath = type === 'Origin' ? '/images/Official-logos/UI-detailed/flag-grey.png' : '/images/Official-logos/UI-detailed/icone_flag.png';
 
+      // const el = document.createElement('div');
+      // el.style.backgroundImage = `url(${iconPath})`;
+      // el.style.width = '60px';      // adjust size
+      // el.style.height = '60px';
+      // el.style.backgroundSize = 'contain';
+      // el.style.backgroundRepeat = 'no-repeat';
+
+    
     marker.current = new Marker({ color, draggable: true })
+    // marker.current = new Marker({ color, element: el, draggable: true })
       .setLngLat([coord.lon, coord.lat])
       .setPopup(new maplibregl.Popup().setHTML(`<h3>${type}</h3>`))
       .addTo(map.current);

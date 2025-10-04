@@ -62,6 +62,7 @@ export const useFetchRoutes = () => {
             }
         } catch (err) {
             setError('Error fetching routes. Please try again.');
+            console.log('error-->', err)
             toast.error('Error fetching routes. Please try again.');
             setRoutes([]);
             setSelectedRouteIndex(-1);

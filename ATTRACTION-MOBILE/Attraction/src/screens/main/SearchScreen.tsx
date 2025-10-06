@@ -1,10 +1,8 @@
-// src/screens/main/SearchScreen.tsx
 import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   View,
   ScrollView,
-  TouchableOpacity,
   Platform,
   KeyboardAvoidingView,
   Dimensions,
@@ -17,19 +15,18 @@ import PlaceButton from "../../components/search/PlaceButton";
 import SwapButton from "../../components/search/SwapButton";
 import DateTimeSelector from "../../components/search/DateTimeSelector";
 import PlaceSearchModal from "../../components/search/PlaceSearchModal";
+import RecentSearches from "../../components/search/RecentSearches";
 
 import { useTrip } from "../../hooks/useTrip";
 import { usePlaces, Place } from "../../hooks/usePlaces";
-import {
-  useGetSearchesQuery,
-  useCreateSearchMutation,
-} from "../../store/api/searchApi";
+import { useCreateSearchMutation } from "../../store/api/searchApi";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const HORIZONTAL_PADDING = 16;
-const MAX_CONTENT_WIDTH = 600; // Massima larghezza per tablet
+const MAX_CONTENT_WIDTH = 600;
 
-// 🔹 Cache per reverse geocoding
 const reverseCache = new Map<string, string>();
 
 async function reverseGeocode(lat: number, lon: number): Promise<string> {
@@ -66,59 +63,40 @@ export default function SearchScreen({ navigation }: any) {
   const [modalType, setModalType] = useState<"from" | "to">("from");
   const [query, setQuery] = useState("");
 
-  // API search → storico + creare nuove ricerche
-  const { data: allSearches = [], isLoading: loadingSearches } =
-    useGetSearchesQuery();
-  const recentSearches = [...allSearches].slice(-5).reverse(); // ultime 5
   const [createSearch] = useCreateSearchMutation();
-
-  // Stato locale per salvare i nomi "reverse"
-  const [resolvedNames, setResolvedNames] = useState<
-    Record<number, { from: string; to: string }>
-  >({});
-
-  // 🔹 Risolvi nomi tramite Nominatim (ottimizzato con Promise.all + cache)
-  useEffect(() => {
-    const resolveAll = async () => {
-      try {
-        const results = await Promise.all(
-          recentSearches.map(async (item) => {
-            const fromName = await reverseGeocode(item.from_lat, item.from_lon);
-            const toName = await reverseGeocode(item.to_lat, item.to_lon);
-            return [item.id, { from: fromName, to: toName }] as const;
-          })
-        );
-        setResolvedNames(Object.fromEntries(results));
-      } catch (err) {
-        console.error("Errore durante la risoluzione nomi:", err);
-      }
-    };
-    if (recentSearches.length > 0) resolveAll();
-  }, [recentSearches]);
+  const { access } = useSelector((state: RootState) => state.auth); // 🔹 token JWT, se presente
 
   // helper date
   const pad = (n: number) => (n < 10 ? "0" + n : n);
-  const formattedDate = `${dateTime.getFullYear()}-${pad(
-    dateTime.getMonth() + 1
-  )}-${pad(dateTime.getDate())}`;
-  const formattedTime = `${pad(dateTime.getHours())}:${pad(
-    dateTime.getMinutes()
-  )}:${pad(dateTime.getSeconds())}`;
+  const formattedDate = `${dateTime.getFullYear()}-${pad(dateTime.getMonth() + 1)}-${pad(
+    dateTime.getDate()
+  )}`;
+  const formattedTime = `${pad(dateTime.getHours())}:${pad(dateTime.getMinutes())}:${pad(
+    dateTime.getSeconds()
+  )}`;
 
-  // 🔹 nuova ricerca
+  // 🔹 nuova ricerca (funziona anche per anonimi)
   const handleSearch = async () => {
     if (!from || !to) return;
 
-    await createSearch({
-      from_lat: from.lat,
-      from_lon: from.lon,
-      to_lat: to.lat,
-      to_lon: to.lon,
-      from_name: from.name,
-      to_name: to.name,
-      trip_date: formattedDate,
-      modes: "all",
-    }).unwrap();
+    try {
+      if (access) {
+        await createSearch({
+          from_lat: from.lat,
+          from_lon: from.lon,
+          to_lat: to.lat,
+          to_lon: to.lon,
+          from_name: from.name,
+          to_name: to.name,
+          trip_date: formattedDate,
+          modes: "all",
+        }).unwrap();
+      } else {
+        console.warn("Utente anonimo: ricerca non salvata ma procedo al calcolo del percorso.");
+      }
+    } catch (err) {
+      console.warn("Errore o utente anonimo durante il salvataggio, continuo la ricerca.");
+    }
 
     const params = {
       fromLat: from.lat,
@@ -136,17 +114,21 @@ export default function SearchScreen({ navigation }: any) {
     navigation.navigate("Results", { routes: foundRoutes });
   };
 
-  // 🔹 usa tratta dallo storico → riempie i campi, NON va subito ai risultati
+  // 🔹 usa tratta dallo storico → riempie i campi
   const handleUseRecent = (item: any) => {
-    setFrom({
-      lat: item.from_lat,
-      lon: item.from_lon,
-      name: resolvedNames[item.id]?.from || "",
-    });
-    setTo({
-      lat: item.to_lat,
-      lon: item.to_lon,
-      name: resolvedNames[item.id]?.to || "",
+    reverseGeocode(item.from_lat, item.from_lon).then((fromName) => {
+      reverseGeocode(item.to_lat, item.to_lon).then((toName) => {
+        setFrom({
+          lat: item.from_lat,
+          lon: item.from_lon,
+          name: fromName,
+        });
+        setTo({
+          lat: item.to_lat,
+          lon: item.to_lon,
+          name: toName,
+        });
+      });
     });
   };
 
@@ -227,13 +209,9 @@ export default function SearchScreen({ navigation }: any) {
                   mode={showPicker}
                   display={Platform.OS === "ios" ? "spinner" : "default"}
                   onChange={(e, d) => {
-                    // Su Android il picker si chiude automaticamente
-                    if (Platform.OS === "android") {
-                      setShowPicker(null);
-                    }
+                    if (Platform.OS === "android") setShowPicker(null);
                     if (d) setDateTime(d);
                   }}
-                  // Su iOS aggiungiamo un bottone di conferma
                   {...(Platform.OS === "ios" && {
                     style: styles.iosDatePicker,
                   })}
@@ -250,36 +228,10 @@ export default function SearchScreen({ navigation }: any) {
                 {loading ? "Ricerca in corso..." : "Cerca Soluzioni"}
               </Button>
 
-              {/* Storico */}
-              <View style={styles.recentSection}>
-                <Text style={styles.recentTitle}>Tratte recenti</Text>
-                {loadingSearches ? (
-                  <View style={styles.loadingContainer}>
-                    <Text style={styles.loadingText}>Caricamento...</Text>
-                  </View>
-                ) : recentSearches.length === 0 ? (
-                  <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyText}>Nessuna ricerca salvata</Text>
-                  </View>
-                ) : (
-                  recentSearches.map((item) => (
-                    <TouchableOpacity
-                      key={item.id}
-                      style={styles.recentItem}
-                      onPress={() => handleUseRecent(item)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.fromText} numberOfLines={1}>
-                        ↑ {resolvedNames[item.id]?.from || "Caricamento..."}
-                      </Text>
-                      <Text style={styles.toText} numberOfLines={1}>
-                        ↓ {resolvedNames[item.id]?.to || "Caricamento..."}
-                      </Text>
-                      <Text style={styles.dateText}>{item.trip_date}</Text>
-                    </TouchableOpacity>
-                  ))
-                )}
-              </View>
+              {/* 🔹 Storico (solo se loggato) */}
+              {access && (
+                <RecentSearches onSelect={handleUseRecent} reverseGeocode={reverseGeocode} />
+              )}
             </View>
           </View>
         </ScrollView>
@@ -314,42 +266,14 @@ export default function SearchScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: Platform.OS === "ios" ? 20 : 32,
-  },
-  contentWrapper: {
-    flex: 1,
-    alignItems: "center",
-    paddingHorizontal: HORIZONTAL_PADDING,
-  },
-  inner: {
-    width: "100%",
-    maxWidth: MAX_CONTENT_WIDTH,
-    paddingTop: Platform.OS === "android" ? 8 : 0,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 20,
-    marginTop: Platform.OS === "android" ? 8 : 4,
-  },
-  checkboxRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 12,
-    marginLeft: -8, // Allinea meglio la checkbox
-  },
-  checkboxLabel: {
-    fontSize: 16,
-    marginLeft: 4,
-  },
+  container: { flex: 1 },
+  keyboardView: { flex: 1 },
+  scrollContent: { flexGrow: 1, paddingBottom: Platform.OS === "ios" ? 20 : 32 },
+  contentWrapper: { flex: 1, alignItems: "center", paddingHorizontal: HORIZONTAL_PADDING },
+  inner: { width: "100%", maxWidth: MAX_CONTENT_WIDTH, paddingTop: Platform.OS === "android" ? 8 : 0 },
+  title: { fontSize: 20, fontWeight: "bold", marginBottom: 20, marginTop: Platform.OS === "android" ? 8 : 4 },
+  checkboxRow: { flexDirection: "row", alignItems: "center", marginVertical: 12, marginLeft: -8 },
+  checkboxLabel: { fontSize: 16, marginLeft: 4 },
   cta: {
     marginTop: 20,
     marginBottom: 8,
@@ -360,83 +284,9 @@ const styles = StyleSheet.create({
     shadowOpacity: Platform.OS === "ios" ? 0.1 : undefined,
     shadowRadius: Platform.OS === "ios" ? 4 : undefined,
   },
-  ctaLabel: {
-    paddingVertical: Platform.OS === "android" ? 4 : 8,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  recentSection: {
-    marginTop: 32,
-    marginBottom: 16,
-  },
-  recentTitle: {
-    fontSize: 17,
-    fontWeight: "bold",
-    marginBottom: 12,
-  },
-  recentItem: {
-    padding: 14,
-    backgroundColor: "#f9f9f9",
-    borderRadius: 10,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#e8e8e8",
-    width: "100%",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 1,
-      },
-    }),
-  },
-  fromText: {
-    fontWeight: "600",
-    color: "#2e7d32",
-    marginBottom: 4,
-    fontSize: 15,
-  },
-  toText: {
-    fontWeight: "600",
-    color: "#c62828",
-    marginBottom: 6,
-    fontSize: 15,
-  },
-  dateText: {
-    fontSize: 13,
-    color: "#666",
-    marginTop: 2,
-  },
-  loadingContainer: {
-    padding: 20,
-    alignItems: "center",
-  },
-  loadingText: {
-    color: "#666",
-    fontSize: 15,
-  },
-  emptyContainer: {
-    padding: 20,
-    alignItems: "center",
-  },
-  emptyText: {
-    color: "#999",
-    fontSize: 15,
-    fontStyle: "italic",
-  },
-  iosDatePicker: {
-    backgroundColor: "#fff",
-    marginHorizontal: HORIZONTAL_PADDING,
-    marginVertical: 10,
-  },
-  snackbar: {
-    marginBottom: Platform.OS === "ios" ? 0 : 16,
-  },
+  ctaLabel: { paddingVertical: Platform.OS === "android" ? 4 : 8, fontSize: 16, fontWeight: "600" },
+  iosDatePicker: { backgroundColor: "#fff", marginHorizontal: HORIZONTAL_PADDING, marginVertical: 10 },
+  snackbar: { marginBottom: Platform.OS === "ios" ? 0 : 16 },
 });
-
 
 

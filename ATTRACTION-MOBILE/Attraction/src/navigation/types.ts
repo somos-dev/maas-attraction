@@ -48,6 +48,7 @@ export type MainStackParamList = {
   Home: undefined;
   Search: undefined;
   Results: { searchId: number } | undefined; // id della ricerca salvata
+  TripDetails: { tripId: string }; // id del viaggio selezionato
 
 };
 

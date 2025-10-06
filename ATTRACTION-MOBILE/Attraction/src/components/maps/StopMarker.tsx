@@ -1,4 +1,3 @@
-// src/components/map/StopMarker.tsx
 import React from "react";
 import MapLibreGL from "@maplibre/maplibre-react-native";
 
@@ -6,16 +5,29 @@ interface StopMarkerProps {
   id: string;
   coordinate: [number, number]; // [lon, lat]
   title: string;
+  showLabel?: boolean;
+  size?: number;
 }
 
-export default function StopMarker({ id, coordinate, title }: StopMarkerProps) {
-  // scegli colore in base al titolo
+/**
+ * StopMarker — Marker per fermate o origine/destinazione
+ * - Colori automatici (verde = Origine, rosso = Destinazione)
+ * - Label opzionale per migliore leggibilità
+ */
+export default function StopMarker({
+  id,
+  coordinate,
+  title,
+  showLabel = false,
+  size = 7,
+}: StopMarkerProps) {
+  const lowerTitle = title.toLowerCase();
   const color =
-    title.toLowerCase() === "origine"
-      ? "#2E8B57" // verde
-      : title.toLowerCase() === "destinazione"
-      ? "#FF0000" // rosso
-      : "#6B7280"; // grigio di fallback
+    lowerTitle === "origine"
+      ? "#2E8B57"
+      : lowerTitle === "destinazione"
+      ? "#FF3B30"
+      : "#6B7280"; // fallback grigio
 
   return (
     <MapLibreGL.ShapeSource
@@ -31,29 +43,34 @@ export default function StopMarker({ id, coordinate, title }: StopMarkerProps) {
         ],
       }}
     >
-      {/* Cerchio colorato */}
+      {/* Marker principale */}
       <MapLibreGL.CircleLayer
         id={`${id}-circle`}
         style={{
-          circleRadius: 7,
+          circleRadius: size,
           circleColor: ["get", "color"],
           circleStrokeWidth: 2,
           circleStrokeColor: "#fff",
         }}
       />
 
-      {/* Label con titolo */}
-      <MapLibreGL.SymbolLayer
-        id={`${id}-label`}
-        style={{
-          textField: ["get", "title"],
-          textSize: 12,
-          textOffset: [0, 1.5],
-          textColor: "#333",
-          textHaloColor: "#fff",
-          textHaloWidth: 1,
-        }}
-      />
+      {/* Label opzionale */}
+      {showLabel && (
+        <MapLibreGL.SymbolLayer
+          id={`${id}-label`}
+          style={{
+            textField: ["get", "title"],
+            textSize: 13,
+            textOffset: [0, 1.2],
+            textColor: "#222",
+            textHaloColor: "#fff",
+            textHaloWidth: 1,
+            textAllowOverlap: true,
+            textAnchor: "top",
+          }}
+        />
+      )}
     </MapLibreGL.ShapeSource>
   );
 }
+

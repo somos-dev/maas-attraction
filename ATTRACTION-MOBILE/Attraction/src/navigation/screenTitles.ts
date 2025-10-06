@@ -9,6 +9,7 @@ export const SCREEN_TITLES: Record<string, string> = {
   Home: "Home",
   Search: "Cerca destinazione",
   Results: "Risultati della ricerca",
+  TripDetails: "Dettagli del viaggio",
 
   // Lines
   Lines: "Linee",

@@ -7,7 +7,7 @@ import SearchScreen from "./SearchScreen";
 import HomeScreen from "./HomeScreen";
 import ResultsScreen from "./ResultsScreen";
 import AppHeader from "../../components/common/header/AppHeader";
- 
+import TripDetailScreen from "./TripDetailsScreen";
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
 
@@ -32,6 +32,11 @@ export default function MainStack() {
         options={{ headerShown: true, title: "Risultati" }}
       />
 
+      <Stack.Screen
+        name="TripDetails"
+        component={TripDetailScreen}
+        options={{ headerShown: true, title: "Dettagli Viaggio" }}
+      />
     </Stack.Navigator>
   );
 }

@@ -5,7 +5,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import BottomSheet from "@gorhom/bottom-sheet";
 import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import MapView from "../../components/maps/MapView";
-import QuickSearchBottomSheet from "../../components/search/QuickSearchBottomSheet";
+import SearchBottomSheet from "../../components/search/SearchBottomSheet";
 
 const { height } = Dimensions.get("window");
 
@@ -25,10 +25,10 @@ export default function HomeScreen({ navigation }: any) {
         ref={sheetRef}
         index={0}
         snapPoints={snapPoints}
-        backgroundStyle={styles.bottomSheetBackground} // 👈 sfondo bianco visibile
+        backgroundStyle={styles.bottomSheetBackground} //  sfondo bianco visibile
       >
         <BottomSheetScrollView contentContainerStyle={styles.bottomSheetContent}>
-          <QuickSearchBottomSheet navigation={navigation} />
+          <SearchBottomSheet navigation={navigation} />
         </BottomSheetScrollView>
       </BottomSheet>
     </GestureHandlerRootView>

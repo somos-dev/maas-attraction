@@ -1,4 +1,4 @@
-import React, { useState, useEffect, memo } from "react";
+import React, { useState, useEffect, memo, useRef, useMemo } from "react";
 import {
   View,
   StyleSheet,
@@ -9,20 +9,19 @@ import {
 } from "react-native";
 import {
   Text,
-  Card,
   Divider,
   useTheme,
-  Chip,
   Surface,
   Button,
 } from "react-native-paper";
-import MapView from "../../components/maps/MapView";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useNavigation } from "@react-navigation/native";
+import MapView from "../../components/maps/MapView";
 
-const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+const { height } = Dimensions.get("window");
 
-// 🔹 Configurazione colori e icone per modalità
 const MODE_CONFIG: Record<string, { icon: string; color: string; label: string }> = {
   walk: { icon: "walk", color: "#9E9E9E", label: "A piedi" },
   bus: { icon: "bus", color: "#2196F3", label: "Bus" },
@@ -33,58 +32,7 @@ const MODE_CONFIG: Record<string, { icon: string; color: string; label: string }
   bike: { icon: "bike", color: "#8BC34A", label: "Bici" },
 };
 
-// 🔹 Component per singolo segmento
-const SegmentChip = memo(({ mode, name, distance }: any) => {
-  const config = MODE_CONFIG[mode.toLowerCase()] || MODE_CONFIG.walk;
-  const distanceKm = Math.round(distance / 100) / 10;
-
-  return (
-    <Chip
-      icon={config.icon}
-      style={[styles.segmentChip, { borderColor: config.color }]}
-      textStyle={{ fontSize: 12, color: config.color }}
-      mode="outlined"
-    >
-      {config.label} {distanceKm > 0 ? `· ${distanceKm} km` : ""}
-      {name ? ` (${name})` : ""}
-    </Chip>
-  );
-});
-
-// 🔹 Header compatto con info principali
-const RouteHeader = memo(({ item, theme }: any) => {
-  const totalMinutes = Math.round(item.duration);
-  const hours = Math.floor(totalMinutes / 60);
-  const mins = totalMinutes % 60;
-  const timeStr = hours > 0 ? `${hours}h ${mins}min` : `${mins} min`;
-
-  return (
-    <View style={styles.headerRow}>
-      <View style={styles.timeColumn}>
-        <Text style={styles.timeText}>{timeStr}</Text>
-        <Text style={styles.distanceText}>{item.distance} km</Text>
-      </View>
-
-      <View style={styles.modesRow}>
-        {[...new Set(item.segments?.map((s: any) => s.mode) || [])].map(
-          (mode: string, i: number) => {
-            const config = MODE_CONFIG[mode.toLowerCase()] || MODE_CONFIG.walk;
-            return (
-              <View
-                key={i}
-                style={[styles.modeIcon, { backgroundColor: config.color }]}
-              >
-                <Icon name={config.icon} size={16} color="#fff" />
-              </View>
-            );
-          }
-        )}
-      </View>
-    </View>
-  );
-});
-
-// 🔹 Timeline dei segmenti
+// Timeline dei segmenti
 const SegmentTimeline = memo(({ segments }: any) => {
   if (!segments || segments.length === 0) return null;
 
@@ -97,12 +45,7 @@ const SegmentTimeline = memo(({ segments }: any) => {
         return (
           <View key={i} style={styles.timelineItem}>
             <View style={styles.timelineIndicator}>
-              <View
-                style={[
-                  styles.timelineDot,
-                  { backgroundColor: config.color },
-                ]}
-              >
+              <View style={[styles.timelineDot, { backgroundColor: config.color }]}>
                 <Icon name={config.icon} size={12} color="#fff" />
               </View>
               {!isLast && (
@@ -118,9 +61,7 @@ const SegmentTimeline = memo(({ segments }: any) => {
 
             <View style={styles.timelineContent}>
               <Text style={styles.segmentMode}>{config.label}</Text>
-              {seg.name && (
-                <Text style={styles.segmentName}>{seg.name}</Text>
-              )}
+              {seg.name && <Text style={styles.segmentName}>{seg.name}</Text>}
               <Text style={styles.segmentDistance}>
                 {Math.round(seg.distance_m / 100) / 10} km
               </Text>
@@ -132,7 +73,7 @@ const SegmentTimeline = memo(({ segments }: any) => {
   );
 });
 
-// 🔹 Singola card percorso
+// Card singola rotta
 const RouteItem = memo(({ item, onSelect, selected, onDetails }: any) => {
   const theme = useTheme();
 
@@ -149,10 +90,30 @@ const RouteItem = memo(({ item, onSelect, selected, onDetails }: any) => {
         ]}
         elevation={selected ? 0 : 2}
       >
-        <RouteHeader item={item} theme={theme} />
+        <View style={styles.headerRow}>
+          <View style={styles.timeColumn}>
+            <Text style={styles.timeText}>{item.duration} min</Text>
+            <Text style={styles.distanceText}>{item.distance} km</Text>
+          </View>
+
+          <View style={styles.modesRow}>
+            {[...new Set(item.segments?.map((s: any) => s.mode) || [])].map(
+              (mode: string, i: number) => {
+                const config = MODE_CONFIG[mode.toLowerCase()] || MODE_CONFIG.walk;
+                return (
+                  <View
+                    key={i}
+                    style={[styles.modeIcon, { backgroundColor: config.color }]}
+                  >
+                    <Icon name={config.icon} size={16} color="#fff" />
+                  </View>
+                );
+              }
+            )}
+          </View>
+        </View>
 
         <Divider style={styles.divider} />
-
         <SegmentTimeline segments={item.segments} />
 
         {item.stops?.length > 0 && (
@@ -164,7 +125,6 @@ const RouteItem = memo(({ item, onSelect, selected, onDetails }: any) => {
           </View>
         )}
 
-        {/* 🔹 Pulsante “Dettagli” */}
         <View style={styles.detailsButtonContainer}>
           <Button
             mode="contained"
@@ -186,105 +146,94 @@ export default function ResultsScreen({ route }: any) {
   const [selectedRoute, setSelectedRoute] = useState<any | null>(
     routes?.[0] || null
   );
-  const [mapHeight, setMapHeight] = useState(SCREEN_HEIGHT * 0.45);
+
+  const bottomSheetRef = useRef<BottomSheet>(null);
+  const mapRef = useRef<any>(null);
+  const snapPoints = useMemo(() => [height * 0.25, height * 0.55, height * 0.85], []);
+
+  // ✅ Mostra la BottomSheet solo dopo che la mappa è stabile
+  const [showSheet, setShowSheet] = useState(false);
+  useEffect(() => {
+    const timeout = setTimeout(() => setShowSheet(true), 300);
+    return () => clearTimeout(timeout);
+  }, []);
 
   const handleOpenDetails = (trip: any) => {
-  navigation.navigate("TripDetails", { trip }); 
-};
-
-  useEffect(() => {
-    console.log("✅ Routes ricevute:", routes);
-  }, [routes]);
+    navigation.navigate("TripDetails", { trip });
+  };
 
   return (
-    <View style={styles.container}>
-      {/* Mappa con percorso selezionato */}
-      <View style={[styles.mapContainer, { height: mapHeight }]}>
-        {selectedRoute ? (
-          <MapView
-            route={selectedRoute}
-            showStops={true}
-            showMarkers={true}
-            highlightColor={theme.colors.primary}
-          />
-        ) : (
-          <View style={styles.emptyMapContainer}>
-            <Icon name="map-outline" size={48} color="#ccc" />
-            <Text style={styles.emptyMapText}>
-              Seleziona un percorso per visualizzarlo
-            </Text>
-          </View>
-        )}
-      </View>
-
-      {/* Indicatore per drag */}
-      <View style={styles.dragHandle}>
-        <View style={styles.dragIndicator} />
-      </View>
-
-      {/* Lista percorsi */}
-      <View style={styles.listContainer}>
-        <View style={styles.listHeader}>
-          <Text style={styles.listTitle}>
-            {routes?.length || 0} {routes?.length === 1 ? "Soluzione" : "Soluzioni"}
-          </Text>
-        </View>
-
-        <FlatList
-          data={routes}
-          keyExtractor={(item, index) => `${item.id || index}`}
-          renderItem={({ item }) => (
-            <RouteItem
-              item={item}
-              onSelect={setSelectedRoute}
-              selected={item === selectedRoute}
-              onDetails={handleOpenDetails}
-            />
-          )}
-          ListEmptyComponent={
-            <View style={styles.emptyListContainer}>
-              <Icon name="routes-clock" size={48} color="#ccc" />
-              <Text style={styles.emptyText}>Nessuna soluzione trovata</Text>
-              <Text style={styles.emptySubtext}>
-                Prova a modificare i parametri di ricerca
-              </Text>
-            </View>
-          }
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContent}
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      {/* Mappa sotto */}
+      <View style={styles.mapContainer} pointerEvents="box-none">
+        <MapView
+          ref={mapRef}
+          route={selectedRoute}
+          showStops
+          showMarkers
+          highlightColor={theme.colors.primary}
         />
       </View>
-    </View>
+
+      {/* BottomSheet sopra - montata dopo 300ms */}
+      {showSheet && (
+        <BottomSheet
+          ref={bottomSheetRef}
+          index={0}
+          snapPoints={snapPoints}
+          backgroundStyle={styles.bottomSheetBackground}
+          enablePanDownToClose={false}
+        >
+          <BottomSheetScrollView
+            contentContainerStyle={styles.bottomSheetContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.listHeader}>
+              <Text style={styles.listTitle}>
+                {routes?.length || 0}{" "}
+                {routes?.length === 1 ? "Soluzione trovata" : "Soluzioni trovate"}
+              </Text>
+            </View>
+
+            <FlatList
+              data={routes}
+              keyExtractor={(item, index) => `${item.id || index}`}
+              renderItem={({ item }) => (
+                <RouteItem
+                  item={item}
+                  onSelect={setSelectedRoute}
+                  selected={item === selectedRoute}
+                  onDetails={handleOpenDetails}
+                />
+              )}
+              scrollEnabled={false}
+            />
+          </BottomSheetScrollView>
+        </BottomSheet>
+      )}
+    </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f5f5f5" },
-  mapContainer: {
-    width: "100%",
-    borderBottomWidth: 1,
-    borderColor: "#e0e0e0",
-    backgroundColor: "#fff",
+  mapContainer: { flex: 1, zIndex: 0 },
+  bottomSheetBackground: {
+    backgroundColor: "white",
+    borderRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-  emptyMapContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#fafafa",
-  },
-  emptyMapText: { marginTop: 12, color: "#999", fontSize: 14 },
-  dragHandle: { alignItems: "center", paddingVertical: 8, backgroundColor: "#fff" },
-  dragIndicator: { width: 40, height: 4, borderRadius: 2, backgroundColor: "#ddd" },
-  listContainer: { flex: 1, backgroundColor: "#f5f5f5" },
+  bottomSheetContent: { padding: 16 },
   listHeader: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: "#fff",
+    paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
+    borderBottomColor: "#eee",
+    marginBottom: 12,
   },
   listTitle: { fontSize: 16, fontWeight: "700", color: "#333" },
-  listContent: { padding: 12, paddingBottom: 24 },
   card: {
     marginBottom: 12,
     borderRadius: 12,
@@ -335,11 +284,6 @@ const styles = StyleSheet.create({
   segmentMode: { fontSize: 14, fontWeight: "600", color: "#333" },
   segmentName: { fontSize: 13, color: "#666", marginTop: 2 },
   segmentDistance: { fontSize: 12, color: "#999", marginTop: 2 },
-  segmentChip: {
-    marginRight: 6,
-    marginBottom: 6,
-    backgroundColor: "#f5f5f5",
-  },
   stopsInfo: {
     flexDirection: "row",
     alignItems: "center",
@@ -349,29 +293,6 @@ const styles = StyleSheet.create({
     borderTopColor: "#f0f0f0",
   },
   stopText: { marginLeft: 6, fontSize: 12, color: "#666", flex: 1 },
-  detailsButtonContainer: {
-    alignItems: "flex-end",
-    marginTop: 12,
-  },
-  detailsButton: {
-    borderRadius: 24,
-    paddingHorizontal: 16,
-  },
-  emptyListContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 48,
-  },
-  emptyText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: "#666",
-    fontWeight: "500",
-  },
-  emptySubtext: {
-    marginTop: 4,
-    fontSize: 13,
-    color: "#999",
-    textAlign: "center",
-  },
+  detailsButtonContainer: { alignItems: "flex-end", marginTop: 12 },
+  detailsButton: { borderRadius: 24, paddingHorizontal: 16 },
 });

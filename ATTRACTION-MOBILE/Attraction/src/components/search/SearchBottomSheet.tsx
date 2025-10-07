@@ -1,4 +1,4 @@
-// src/components/search/QuickSearchBottomSheet.tsx
+// src/components/search/SearchBottomSheet.tsx
 import React, { useState } from "react";
 import { View, StyleSheet } from "react-native";
 import { Button, Checkbox, Text, useTheme, Snackbar } from "react-native-paper";
@@ -16,7 +16,7 @@ interface Props {
   navigation: any;
 }
 
-export default function QuickSearchBottomSheet({ navigation }: Props) {
+export default function SearchBottomSheet({ navigation }: Props) {
   const theme = useTheme();
   const { routes, loading, error, fetchTrip } = useTrip();
   const { results, loading: searching, error: searchError, search } = usePlaces();

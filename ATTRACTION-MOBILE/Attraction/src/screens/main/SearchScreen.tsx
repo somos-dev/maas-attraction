@@ -21,7 +21,7 @@ import { useTrip } from "../../hooks/useTrip";
 import { usePlaces, Place } from "../../hooks/usePlaces";
 import { useCreateSearchMutation } from "../../store/api/searchApi";
 import { useSelector } from "react-redux";
-import { RootState } from "../../store";
+import { RootState } from "../../store/store";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const HORIZONTAL_PADDING = 16;

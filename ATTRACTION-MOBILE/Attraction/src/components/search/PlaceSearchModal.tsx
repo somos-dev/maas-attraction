@@ -18,7 +18,7 @@ import {
   IconButton,
 } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { useCurrentLocation } from "../../hooks/useCurrentLocation"; // 👈 import hook
+import { useCurrentLocation } from "../../hooks/useCurrentLocation"; //  import hook
 
 export interface Place {
   name: string;

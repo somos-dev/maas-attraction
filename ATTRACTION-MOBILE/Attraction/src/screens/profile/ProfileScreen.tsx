@@ -18,7 +18,7 @@ import { useNavigation } from "@react-navigation/native";
 
 // componenti riutilizzabili
 import AppCard from "../../components/common/card/AppCard";
-import AppButton from "../../components/common/buttom/AppButton";
+import AppButton from "../../components/common/button/AppButton";
 import AppListItem from "../../components/common/list/AppListItem";
 
 export default function ProfileScreen() {

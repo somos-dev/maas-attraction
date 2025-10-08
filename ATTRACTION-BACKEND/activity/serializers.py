@@ -12,10 +12,16 @@ class FavoritePlaceSerializer(serializers.ModelSerializer):
         fields = ['id', 'address', 'type', 'latitude', 'longitude']  # id is read-only by default
 
 
+from rest_framework import serializers
+from .models import Booking
+
 class BookingSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(source='user.id', read_only=True)  # Expose the user ID
+
     class Meta:
         model = Booking
-        fields = '__all__'
+        fields = ['id', 'user_id', 'origin', 'destination', 'time', 'mode']
+
 
 from rest_framework import serializers
 from django.contrib.auth import get_user_model

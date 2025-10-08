@@ -47,28 +47,28 @@ class AuthenticatedMixin:
 # Search
 # ------------------------------
 
-class SearchListCreateView(AuthenticatedMixin, generics.ListCreateAPIView):
+import uuid
+
+class SearchListCreateView(generics.ListCreateAPIView):
     queryset = Search.objects.all()
     serializer_class = SearchSerializer
-    def list(self, request, *args, **kwargs):
-        searches = self.get_queryset()
-        serializer = self.get_serializer(searches, many=True)
-        return Response({
-            "success": True,
-            "message": "Searches retrieved successfully",
-            "data": serializer.data
-        }, status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            if request.user.is_authenticated:
+                serializer.save(user=request.user)
+            else:
+                # assign an anonymous session key for tracking
+                serializer.save(anonymous_session_key=str(uuid.uuid4()))
             return Response({
                 "success": True,
                 "message": "Search created successfully",
                 "data": serializer.data
             }, status=status.HTTP_201_CREATED)
         return Response({"success": False, "error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 
 # ------------------------------
@@ -150,7 +150,8 @@ class BookingListCreateView(AuthenticatedMixin, generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            # Automatically assign the logged-in user
+            serializer.save(user=request.user)
             return Response({
                 "success": True,
                 "message": "Booking created successfully",
@@ -158,22 +159,22 @@ class BookingListCreateView(AuthenticatedMixin, generics.ListCreateAPIView):
             }, status=status.HTTP_201_CREATED)
         return Response({"success": False, "error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
+
+
 # ------------------------------
 # Track User Activity
 # ------------------------------
 
 class TrackUserActivityView(AuthenticatedMixin, APIView):
     def get(self, request):
-        user_id = request.query_params.get("id")
-        if not user_id:
-            return Response({"success": False, "error": "Missing 'id' parameter"}, status=status.HTTP_400_BAD_REQUEST)
-
-        searches = Search.objects.filter(id=user_id).order_by("-time")
+        user = request.user  # Get user from JWT token
+        searches = Search.objects.filter(user=user).order_by("-requested_at")  # or "trip_date"
         if not searches.exists():
             return Response({"success": False, "error": "No search activity found."}, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = SearchSerializer(searches.first())
+        serializer = SearchSerializer(searches, many=True)
         return Response({"success": True, "data": serializer.data}, status=status.HTTP_200_OK)
+
 
 # ------------------------------
 # Feedback

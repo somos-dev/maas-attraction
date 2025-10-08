@@ -43,3 +43,12 @@ class FeedbackAdmin(admin.ModelAdmin):
     list_display = ('user_id', 'text', 'timestamp')
     search_fields = ('user_id', 'text')
     list_filter = ('timestamp',)
+
+@admin.register(Booking)
+class BookingAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user_display', 'origin', 'destination', 'time', 'mode')
+
+    def user_display(self, obj):
+        return obj.user.id if obj.user else 'N/A'
+    user_display.admin_order_field = 'user'  # allows sorting by user
+    user_display.short_description = 'User ID'

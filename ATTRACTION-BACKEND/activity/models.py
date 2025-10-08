@@ -42,13 +42,23 @@ class FavoritePlace(models.Model):
     def __str__(self):
         return f"{self.address} ({self.type})"
 
-
+from django.conf import settings
+from django.db import models
 
 class Booking(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='bookings'
+    )
     origin = models.CharField(max_length=255)
     destination = models.CharField(max_length=255)
     time = models.DateTimeField()
     mode = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"Booking by {self.user} from {self.origin} to {self.destination} at {self.time}"
+
 
 from django.contrib.auth import get_user_model
 from django.db import models
@@ -59,5 +69,4 @@ class Feedback(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     text = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
-
 

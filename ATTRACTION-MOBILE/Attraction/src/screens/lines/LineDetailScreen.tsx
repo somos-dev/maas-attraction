@@ -156,6 +156,10 @@ export default function LineDetailScreen({route, navigation}: Props) {
 
   const patterns = routeObj.patterns ?? [];
 
+  const tubeColor = routeObj?.color
+    ? `#${routeObj.color}`
+    : theme.colors.primary;
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {/* Header info */}
@@ -195,7 +199,7 @@ export default function LineDetailScreen({route, navigation}: Props) {
       </Card>
 
       {/* Patterns */}
-      <List.Section>
+      <List.Section style={{paddingLeft: 6, marginLeft: -12}}>
         <List.Subheader>Direzioni e fermate</List.Subheader>
         {patterns.length === 0 ? (
           <Text style={{paddingHorizontal: 16, color: '#666'}}>
@@ -208,35 +212,78 @@ export default function LineDetailScreen({route, navigation}: Props) {
                 title={p.name || `Direzione ${p.directionId ?? idx}`}
                 left={props => <List.Icon {...props} icon="arrow-right-bold" />}
                 style={styles.accordion}>
-                {p.stops?.map((s: any) => (
-                  <List.Item
-                    key={s.gtfsId}
-                    title={s.name}
-                    description={s.code ? `Codice: ${s.code}` : undefined}
-                    left={props => (
-                      <List.Icon
-                        {...props}
-                        icon={
-                          s.gtfsId === route.params.referenceStopId
-                            ? 'star-circle' // 👈 icona diversa
-                            : 'map-marker'
-                        }
-                        color={
-                          s.gtfsId === route.params.referenceStopId
-                            ? theme.colors.primary
-                            : undefined
-                        }
-                      />
-                    )}
-                    right={props =>
-                      s.gtfsId === route.params.referenceStopId ? (
-                        <Chip compact style={{alignSelf: 'center'}}>
-                          Più vicina
-                        </Chip>
-                      ) : null
-                    }
-                  />
-                ))}
+                {p.stops?.map((s: any, i: number) => {
+                  const isRef = s.gtfsId === route.params.referenceStopId;
+                  const isFirst = i === 0;
+                  const isLast = i === (p.stops?.length ?? 1) - 1;
+
+                  return (
+                    <View key={s.gtfsId} style={styles.stopRow}>
+                      {/* Colonna timeline */}
+                      <View style={styles.timelineCol}>
+                        {/* segmento sopra (sovrapposto di 1px per continuità) */}
+                        <View
+                          style={[
+                            styles.segment,
+                            !isFirst
+                              ? styles.segmentVisible
+                              : styles.segmentHidden,
+                            !isFirst && {backgroundColor: tubeColor},
+                          ]}
+                        />
+
+                        {/* pallino */}
+                        <View
+                          style={[
+                            styles.bullet,
+                            isRef ? styles.bulletActive : styles.bulletIdle,
+                            isRef
+                              ? {
+                                  borderColor: tubeColor,
+                                  backgroundColor: tubeColor,
+                                }
+                              : {
+                                  borderColor: theme.colors.outline,
+                                  backgroundColor: theme.colors.surface,
+                                },
+                          ]}
+                        />
+
+                        {/* segmento sotto (sovrapposto di 1px per continuità) */}
+                        <View
+                          style={[
+                            styles.segment,
+                            !isLast
+                              ? styles.segmentVisible
+                              : styles.segmentHidden,
+                            !isLast && {backgroundColor: tubeColor},
+                          ]}
+                        />
+                      </View>
+
+                      {/* Testo fermata */}
+                      <View style={styles.stopContent}>
+                        <View style={styles.stopHeader}>
+                          <Text
+                            style={[
+                              styles.stopName,
+                              isRef && {color: tubeColor, fontWeight: '800'},
+                            ]}>
+                            {s.name}
+                          </Text>
+                          {isRef && (
+                            <Chip compact style={styles.nearChip}>
+                              Più vicina
+                            </Chip>
+                          )}
+                        </View>
+                        {!!s.code && (
+                          <Text style={styles.stopCode}>Codice: {s.code}</Text>
+                        )}
+                      </View>
+                    </View>
+                  );
+                })}
               </List.Accordion>
               <Divider />
             </View>
@@ -267,4 +314,71 @@ const styles = StyleSheet.create({
   title: {fontWeight: '700', marginTop: 4},
   desc: {marginTop: 6, color: '#666'},
   accordion: {backgroundColor: 'transparent'},
+  stopRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    paddingVertical: 0,
+  },
+
+  timelineCol: {
+    width: 18, // più stretto = più a sinistra
+    alignItems: 'center',
+    paddingVertical: 0,
+  },
+
+  // Segmento verticale: spesso e continuo
+  segment: {
+    width: 4,
+    flexGrow: 1,
+    borderRadius: 2,
+  },
+  segmentVisible: {
+    backgroundColor: '#000', // verrà override nel JSX se usi tubeColor
+    marginTop: -1, // sovrapposizione per evitare micro-gaps
+    marginBottom: -1,
+  },
+  segmentHidden: {
+    backgroundColor: 'transparent',
+  },
+
+  // Pallino ingrandito
+  bullet: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 3,
+    marginVertical: 0,
+  },
+  bulletActive: {
+    borderColor: '#000', // override nel JSX con tubeColor
+    backgroundColor: '#000',
+  },
+  bulletIdle: {
+    borderColor: '#999',
+    backgroundColor: '#fff',
+  },
+
+  // Contenuto: meno margine sinistro
+  stopContent: {
+    flex: 1,
+    marginLeft: 6, // 👈 meno margine: pallini più a sinistra
+    paddingVertical: 10, // lo spacing verticale sta qui, non sulla riga
+  },
+
+  stopHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  stopName: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  stopNameActive: {
+    color: '#000', // override nel JSX con tubeColor
+    fontWeight: '800',
+  },
+  nearChip: {alignSelf: 'flex-start'},
+  stopCode: {marginTop: 2, fontSize: 12, color: '#666'},
 });

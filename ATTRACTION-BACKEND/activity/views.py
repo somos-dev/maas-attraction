@@ -208,311 +208,303 @@ class PlanTripView(APIView):
         if not serializer.is_valid():
             return Response({"success": False, "error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-        if serializer.is_valid():
-            data = serializer.validated_data
+        data = serializer.validated_data
+        mode_filter = data.get('mode')
+        if not mode_filter:
+            return Response({"error": "Mode is required and cannot be empty."}, status=status.HTTP_400_BAD_REQUEST)
+        mode_filter = mode_filter.strip().upper()
 
-            # Force 'mode' to be present and uppercase
-            mode_filter = data.get('mode')
-            if not mode_filter:
-                return Response({"error": "Mode is required and cannot be empty."}, status=status.HTTP_400_BAD_REQUEST)
-            mode_filter = mode_filter.strip().upper()
+        date_obj = data.get('date')
+        time_str = data.get('time', None)
+        req_date_obj = data.get('requested_date')
+        req_time_str = data.get('requested_time', None)
 
-            date_obj = data.get('date')
+        if not time_str or (isinstance(time_str, str) and time_str.lower() == 'timenow'):
+            time_str = datetime.now().strftime("%H:%M:%S")
 
-            # Updated time handling logic: accept "timenow" or specific HH:MM:SS or default to now
-            time_str = data.get('time', None)
+        if not req_time_str or (isinstance(req_time_str, str) and req_time_str.lower() == 'timenow'):
+            req_time_str = datetime.now().strftime("%H:%M:%S")
 
-            req_date_obj = data.get('requested_date')
+        try:
+            datetime.strptime(time_str, "%H:%M:%S")
+            datetime.strptime(req_time_str, "%H:%M:%S")
+        except ValueError:
+            return Response({"error": "Time must be in HH:MM:SS format."}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Updated time handling logic: accept "timenow" or specific HH:MM:SS or default to now
-            req_time_str = data.get('requested_time', None)
+        date_str = date_obj.strftime("%Y-%m-%d")
+        req_date_str = req_date_obj.strftime("%Y-%m-%d")
 
-            if not time_str or (isinstance(time_str, str) and time_str.lower() == 'timenow'):
-                time_str = datetime.now().strftime("%H:%M:%S")
+        # -------- Fetch stops ----------
+        stops_query = """
+        query {
+          stops {
+            id
+            name
+            lat
+            lon
+            code
+          }
+        }
+        """
+        headers = {"Content-Type": "application/json"}
 
-            try:
-                datetime.strptime(time_str, "%H:%M:%S")
-                datetime.strptime(req_time_str, "%H:%M:%S")
-            except ValueError:
-                return Response({"error": "Time must be in HH:MM:SS format."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            stops_response = requests.post(
+                "https://otp.somos.srl/otp/routers/default/index/graphql",
+                json={"query": stops_query},
+                headers=headers,
+                timeout=10
+            )
+            stops_response.raise_for_status()
+            stops_data = stops_response.json()
+        except requests.exceptions.RequestException as e:
+            return Response({"error": f"Failed to fetch stops: {str(e)}"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
-            date_str = date_obj.strftime("%Y-%m-%d")
-            req_date_str = req_date_obj.strftime("%Y-%m-%d")
+        if "errors" in stops_data:
+            return Response({"errors": stops_data["errors"]}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Fetch stops
-            stops_query = """
-            query {
-              stops {
-                id
-                name
-                lat
-                lon
-                code
-              }
-            }
-            """
-            headers = {"Content-Type": "application/json"}
+        stops = stops_data["data"]["stops"]
 
-            try:
-                stops_response = requests.post(
-                    "https://otp.somos.srl/otp/routers/default/index/graphql",
-                    json={"query": stops_query},
-                    headers=headers,
-                    timeout=10
-                )
-                stops_response.raise_for_status()
-                stops_data = stops_response.json()
-            except requests.exceptions.RequestException as e:
-                return Response({"error": f"Failed to fetch stops: {str(e)}"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        def find_closest_stop(lat, lon):
+            closest = None
+            min_dist = float('inf')
+            for stop in stops:
+                dist = haversine(lon, lat, stop['lon'], stop['lat'])
+                if dist < min_dist:
+                    min_dist = dist
+                    closest = stop
+            return closest
 
-            if "errors" in stops_data:
-                return Response({"errors": stops_data["errors"]}, status=status.HTTP_400_BAD_REQUEST)
+        from_stop = find_closest_stop(data['fromLat'], data['fromLon'])
+        to_stop = find_closest_stop(data['toLat'], data['toLon'])
 
-            stops = stops_data["data"]["stops"]
-
-            def find_closest_stop(lat, lon):
-                closest = None
-                min_dist = float('inf')
-                for stop in stops:
-                    dist = haversine(lon, lat, stop['lon'], stop['lat'])
-                    if dist < min_dist:
-                        min_dist = dist
-                        closest = stop
-                return closest
-
-            from_stop = find_closest_stop(data['fromLat'], data['fromLon'])
-            to_stop = find_closest_stop(data['toLat'], data['toLon'])
-
-            # Query OTP plan
-            plan_query = """
-            query PlanTrip(
-                $fromLat: Float!, $fromLon: Float!,
-                $toLat: Float!, $toLon: Float!,
-                $date: String!, $time: String!
-                ) {
-                plan(
-                    from: { lat: $fromLat, lon: $fromLon },
-                    to: { lat: $toLat, lon: $toLon },
-                    date: $date,
-                    time: $time
-                ) {
-                    itineraries {
+        # -------- OTP Plan Query ----------
+        plan_query = """
+        query PlanTrip(
+            $fromLat: Float!, $fromLon: Float!,
+            $toLat: Float!, $toLon: Float!,
+            $date: String!, $time: String!
+        ) {
+            plan(
+                from: { lat: $fromLat, lon: $fromLon },
+                to: { lat: $toLat, lon: $toLon },
+                date: $date,
+                time: $time
+            ) {
+                itineraries {
                     duration
-                    walkDistance               # metri (solo tratti WALK dell’itinerario)
+                    walkDistance
                     legs {
                         mode
                         startTime
                         endTime
-                        distance                 # <-- metri per ogni leg (WALK/TRANSIT/BICYCLE, ecc.)
+                        distance
                         from { name }
                         to { name }
-                        trip { routeShortName }
+                        trip {
+                            routeShortName
+                            tripHeadsign
+                            route {
+                                id
+                                shortName
+                                longName
+                                agency { id name }
+                            }
+                        }
                         legGeometry { points }
-                        steps {                  # opzionale: solo per WALK
-                        distance               # metri per step pedonale
-                        streetName
+                        steps {
+                            distance
+                            streetName
                         }
                     }
-                    }
                 }
-                }
-            """
-
-            variables = {
-                "fromLat": data['fromLat'],
-                "fromLon": data['fromLon'],
-                "toLat": data['toLat'],
-                "toLon": data['toLon'],
-                "date": date_str,
-                "time": time_str,
             }
+        }
+        """
 
-            try:
-                plan_response = requests.post(
-                    "https://otp.somos.srl/otp/routers/default/index/graphql",
-                    json={"query": plan_query, "variables": variables},
-                    headers=headers,
-                    timeout=10
-                )
-                plan_response.raise_for_status()
-                result = plan_response.json()
-            except requests.exceptions.RequestException as e:
-                return Response({"error": f"Failed to fetch plan: {str(e)}"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        variables = {
+            "fromLat": data['fromLat'],
+            "fromLon": data['fromLon'],
+            "toLat": data['toLat'],
+            "toLon": data['toLon'],
+            "date": date_str,
+            "time": time_str,
+        }
 
-            if "errors" in result:
-                return Response({"errors": result["errors"]}, status=status.HTTP_400_BAD_REQUEST)
-
-            itineraries = result["data"]["plan"].get("itineraries", [])
-
-            # Prepare options dict with empty lists
-            options = {
-                "walk": [],
-                "bus": [],
-                "bicycle": [],
-                "scooter": [],
-                "other": []
-            }
-
-            for idx, itinerary in enumerate(itineraries, start=1):
-                legs = itinerary.get("legs", []) or []
-                modes_in_itinerary = { (leg.get("mode") or "").upper() for leg in legs }
-
-                # Filtro per mode come già fai
-                if mode_filter != "ALL":
-                    if mode_filter == "WALK":
-                        if modes_in_itinerary != {"WALK"}:
-                            continue
-                    elif mode_filter == "BUS":
-                        if "BUS" not in modes_in_itinerary:
-                            continue
-                    elif mode_filter == "BICYCLE":
-                        if "BICYCLE" not in modes_in_itinerary:
-                            continue
-                    elif mode_filter == "SCOOTER":
-                        if "SCOOTER" not in modes_in_itinerary:
-                            continue
-                    else:
-                        if mode_filter not in modes_in_itinerary:
-                            continue
-
-                # >>> NOVITÀ: totali dall’output di OTP <<<
-                itinerary_total_m = int(round(sum((leg.get("distance") or 0) for leg in legs)))
-                walk_total_m = int(round(itinerary.get("walkDistance") or 0))
-
-                # ---- LEGS (dettaglio singolo tratto) ----
-                legs_out = []
-                for leg in legs:
-                    mode = (leg.get("mode") or "UNKNOWN").lower()
-                    start_ts = leg.get("startTime")
-                    end_ts = leg.get("endTime")
-                    from_name = leg.get("from", {}).get("name") or "Unknown stop"
-                    to_name = leg.get("to", {}).get("name") or "Unknown stop"
-                    geometry = (leg.get("legGeometry") or {}).get("points")
-                    leg_distance_m = int(round(leg.get("distance") or 0))
-
-                    if start_ts and end_ts:
-                        start_dt = datetime.fromtimestamp(start_ts / 1000)
-                        end_dt = datetime.fromtimestamp(end_ts / 1000)
-                        duration_s = int((end_ts - start_ts) / 1000)
-                        minutes = duration_s // 60
-                        seconds = duration_s % 60
-                        duration_str = f"{minutes}m {seconds}s"
-                        start_time_iso = start_dt.isoformat()
-                        end_time_iso = end_dt.isoformat()
-                    else:
-                        duration_s = 0
-                        duration_str = "N/A"
-                        start_time_iso = None
-                        end_time_iso = None
-
-                    leg_obj = {
-                        "type": mode,                 # walk, bus, bicycle, ...
-                        "from": from_name,
-                        "to": to_name,
-                        "duration": duration_str,
-                        "duration_s": duration_s,
-                        "start_time": start_time_iso,
-                        "end_time": end_time_iso,
-                        "geometry": geometry,
-                        "distance_m": leg_distance_m  # <-- distanza del leg calcolata da OTP
-                    }
-                    if mode == "bus":
-                        bus_route = (leg.get("trip") or {}).get("routeShortName")
-                        if bus_route:
-                            leg_obj["route"] = bus_route
-
-                    # opzionale: mantieni gli step pedonali con distanza
-                    if mode == "walk" and leg.get("steps"):
-                        leg_obj["walk_steps"] = [
-                            {
-                                "streetName": st.get("streetName"),
-                                "distance_m": int(round(st.get("distance") or 0))
-                            } for st in (leg.get("steps") or [])
-                        ]
-
-                    legs_out.append(leg_obj)
-
-                # ---- SEGMENTS (raggruppo contigui per mode: es. walk → bus → walk) ----
-                segments = []
-                for lg in legs_out:
-                    if not segments or segments[-1]["mode"] != lg["type"]:
-                        seg = {
-                            "mode": lg["type"],
-                            "from": lg["from"],
-                            "to": lg["to"],
-                            "distance_m": lg["distance_m"],
-                            "duration_s": lg["duration_s"],
-                            "legs_count": 1
-                        }
-                        # per BUS accumulo anche le linee coinvolte
-                        if lg["type"] == "bus":
-                            seg["routes"] = [lg.get("route")] if lg.get("route") else []
-                        segments.append(seg)
-                    else:
-                        # stesso mode del segmento precedente: aggrego
-                        segments[-1]["to"] = lg["to"]
-                        segments[-1]["distance_m"] += lg["distance_m"]
-                        segments[-1]["duration_s"] += lg["duration_s"]
-                        segments[-1]["legs_count"] += 1
-                        if lg["type"] == "bus" and lg.get("route"):
-                            routes = segments[-1].setdefault("routes", [])
-                            if lg["route"] not in routes:
-                                routes.append(lg["route"])
-
-                # ---- CLASSIFICAZIONE PRIMARIA (come già facevi) ----
-                primary_mode = "other"
-                if modes_in_itinerary == {"WALK"}:
-                    primary_mode = "walk"
-                elif "BUS" in modes_in_itinerary:
-                    primary_mode = "bus"
-                elif "BICYCLE" in modes_in_itinerary:
-                    primary_mode = "bicycle"
-                elif "SCOOTER" in modes_in_itinerary:
-                    primary_mode = "scooter"
-
-                # ---- OUTPUT OPZIONE ----
-                options[primary_mode].append({
-                    "option": idx,
-                    "total_distance_m": itinerary_total_m,   # somma di tutti i leg, by OTP
-                    "walk_distance_m": walk_total_m,         # solo pedonale (OTP)
-                    "legs": legs_out,                        # distanza per ogni leg
-                    "segments": segments                     # distanza aggregata per “cambio” mode contiguo
-                })
-
-            user = request.user if request.user.is_authenticated else None
-
-            if not request.session.session_key:
-                request.session.create()
-
-            anonymous_session_key = request.session.session_key if user is None else None
-
-            trip_datetime_naive = datetime.strptime(f"{date_obj.strftime('%Y-%m-%d')} {time_str}", "%Y-%m-%d %H:%M:%S")
-            trip_datetime = timezone.make_aware(trip_datetime_naive)
-            req_datetime_naive = datetime.strptime(f"{req_date_obj.strftime('%Y-%m-%d')} {req_time_str}", "%Y-%m-%d %H:%M:%S")
-            req_datetime = timezone.make_aware(req_datetime_naive)
-
-
-            Search.objects.create(
-                user=user,
-                anonymous_session_key=anonymous_session_key,
-                from_lat=data['fromLat'],
-                from_lon=data['fromLon'],
-                to_lat=data['toLat'],
-                to_lon=data['toLon'],
-                trip_date=trip_datetime,
-                requested_at=req_datetime,
-                modes=mode_filter
+        try:
+            plan_response = requests.post(
+                "https://otp.somos.srl/otp/routers/default/index/graphql",
+                json={"query": plan_query, "variables": variables},
+                headers=headers,
+                timeout=10
             )
+            plan_response.raise_for_status()
+            result = plan_response.json()
+        except requests.exceptions.RequestException as e:
+            return Response({"error": f"Failed to fetch plan: {str(e)}"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
-            response_data = {
-                "fromStationName": from_stop['name'] if from_stop else None,
-                "toStationName": to_stop['name'] if to_stop else None,
-                "options": options
-            }
+        if "errors" in result:
+            return Response({"errors": result["errors"]}, status=status.HTTP_400_BAD_REQUEST)
 
-            return Response(response_data, status=status.HTTP_200_OK)
+        itineraries = result["data"]["plan"].get("itineraries", [])
+        options = {"walk": [], "bus": [], "bicycle": [], "scooter": [], "other": []}
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        for idx, itinerary in enumerate(itineraries, start=1):
+            legs = itinerary.get("legs", []) or []
+            modes_in_itinerary = {(leg.get("mode") or "").upper() for leg in legs}
+
+            if mode_filter != "ALL":
+                if mode_filter == "WALK" and modes_in_itinerary != {"WALK"}:
+                    continue
+                elif mode_filter == "BUS" and "BUS" not in modes_in_itinerary:
+                    continue
+                elif mode_filter == "BICYCLE" and "BICYCLE" not in modes_in_itinerary:
+                    continue
+                elif mode_filter == "SCOOTER" and "SCOOTER" not in modes_in_itinerary:
+                    continue
+                elif mode_filter not in modes_in_itinerary:
+                    continue
+
+            itinerary_total_m = int(round(sum((leg.get("distance") or 0) for leg in legs)))
+            walk_total_m = int(round(itinerary.get("walkDistance") or 0))
+
+            legs_out = []
+            for leg in legs:
+                mode = (leg.get("mode") or "UNKNOWN").lower()
+                start_ts = leg.get("startTime")
+                end_ts = leg.get("endTime")
+                from_name = leg.get("from", {}).get("name") or "Unknown stop"
+                to_name = leg.get("to", {}).get("name") or "Unknown stop"
+                geometry = (leg.get("legGeometry") or {}).get("points")
+                leg_distance_m = int(round(leg.get("distance") or 0))
+
+                if start_ts and end_ts:
+                    start_dt = datetime.fromtimestamp(start_ts / 1000)
+                    end_dt = datetime.fromtimestamp(end_ts / 1000)
+                    duration_s = int((end_ts - start_ts) / 1000)
+                    duration_str = f"{duration_s // 60}m {duration_s % 60}s"
+                    start_time_iso = start_dt.isoformat()
+                    end_time_iso = end_dt.isoformat()
+                else:
+                    duration_s = 0
+                    duration_str = "N/A"
+                    start_time_iso = None
+                    end_time_iso = None
+
+                leg_obj = {
+                    "type": mode,
+                    "from": from_name,
+                    "to": to_name,
+                    "duration": duration_str,
+                    "duration_s": duration_s,
+                    "start_time": start_time_iso,
+                    "end_time": end_time_iso,
+                    "geometry": geometry,
+                    "distance_m": leg_distance_m,
+                }
+
+                if mode == "bus":
+                    bus_trip = leg.get("trip") or {}
+                    route_info = bus_trip.get("route") or {}
+                    agency_info = route_info.get("agency") or {}
+
+                    authority_id = agency_info.get("id")
+                    authority_name = agency_info.get("name")
+
+                    leg_obj.update({
+                        "route_short": bus_trip.get("routeShortName"),
+                        "route_long": route_info.get("longName"),
+                        "headsign": bus_trip.get("tripHeadsign"),
+                        "authority_id": authority_id,
+                        "authority_name": authority_name,
+                        "bus_name": (
+                            f"Bus {bus_trip.get('routeShortName') or ''} - {bus_trip.get('tripHeadsign') or ''}".strip()
+                            or authority_name
+                        ),
+                    })
+
+                if mode == "walk" and leg.get("steps"):
+                    leg_obj["walk_steps"] = [
+                        {"streetName": st.get("streetName"), "distance_m": int(round(st.get("distance") or 0))}
+                        for st in (leg.get("steps") or [])
+                    ]
+
+                legs_out.append(leg_obj)
+
+            # ---- Segments aggregation ----
+            segments = []
+            for lg in legs_out:
+                if not segments or segments[-1]["mode"] != lg["type"]:
+                    seg = {
+                        "mode": lg["type"],
+                        "from": lg["from"],
+                        "to": lg["to"],
+                        "distance_m": lg["distance_m"],
+                        "duration_s": lg["duration_s"],
+                        "legs_count": 1,
+                    }
+                    if lg["type"] == "bus":
+                        seg["routes"] = [lg.get("route_short")] if lg.get("route_short") else []
+                    segments.append(seg)
+                else:
+                    segments[-1]["to"] = lg["to"]
+                    segments[-1]["distance_m"] += lg["distance_m"]
+                    segments[-1]["duration_s"] += lg["duration_s"]
+                    segments[-1]["legs_count"] += 1
+                    if lg["type"] == "bus" and lg.get("route_short"):
+                        routes = segments[-1].setdefault("routes", [])
+                        if lg["route_short"] not in routes:
+                            routes.append(lg["route_short"])
+
+            # ---- Primary mode ----
+            primary_mode = "other"
+            if modes_in_itinerary == {"WALK"}:
+                primary_mode = "walk"
+            elif "BUS" in modes_in_itinerary:
+                primary_mode = "bus"
+            elif "BICYCLE" in modes_in_itinerary:
+                primary_mode = "bicycle"
+            elif "SCOOTER" in modes_in_itinerary:
+                primary_mode = "scooter"
+
+            options[primary_mode].append({
+                "option": idx,
+                "total_distance_m": itinerary_total_m,
+                "walk_distance_m": walk_total_m,
+                "legs": legs_out,
+                "segments": segments
+            })
+
+        # ---- Save search ----
+        user = request.user if request.user.is_authenticated else None
+        if not request.session.session_key:
+            request.session.create()
+        anonymous_session_key = request.session.session_key if user is None else None
+
+        trip_datetime_naive = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M:%S")
+        trip_datetime = timezone.make_aware(trip_datetime_naive)
+        req_datetime_naive = datetime.strptime(f"{req_date_str} {req_time_str}", "%Y-%m-%d %H:%M:%S")
+        req_datetime = timezone.make_aware(req_datetime_naive)
+
+        Search.objects.create(
+            user=user,
+            anonymous_session_key=anonymous_session_key,
+            from_lat=data['fromLat'],
+            from_lon=data['fromLon'],
+            to_lat=data['toLat'],
+            to_lon=data['toLon'],
+            trip_date=trip_datetime,
+            requested_at=req_datetime,
+            modes=mode_filter
+        )
+
+        response_data = {
+            "fromStationName": from_stop['name'] if from_stop else None,
+            "toStationName": to_stop['name'] if to_stop else None,
+            "options": options
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
 
 '''import requests
 from datetime import datetime

@@ -1,4 +1,4 @@
-// src/components/common/buttom/AppButton.tsx
+// src/components/common/button/AppButton.tsx
 import React from "react";
 import { StyleSheet, StyleProp, ViewStyle } from "react-native";
 import { Button } from "react-native-paper";

@@ -39,6 +39,10 @@ export type ServicesStackParamList = {
   Services: undefined;
 };
 
+export type StopsStackParamList = {
+  Stops: undefined;
+};
+
 export type ProfileStackParamList = {
   Profile: undefined;
   EditProfile: undefined;

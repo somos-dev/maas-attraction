@@ -5,6 +5,9 @@ require Pod::Executable.execute_command('node', ['-p',
     {paths: [process.argv[1]]},
   )', __dir__]).strip
 
+  require File.join(File.dirname(`node --print "require.resolve('react-native-permissions/package.json')"`), "scripts/setup")
+
+
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
 
@@ -13,6 +16,8 @@ if linkage != nil
   Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
   use_frameworks! :linkage => linkage.to_sym
 end
+
+use_frameworks! :linkage => :static
 
 target 'Attraction' do
   config = use_native_modules!
@@ -33,4 +38,9 @@ target 'Attraction' do
     )
     $MLRN.post_install(installer)
   end
+
+  setup_permissions([
+    'LocationWhenInUse',
+    # 'LocationAlways',   # aggiungilo SOLO se ti serve davvero l'Always
+  ])
 end

@@ -1,19 +1,26 @@
+// src/components/trip/RouteDetails.tsx
 import React from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { Divider, Chip, useTheme } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 interface RouteDetailsProps {
-  route: any; // dati del percorso Valhalla / backend
+  route: any; // dati del percorso normalizzati da normalizeRoutes()
 }
 
 /**
- * RouteDetails — componente modulare per mostrare i dettagli del viaggio
- * Mostra: tratte (legs/segments), modalità di trasporto, orari, durata e tappe.
+ * RouteDetails
+ * ------------------------------------------------------------------
+ * Mostra i dettagli di un itinerario (segmenti/legs).
+ * - Coerente con normalizeRoutes() (mobile)
+ * - Coerente con normalizeRouteOptionsToRoutes() (web)
+ * - Allineato alle API Django (plan-trip)
  */
 export default function RouteDetails({ route }: RouteDetailsProps) {
   const theme = useTheme();
-  const segments = route?.legs || route?.segments || [];
+
+  // Priorità: legs (dettagli), fallback su segments (aggregati)
+  const segments = route?.legs?.length ? route.legs : route?.segments || [];
 
   if (!segments.length) {
     return (
@@ -23,7 +30,11 @@ export default function RouteDetails({ route }: RouteDetailsProps) {
     );
   }
 
-  const MODE_CONFIG: Record<string, { icon: string; color: string; label: string }> = {
+  // Config modalità coerente con web e backend
+  const MODE_CONFIG: Record<
+    string,
+    { icon: string; color: string; label: string }
+  > = {
     walk: { icon: "walk", color: "#9E9E9E", label: "A piedi" },
     bus: { icon: "bus", color: "#2196F3", label: "Bus" },
     train: { icon: "train", color: "#FF6F00", label: "Treno" },
@@ -46,26 +57,21 @@ export default function RouteDetails({ route }: RouteDetailsProps) {
         const mode = (seg.type || seg.mode || "walk").toLowerCase();
         const config = MODE_CONFIG[mode] || MODE_CONFIG.walk;
 
-        const fromName =
-          seg.from?.name ||
-          seg.fromStationName ||
-          seg.from?.stop_name ||
-          seg.from?.street ||
-          "Punto di partenza";
-        const toName =
-          seg.to?.name ||
-          seg.toStationName ||
-          seg.to?.stop_name ||
-          seg.to?.street ||
-          "Punto di arrivo";
-
         const durationMinutes = seg.duration
           ? Math.round(Number(seg.duration) / 60)
+          : seg.duration_s
+          ? Math.round(Number(seg.duration_s) / 60)
           : null;
+
+        // step camminata
+        const walkSteps =
+          Array.isArray(seg.walk_steps) && seg.walk_steps.length > 0
+            ? seg.walk_steps
+            : [];
 
         return (
           <View key={i} style={styles.segmentCard}>
-            {/* Header della tratta */}
+            {/* Header tratta */}
             <View style={styles.segmentHeader}>
               <View
                 style={[styles.iconWrapper, { backgroundColor: config.color }]}
@@ -74,9 +80,6 @@ export default function RouteDetails({ route }: RouteDetailsProps) {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.modeTitle}>{config.label}</Text>
-                <Text style={styles.subInfo}>
-                  {fromName} → {toName}
-                </Text>
 
                 {seg.start_time && seg.end_time ? (
                   <Text style={styles.timeInfo}>
@@ -110,11 +113,11 @@ export default function RouteDetails({ route }: RouteDetailsProps) {
               </View>
             )}
 
-            {/* Step di camminata */}
-            {Array.isArray(seg.walk_steps) && seg.walk_steps.length > 0 && (
+            {/* Passi camminata */}
+            {walkSteps.length > 0 && (
               <View style={styles.stepsContainer}>
                 <Divider style={styles.stepsDivider} />
-                {seg.walk_steps.map((step: any, j: number) => (
+                {walkSteps.map((step: any, j: number) => (
                   <View key={j} style={styles.stepRow}>
                     <Icon
                       name="arrow-right"
@@ -122,7 +125,10 @@ export default function RouteDetails({ route }: RouteDetailsProps) {
                       color={theme.colors.onSurfaceVariant || "#666"}
                     />
                     <Text style={styles.stepText}>
-                      {step.streetName || "Strada sconosciuta"} — {step.distance_m} m
+                      {step.streetName || step.name || "Strada sconosciuta"}{" "}
+                      {step.distance_m
+                        ? `— ${Math.round(step.distance_m)} m`
+                        : ""}
                     </Text>
                   </View>
                 ))}
@@ -171,7 +177,6 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   modeTitle: { fontSize: 15, fontWeight: "700", color: "#333" },
-  subInfo: { fontSize: 13, color: "#666", marginTop: 2 },
   timeInfo: { fontSize: 12, color: "#777", marginTop: 4 },
   chipContainer: { marginTop: 8, flexDirection: "row" },
   routeChip: {

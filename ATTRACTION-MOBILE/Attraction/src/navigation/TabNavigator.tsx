@@ -1,14 +1,14 @@
-import React from "react";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { useTheme } from "react-native-paper";
-import { Image } from "react-native";
+import React from 'react';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import {useTheme} from 'react-native-paper';
+import {Image} from 'react-native';
 
-import MainStack from "../screens/main/MainStack";
-import LinesStack from "../screens/lines/LinesStack";
-import ServicesStack from "../screens/services/ServicesStack";
-import ProfileStack from "../screens/profile/ProfileStack";
+import MainStack from '../screens/main/MainStack';
+import LinesStack from '../screens/lines/LinesStack';
+import StopsStack from '../screens/stops/StopsStack';
+import ProfileStack from '../screens/profile/ProfileStack';
 
-import type { TabNavigatorParamList } from "./types";
+import type {TabNavigatorParamList} from './types';
 
 const Tab = createBottomTabNavigator<TabNavigatorParamList>();
 
@@ -18,14 +18,14 @@ export default function TabNavigator() {
   const renderIcon = (
     focused: boolean,
     activeSource: any,
-    inactiveSource: any
+    inactiveSource: any,
   ) => (
     <Image
       source={focused ? activeSource : inactiveSource}
       style={{
         width: 40,
         height: 40,
-        resizeMode: "cover",
+        resizeMode: 'cover',
       }}
     />
   );
@@ -44,20 +44,19 @@ export default function TabNavigator() {
           paddingTop: 8,
           paddingBottom: 8,
         },
-        tabBarLabelStyle: { fontSize: 13 },
-        tabBarIconStyle: { marginBottom: 1 }, // spazio tra icona e testo
-      }}
-    >
+        tabBarLabelStyle: {fontSize: 13},
+        tabBarIconStyle: {marginBottom: 1}, // spazio tra icona e testo
+      }}>
       <Tab.Screen
         name="HomeTab"
         component={MainStack}
         options={{
-          title: "Home",
-          tabBarIcon: ({ focused }) =>
+          title: 'Home',
+          tabBarIcon: ({focused}) =>
             renderIcon(
               focused,
-              require("../assets/images/icons/map.png"),
-              require("../assets/images/icons/map-grey.png")
+              require('../assets/images/icons/map.png'),
+              require('../assets/images/icons/map-grey.png'),
             ),
         }}
       />
@@ -65,25 +64,25 @@ export default function TabNavigator() {
         name="LinesTab"
         component={LinesStack}
         options={{
-          title: "Linee",
-          tabBarIcon: ({ focused }) =>
+          title: 'Linee',
+          tabBarIcon: ({focused}) =>
             renderIcon(
               focused,
-              require("../assets/images/icons/trip.png"),
-              require("../assets/images/icons/trip-grey.png")
+              require('../assets/images/icons/trip.png'),
+              require('../assets/images/icons/trip-grey.png'),
             ),
         }}
       />
       <Tab.Screen
-        name="ServicesTab"
-        component={ServicesStack}
+        name="StopsTab"
+        component={StopsStack}
         options={{
-          title: "Servizi",
-          tabBarIcon: ({ focused }) =>
+          title: 'Fermate',
+          tabBarIcon: ({focused}) =>
             renderIcon(
               focused,
-              require("../assets/images/icons/car.png"),
-              require("../assets/images/icons/car-grey.png")
+              require('../assets/images/icons/flag.png'),
+              require('../assets/images/icons/flag-grey.png'),
             ),
         }}
       />
@@ -91,16 +90,15 @@ export default function TabNavigator() {
         name="ProfileTab"
         component={ProfileStack}
         options={{
-          title: "Profilo",
-          tabBarIcon: ({ focused }) =>
+          title: 'Profilo',
+          tabBarIcon: ({focused}) =>
             renderIcon(
               focused,
-              require("../assets/images/icons/a.png"),
-              require("../assets/images/icons/a-grey.png")
+              require('../assets/images/icons/a.png'),
+              require('../assets/images/icons/a-grey.png'),
             ),
         }}
       />
     </Tab.Navigator>
   );
 }
-

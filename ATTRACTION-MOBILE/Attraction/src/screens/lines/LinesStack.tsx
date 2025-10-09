@@ -1,8 +1,9 @@
-import React from "react";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { useTheme } from "react-native-paper"; // 👈 aggiunto
-import LinesScreen from "./LinesScreen";
-import type { LinesStackParamList } from "../../navigation/types";
+import React from 'react';
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import {useTheme} from 'react-native-paper'; // 👈 aggiunto
+import LinesScreen from './LinesScreen';
+import type {LinesStackParamList} from '../../navigation/types';
+import LineDetailScreen from './LineDetailScreen';
 
 const Stack = createNativeStackNavigator<LinesStackParamList>();
 
@@ -13,14 +14,18 @@ export default function LinesStack() {
     <Stack.Navigator
       screenOptions={{
         headerShadowVisible: false,
-        headerStyle: { backgroundColor: theme.colors.surface }, // 👈 sfondo coerente
+        headerStyle: {backgroundColor: theme.colors.surface}, // 👈 sfondo coerente
         headerTintColor: theme.colors.onSurface, // 👈 testo coerente
-      }}
-    >
+      }}>
       <Stack.Screen
         name="Lines"
         component={LinesScreen}
-        options={{ title: "Linee" }}
+        options={{title: 'Linee'}}
+      />
+      <Stack.Screen
+        name="LineDetail"
+        component={LineDetailScreen}
+        options={{title: 'Dettagli linea'}}
       />
     </Stack.Navigator>
   );

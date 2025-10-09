@@ -1,4 +1,3 @@
-
 // AppNavigator (gestisce l'intero flusso: splash → onboarding → auth/tab)
 export type AppNavigatorParamList = {
   Splash: undefined;
@@ -11,11 +10,9 @@ export type AppNavigatorParamList = {
 export type AuthStackParamList = {
   Login: undefined;
   Register: undefined;
-  ForgotPassword?: { email?: string }; 
-  ResetPassword: { token: string } | undefined; // token dal link email
+  ForgotPassword?: {email?: string};
+  ResetPassword: {token: string} | undefined; // token dal link email
 };
-
-
 
 // TabNavigator (Tab principale: Home, Linee, Servizi, Profilo)
 export type TabNavigatorParamList = {
@@ -27,12 +24,23 @@ export type TabNavigatorParamList = {
 
 export type LinesStackParamList = {
   Lines: undefined;
- 
+  LineDetail: {
+    routeId: string;
+    ref?: string;
+    name?: string;
+    operator?: string;
+    mode?: string;
+    referenceStopId?: string;
+    referenceStopName?: string;
+  };
 };
 
 export type ServicesStackParamList = {
   Services: undefined;
+};
 
+export type StopsStackParamList = {
+  Stops: undefined;
 };
 
 export type ProfileStackParamList = {
@@ -41,20 +49,17 @@ export type ProfileStackParamList = {
   TransportPreferences: undefined;
 };
 
-
-
 // MainStack (schermate principali dopo login o accesso ospite)
 export type MainStackParamList = {
   Home: undefined;
   Search: undefined;
-  Results: { searchId: number } | undefined; // id della ricerca salvata
-  TripDetails: { tripId: string }; // id del viaggio selezionato
-
+  Results: {searchId: number} | undefined; // id della ricerca salvata
+  TripDetails: {tripId: string}; // id del viaggio selezionato
 };
 
 // DrawerNavigator (menu laterale)
 export type DrawerParamList = {
-  TabsRoot: undefined;  // nasconde le Tab nel drawer
+  TabsRoot: undefined; // nasconde le Tab nel drawer
   Settings: undefined;
-  Feedback: undefined;  
+  Feedback: undefined;
 };

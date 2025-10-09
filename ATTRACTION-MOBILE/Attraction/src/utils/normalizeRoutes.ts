@@ -44,8 +44,8 @@ export function normalizeRoutes(response: any, request?: any) {
     const modeRoutes = options[mode];
     if (Array.isArray(modeRoutes)) {
       modeRoutes.forEach((opt: any, index: number) => {
-        // ✅ usa legs invece di steps
-        const decodedLegs = (opt.legs || []).map((leg: any, legIndex: number) => {
+        //  usa legs invece di steps
+        const decodedLegs = (opt.legs || []).map((leg: any) => {
           const decodedGeometry =
             typeof leg.geometry === "string"
               ? decodeRoutePolyline(leg.geometry)
@@ -65,6 +65,19 @@ export function normalizeRoutes(response: any, request?: any) {
         // distanza totale in km
         const totalDistanceKm = (opt.total_distance_m || 0) / 1000;
 
+        //  Aggiunta importante: fallback dei nomi nei segments
+        const normalizedSegments = (opt.segments || []).map((seg: any) => ({
+          ...seg,
+          from:
+            seg.from ||
+            response.fromStationName ||
+            "Punto di partenza",
+          to:
+            seg.to ||
+            response.toStationName ||
+            "Punto di arrivo",
+        }));
+
         routes.push({
           id: `${mode}-${opt.option ?? index}`,
           fromStationName: response.fromStationName,
@@ -72,8 +85,8 @@ export function normalizeRoutes(response: any, request?: any) {
           mode,
           duration: totalDuration,
           distance: Math.round(totalDistanceKm * 10) / 10,
-          legs: decodedLegs,            // 👈 per MapView
-          segments: opt.segments || [], // 👈 info aggregate
+          legs: decodedLegs,              //  usato da MapView
+          segments: normalizedSegments,   //  con fallback da aggiungere
           fromLat: request?.fromLat,
           fromLon: request?.fromLon,
           toLat: request?.toLat,
@@ -85,3 +98,4 @@ export function normalizeRoutes(response: any, request?: any) {
 
   return routes;
 }
+

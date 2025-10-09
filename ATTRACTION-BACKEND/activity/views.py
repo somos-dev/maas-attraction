@@ -68,9 +68,6 @@ class SearchListCreateView(generics.ListCreateAPIView):
             }, status=status.HTTP_201_CREATED)
         return Response({"success": False, "error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-
-
-
 # ------------------------------
 # Favorite Places
 # ------------------------------

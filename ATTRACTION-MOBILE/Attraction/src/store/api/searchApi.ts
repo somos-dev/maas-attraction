@@ -7,29 +7,37 @@ export const searchApi = createApi({
   baseQuery: baseQueryWithReauth,
   tagTypes: ["Search"],
   endpoints: (builder) => ({
-    // GET /search/
+    // GET /search/ → restituisce un array diretto
     getSearches: builder.query<Search[], void>({
       query: () => "search/",
-      // 👇 il backend risponde con { success, message, data: [...] }
-      transformResponse: (response: { data: Search[] }) => response.data,
+      transformResponse: (response: any) => {
+        console.log(" Risposta backend getSearches:", response);
+        // Il backend restituisce un array, non un oggetto con "data"
+        return Array.isArray(response) ? response : [];
+      },
       providesTags: ["Search"],
     }),
 
-    // POST /search/
+    // 🔹 POST /search/
     createSearch: builder.mutation<Search, SearchRequest>({
       query: (body) => ({
         url: "search/",
         method: "POST",
         body,
       }),
-      // 👇 anche qui il backend wrappa la risposta
-      transformResponse: (response: { data: Search }) => response.data,
+      transformResponse: (response: any) => {
+        console.log("✅ Risposta backend createSearch:", response);
+        // Anche qui, restituisce direttamente un oggetto Search
+        return response;
+      },
       invalidatesTags: ["Search"],
     }),
   }),
 });
 
 export const { useGetSearchesQuery, useCreateSearchMutation } = searchApi;
+
+
 
 
 

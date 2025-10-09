@@ -2,14 +2,15 @@
 import React, { useMemo, useRef } from "react";
 import { View, StyleSheet, Dimensions } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import BottomSheet from "@gorhom/bottom-sheet";
-import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import MapView from "../../components/maps/MapView";
 import SearchBottomSheet from "../../components/search/SearchBottomSheet";
+import { useTheme } from "react-native-paper";
 
 const { height } = Dimensions.get("window");
 
 export default function HomeScreen({ navigation }: any) {
+  const theme = useTheme(); 
   const sheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => [height * 0.25, height * 0.5, height * 0.75], []);
 
@@ -25,7 +26,16 @@ export default function HomeScreen({ navigation }: any) {
         ref={sheetRef}
         index={0}
         snapPoints={snapPoints}
-        backgroundStyle={styles.bottomSheetBackground} //  sfondo bianco visibile
+        // ✅ background dinamico in base al tema
+        backgroundStyle={{
+          backgroundColor: theme.dark
+            ? theme.colors.surface // Dark mode: scuro
+            : theme.colors.background, // Light mode: chiaro
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+          shadowColor: theme.dark ? "transparent" : "#000",
+          elevation: theme.dark ? 0 : 5,
+        }}
       >
         <BottomSheetScrollView contentContainerStyle={styles.bottomSheetContent}>
           <SearchBottomSheet navigation={navigation} />
@@ -40,23 +50,7 @@ const styles = StyleSheet.create({
     flex: 1,
     zIndex: 0,
   },
-  bottomSheetBackground: {
-    backgroundColor: "white",
-    borderRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
   bottomSheetContent: {
     padding: 16,
   },
 });
-
-
-
-
-
-
-

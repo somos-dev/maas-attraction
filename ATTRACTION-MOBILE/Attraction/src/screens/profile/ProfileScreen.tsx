@@ -20,6 +20,7 @@ import { useNavigation } from "@react-navigation/native";
 import AppCard from "../../components/common/card/AppCard";
 import AppButton from "../../components/common/button/AppButton";
 import AppListItem from "../../components/common/list/AppListItem";
+import RestrictedAccess from "../../components/common/RestrictedAccess";
 
 export default function ProfileScreen() {
   const theme = useTheme();
@@ -27,7 +28,9 @@ export default function ProfileScreen() {
   const navigation = useNavigation<any>();
   const user = useSelector((state: RootState) => state.user);
   const { access, isAnonymous } = useSelector((state: RootState) => state.auth);
-
+  if (isAnonymous) {
+    return <RestrictedAccess />;
+      }
   const { data, isSuccess, isFetching } = useGetProfileQuery(undefined, {
     skip: !access || isAnonymous,
   });

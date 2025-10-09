@@ -11,7 +11,14 @@ interface RecentSearchesProps {
 export default function RecentSearches({ onSelect, reverseGeocode }: RecentSearchesProps) {
   const theme = useTheme();
   const { data: allSearches = [], isLoading } = useGetSearchesQuery();
-  const recentSearches = [...allSearches].slice(-5).reverse();
+
+  // 🔹 Filtra solo ricerche valide (coordinate reali)
+  const validSearches = allSearches.filter(
+    (s) => s.from_lat !== 0 && s.to_lat !== 0
+  );
+
+  // 🔹 Mostra le ultime 6
+  const recentSearches = [...validSearches].slice(-6).reverse();
 
   const [resolvedNames, setResolvedNames] = useState<
     Record<number, { from: string; to: string }>
@@ -61,13 +68,20 @@ export default function RecentSearches({ onSelect, reverseGeocode }: RecentSearc
           onPress={() => onSelect(item)}
           activeOpacity={0.7}
         >
-          <Text style={styles.fromText} numberOfLines={1}>
+          <Text style={styles.fromText}>
             ↑ {resolvedNames[item.id]?.from || "Caricamento..."}
           </Text>
-          <Text style={styles.toText} numberOfLines={1}>
+          <Text style={styles.toText}>
             ↓ {resolvedNames[item.id]?.to || "Caricamento..."}
           </Text>
-          <Text style={styles.dateText}>{item.trip_date}</Text>
+          <Text style={styles.dateText}>
+            {new Date(item.trip_date).toLocaleString("it-IT", {
+              day: "2-digit",
+              month: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </Text>
         </TouchableOpacity>
       ))}
     </View>
@@ -139,3 +153,4 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
   },
 });
+

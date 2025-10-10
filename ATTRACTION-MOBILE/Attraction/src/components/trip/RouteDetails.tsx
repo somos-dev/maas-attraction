@@ -11,7 +11,6 @@ interface RouteDetailsProps {
 export default function RouteDetails({ route, busInfo }: RouteDetailsProps) {
   const theme = useTheme();
 
-  // Priorità: legs (dettagli), fallback su segments (aggregati)
   const segments = route?.legs?.length ? route.legs : route?.segments || [];
 
   if (!segments.length) {
@@ -22,9 +21,7 @@ export default function RouteDetails({ route, busInfo }: RouteDetailsProps) {
           { backgroundColor: theme.colors.surface },
         ]}
       >
-        <Text
-          style={[styles.emptyText, { color: theme.colors.onSurface}]}
-        >
+        <Text style={[styles.emptyText, { color: theme.colors.onSurface }]}>
           Nessuna istruzione disponibile.
         </Text>
       </View>
@@ -64,6 +61,11 @@ export default function RouteDetails({ route, busInfo }: RouteDetailsProps) {
           ? Math.round(Number(seg.duration_s) / 60)
           : null;
 
+        const distanceKm =
+          seg.distance_m != null
+            ? (Number(seg.distance_m) / 1000).toFixed(2)
+            : null;
+
         const walkSteps =
           Array.isArray(seg.walk_steps) && seg.walk_steps.length > 0
             ? seg.walk_steps
@@ -76,7 +78,7 @@ export default function RouteDetails({ route, busInfo }: RouteDetailsProps) {
               styles.segmentCard,
               {
                 backgroundColor: theme.colors.backgroundCard,
-                borderColor: theme.colors.outline,
+                borderColor: "transparent",
                 shadowColor: theme.dark ? "transparent" : "#000",
               },
             ]}
@@ -123,6 +125,18 @@ export default function RouteDetails({ route, busInfo }: RouteDetailsProps) {
                     ⏱ {durationMinutes} min
                   </Text>
                 ) : null}
+
+                {/* ✅ nuova riga: distanza per tratta */}
+                {distanceKm && (
+                  <Text
+                    style={[
+                      styles.distanceInfo,
+                      { color: theme.colors.onSurfaceVariant },
+                    ]}
+                  >
+                     Distanza: {distanceKm} km
+                  </Text>
+                )}
               </View>
             </View>
 
@@ -134,7 +148,10 @@ export default function RouteDetails({ route, busInfo }: RouteDetailsProps) {
                     icon="bus"
                     style={[
                       styles.routeChip,
-                      { borderColor: config.color, backgroundColor: theme.colors.surface },
+                      {
+                        borderColor: config.color,
+                        backgroundColor: theme.colors.surface,
+                      },
                     ]}
                     textStyle={{
                       color: config.color,
@@ -150,7 +167,10 @@ export default function RouteDetails({ route, busInfo }: RouteDetailsProps) {
                     icon="bus"
                     style={[
                       styles.routeChip,
-                      { borderColor: config.color, backgroundColor: theme.colors.surface },
+                      {
+                        borderColor: config.color,
+                        backgroundColor: theme.colors.surface,
+                      },
                     ]}
                     textStyle={{
                       color: config.color,
@@ -204,7 +224,7 @@ export default function RouteDetails({ route, busInfo }: RouteDetailsProps) {
                     <Text
                       style={[
                         styles.stepText,
-                        { color: theme.colors.onSurface},
+                        { color: theme.colors.onSurface },
                       ]}
                     >
                       {step.streetName || step.name || "Strada sconosciuta"}{" "}
@@ -256,6 +276,7 @@ const styles = StyleSheet.create({
   },
   modeTitle: { fontSize: 15, fontWeight: "700" },
   timeInfo: { fontSize: 12, marginTop: 4 },
+  distanceInfo: { fontSize: 12, marginTop: 2, fontStyle: "italic" }, // ✅ coerente graficamente
   chipContainer: { marginTop: 8, flexDirection: "row" },
   routeChip: {
     borderWidth: 1.5,
@@ -270,5 +291,6 @@ const styles = StyleSheet.create({
   emptyContainer: { padding: 20, alignItems: "center" },
   emptyText: { fontStyle: "italic", fontSize: 14 },
 });
+
 
 

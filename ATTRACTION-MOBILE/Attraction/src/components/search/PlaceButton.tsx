@@ -35,7 +35,7 @@ export default function PlaceButton({
       <View style={styles.iconContainer}>
         <Icon 
           name={icon} 
-          size={24} 
+          size={22} // 🔽 leggermente ridotto per mobile
           color={theme.colors.primary} 
         />
       </View>
@@ -70,7 +70,7 @@ export default function PlaceButton({
       <View style={styles.chevronContainer}>
         <Icon 
           name="chevron-right" 
-          size={24} 
+          size={22} // 🔽 leggermente più piccolo
           color={theme.colors.onSurfaceVariant || "#999"} 
         />
       </View>
@@ -82,48 +82,48 @@ const styles = StyleSheet.create({
   button: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
+    marginVertical: 5,           // 🔽 meno spazio tra i due campi
+    paddingVertical: 10,         // 🔽 meno alto
+    paddingHorizontal: 10,
     borderRadius: 8,
     borderWidth: 1,
-    minHeight: 60,
-    elevation: 1, // ombra su Android
-    shadowColor: "#000", // ombra su iOS
+    minHeight: 52,               // 🔽 da 60 → 52
+    elevation: 1,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 2,
   },
   iconContainer: {
-    width: 40,
-    height: 40,
+    width: 32,                   // 🔽 da 40 → 32
+    height: 32,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
+    marginRight: 10,             // 🔽 da 12 → 10
   },
   textContainer: {
     flex: 1,
     justifyContent: "center",
-    marginRight: 8,
+    marginRight: 6,              // 🔽 da 8 → 6
   },
   valueText: {
-    fontSize: 16,
+    fontSize: 15,                // 🔽 da 16 → 15
     fontWeight: "500",
-    lineHeight: 22,
+    lineHeight: 21,
   },
   placeholderText: {
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 15,
+    lineHeight: 21,
   },
   addressText: {
-    fontSize: 13,
+    fontSize: 12.5,
     lineHeight: 18,
-    marginTop: 4,
+    marginTop: 3,
     opacity: 0.7,
   },
   chevronContainer: {
-    width: 24,
-    height: 24,
+    width: 22,
+    height: 22,
     justifyContent: "center",
     alignItems: "center",
   },

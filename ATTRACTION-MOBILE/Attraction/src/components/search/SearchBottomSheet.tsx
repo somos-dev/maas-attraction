@@ -1,4 +1,3 @@
-// src/components/search/SearchBottomSheet.tsx
 import React, { useState } from "react";
 import { View, StyleSheet } from "react-native";
 import {
@@ -46,7 +45,6 @@ export default function SearchBottomSheet({ navigation }: Props) {
 
   const handleSearch = async () => {
     if (!from || !to) return;
-
     const params = {
       fromLat: from.lat,
       fromLon: from.lon,
@@ -60,7 +58,6 @@ export default function SearchBottomSheet({ navigation }: Props) {
       mode: "all" as const,
     };
 
-    console.log("fetchTrip params:", params);
     const foundRoutes = await fetchTrip(params);
     navigation.navigate("Results", { routes: foundRoutes });
   };
@@ -72,41 +69,25 @@ export default function SearchBottomSheet({ navigation }: Props) {
   };
 
   const handleSelectPlace = (place: Place) => {
-    if (modalType === "from") {
-      setFrom(place);
-    } else {
-      setTo(place);
-    }
+    if (modalType === "from") setFrom(place);
+    else setTo(place);
     setModalVisible(false);
   };
 
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: theme.colors.surface },
-      ]}
-    >
-      <Text
-        style={[
-          styles.title,
-          { color: theme.colors.onSurface },
-        ]}
-      >
+    <View style={[styles.container, { backgroundColor: theme.colors.surface }]}>
+      <Text style={[styles.title, { color: theme.colors.onSurface }]}>
         Trova il tuo percorso
       </Text>
 
-      {/* Campo Partenza */}
       <PlaceButton
         label="Partenza"
         value={from?.name}
         address={from?.address}
         icon="arrow-up-circle-outline"
         onPress={() => openModal("from")}
-        iconColor={theme.colors.onSurface} // ✅ colore dinamico
       />
 
-      {/* Scambio */}
       <SwapButton
         onPress={() => {
           const temp = from;
@@ -114,43 +95,34 @@ export default function SearchBottomSheet({ navigation }: Props) {
           setTo(temp);
         }}
         disabled={!from && !to}
-        iconColor={theme.colors.onSurface} // ✅ colore dinamico
+        iconColor={theme.colors.onSurface}
       />
 
-      {/* Campo Destinazione */}
       <PlaceButton
         label="Destinazione"
         value={to?.name}
         address={to?.address}
         icon="arrow-down-circle-outline"
         onPress={() => openModal("to")}
-        iconColor={theme.colors.onSurface} // ✅ colore dinamico
       />
 
-      {/* Andata/Ritorno */}
       <View style={styles.checkboxRow}>
         <Checkbox
           status={roundTrip ? "checked" : "unchecked"}
           onPress={() => setRoundTrip(!roundTrip)}
-          color={theme.colors.primary} // ✅ visibile su dark e light
+          color={theme.colors.primary}
           uncheckedColor={theme.colors.onSurfaceVariant}
         />
-        <Text
-          style={[
-            styles.checkboxLabel,
-            { color: theme.colors.onSurface },
-          ]}
-        >
+        <Text style={[styles.checkboxLabel, { color: theme.colors.onSurface }]}>
           Andata/Ritorno
         </Text>
       </View>
 
-      {/* Data/Ora */}
       <DateTimeSelector
         date={dateTime}
         onSelectDate={() => setShowPicker("date")}
         onSelectTime={() => setShowPicker("time")}
-        textColor={theme.colors.onSurface} // ✅ miglior contrasto
+        textColor={theme.colors.onSurface}
       />
 
       {showPicker && (
@@ -165,7 +137,6 @@ export default function SearchBottomSheet({ navigation }: Props) {
         />
       )}
 
-      {/* Bottone ricerca */}
       <Button
         mode="contained"
         style={styles.cta}
@@ -176,12 +147,10 @@ export default function SearchBottomSheet({ navigation }: Props) {
         {loading ? "Ricerca in corso..." : "Cerca Soluzioni"}
       </Button>
 
-      {/* Snackbar errori */}
       <Snackbar visible={!!error} onDismiss={() => {}}>
         Errore durante la ricerca. Riprova.
       </Snackbar>
 
-      {/* Modal ricerca luoghi */}
       <PlaceSearchModal
         visible={modalVisible}
         type={modalType}
@@ -203,30 +172,33 @@ export default function SearchBottomSheet({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingHorizontal: 14,  // 🔽 meno spazio laterale
+    paddingTop: 6,          // 🔽 ridotto
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    paddingBottom: 30,
+    paddingBottom: 24,      // 🔽 più compatto
     borderBottomLeftRadius: 16,
     borderBottomRightRadius: 16,
   },
   title: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 12,
+    fontSize: 17,
+    fontWeight: "700",
+    marginBottom: 10,
+    textAlign: "center",
   },
   checkboxRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: 8,
+    marginVertical: 6,
   },
   checkboxLabel: {
-    fontSize: 16,
+    fontSize: 14,
+    marginLeft: 4,
   },
   cta: {
-    marginTop: 16,
+    marginTop: 12,
     borderRadius: 8,
-    paddingVertical: 8,
+    paddingVertical: 6,     // 🔽 pulsante più snello
   },
 });
+

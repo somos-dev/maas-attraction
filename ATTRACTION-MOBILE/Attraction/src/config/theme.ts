@@ -7,7 +7,7 @@ export const lightTheme = {
     ...DefaultLightTheme.colors,
     primary: "#50b948",
     secondary: "#45c3d6",
-    background: "#F5F9F6",
+    background: "#ffffffff",
     surface: "#FFFFFF",
     text: "#333333",
     error: "#D32F2F",

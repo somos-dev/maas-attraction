@@ -44,7 +44,7 @@ export default function FeedbackScreen() {
     }
   };
 
-  //  Se l'utente è anonimo o non loggato, mostriamo RestrictedAccess
+  // 👇 Se l'utente è anonimo o non loggato, mostriamo RestrictedAccess
   if (auth.isAnonymous || !auth.access) {
     return (
       <RestrictedAccess message="Solo gli utenti registrati possono inviare un feedback." />

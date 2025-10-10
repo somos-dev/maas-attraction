@@ -9,15 +9,13 @@ interface RecentSearchesProps {
 }
 
 export default function RecentSearches({ onSelect, reverseGeocode }: RecentSearchesProps) {
-  const theme = useTheme();
+  const theme = useTheme(); // ✅ accedi ai colori del tema
   const { data: allSearches = [], isLoading } = useGetSearchesQuery();
 
-  // 🔹 Filtra solo ricerche valide (coordinate reali)
   const validSearches = allSearches.filter(
     (s) => s.from_lat !== 0 && s.to_lat !== 0
   );
 
-  // 🔹 Mostra le ultime 6
   const recentSearches = [...validSearches].slice(-6).reverse();
 
   const [resolvedNames, setResolvedNames] = useState<
@@ -45,7 +43,9 @@ export default function RecentSearches({ onSelect, reverseGeocode }: RecentSearc
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Caricamento...</Text>
+        <Text style={[styles.loadingText, { color: theme.colors.onSurfaceVariant }]}>
+          Caricamento...
+        </Text>
       </View>
     );
   }
@@ -53,28 +53,37 @@ export default function RecentSearches({ onSelect, reverseGeocode }: RecentSearc
   if (recentSearches.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>Nessuna ricerca salvata</Text>
+        <Text style={[styles.emptyText, { color: theme.colors.onSurfaceVariant }]}>
+          Nessuna ricerca salvata
+        </Text>
       </View>
     );
   }
 
   return (
     <View style={styles.recentSection}>
-      <Text style={styles.recentTitle}>Tratte recenti</Text>
+      {/* ✅ Colore dinamico del tema per il titolo */}
+      <Text style={[styles.recentTitle, { color: theme.colors.onSurface }]}>
+        Tratte recenti
+      </Text>
+
       {recentSearches.map((item) => (
         <TouchableOpacity
           key={item.id}
-          style={styles.recentItem}
+          style={[
+            styles.recentItem,
+            { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline },
+          ]}
           onPress={() => onSelect(item)}
           activeOpacity={0.7}
         >
-          <Text style={styles.fromText}>
+          <Text style={[styles.fromText, { color: theme.colors.primary }]}>
             ↑ {resolvedNames[item.id]?.from || "Caricamento..."}
           </Text>
-          <Text style={styles.toText}>
+          <Text style={[styles.toText, { color: theme.colors.error }]}>
             ↓ {resolvedNames[item.id]?.to || "Caricamento..."}
           </Text>
-          <Text style={styles.dateText}>
+          <Text style={[styles.dateText, { color: theme.colors.onSurfaceVariant }]}>
             {new Date(item.trip_date).toLocaleString("it-IT", {
               day: "2-digit",
               month: "2-digit",
@@ -100,11 +109,9 @@ const styles = StyleSheet.create({
   },
   recentItem: {
     padding: 14,
-    backgroundColor: "#f9f9f9",
     borderRadius: 10,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#e8e8e8",
     width: "100%",
     ...Platform.select({
       ios: {
@@ -120,19 +127,16 @@ const styles = StyleSheet.create({
   },
   fromText: {
     fontWeight: "600",
-    color: "#2e7d32",
     marginBottom: 4,
     fontSize: 15,
   },
   toText: {
     fontWeight: "600",
-    color: "#c62828",
     marginBottom: 6,
     fontSize: 15,
   },
   dateText: {
     fontSize: 13,
-    color: "#666",
     marginTop: 2,
   },
   loadingContainer: {
@@ -140,7 +144,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   loadingText: {
-    color: "#666",
     fontSize: 15,
   },
   emptyContainer: {
@@ -148,9 +151,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   emptyText: {
-    color: "#999",
     fontSize: 15,
     fontStyle: "italic",
   },
 });
-

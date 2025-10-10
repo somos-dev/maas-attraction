@@ -29,7 +29,7 @@ export default function HomeScreen({ navigation }: any) {
         // ✅ background dinamico in base al tema
         backgroundStyle={{
           backgroundColor: theme.dark
-            ? theme.colors.surface // Dark mode: scuro
+            ? theme.colors.background // Dark mode: scuro
             : theme.colors.background, // Light mode: chiaro
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,

@@ -107,7 +107,7 @@ const RouteItem = memo(({ item, onSelect, selected, onDetails }: any) => {
       <Surface
         style={[
           styles.card,
-          { backgroundColor: theme.colors.surface },
+          { backgroundColor: theme.colors.backgroundCard },
           selected && {
             borderColor: theme.colors.primary,
             borderWidth: 2,

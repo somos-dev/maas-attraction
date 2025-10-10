@@ -1,6 +1,6 @@
 import React from "react";
 import { View, TouchableOpacity, StyleSheet } from "react-native";
-import { Text } from "react-native-paper";
+import { Text, useTheme } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 interface Props {
@@ -10,15 +10,30 @@ interface Props {
 }
 
 export default function DateTimeSelector({ date, onSelectDate, onSelectTime }: Props) {
+  const theme = useTheme(); // ✅ accedi ai colori del tema
+
   return (
     <View style={styles.row}>
+      {/* Calendario */}
       <TouchableOpacity style={styles.box} onPress={onSelectDate}>
-        <Icon name="calendar" size={20} />
-        <Text style={styles.text}>{date.toLocaleDateString("it-IT")}</Text>
+        <Icon
+          name="calendar"
+          size={20}
+          color={theme.colors.onSurface} // ✅ colore adattivo chiaro/scuro
+        />
+        <Text style={[styles.text, { color: theme.colors.onSurface }]}>
+          {date.toLocaleDateString("it-IT")}
+        </Text>
       </TouchableOpacity>
+
+      {/* Orologio */}
       <TouchableOpacity style={styles.box} onPress={onSelectTime}>
-        <Icon name="clock-outline" size={20} />
-        <Text style={styles.text}>
+        <Icon
+          name="clock-outline"
+          size={20}
+          color={theme.colors.onSurface} // ✅ colore adattivo chiaro/scuro
+        />
+        <Text style={[styles.text, { color: theme.colors.onSurface }]}>
           {date.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
         </Text>
       </TouchableOpacity>

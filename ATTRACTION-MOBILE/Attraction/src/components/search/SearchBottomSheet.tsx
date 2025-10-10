@@ -1,7 +1,13 @@
 // src/components/search/SearchBottomSheet.tsx
 import React, { useState } from "react";
 import { View, StyleSheet } from "react-native";
-import { Button, Checkbox, Text, useTheme, Snackbar } from "react-native-paper";
+import {
+  Button,
+  Checkbox,
+  Text,
+  useTheme,
+  Snackbar,
+} from "react-native-paper";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
 import PlaceButton from "./PlaceButton";
@@ -25,16 +31,18 @@ export default function SearchBottomSheet({ navigation }: Props) {
   const [to, setTo] = useState<Place | null>(null);
   const [roundTrip, setRoundTrip] = useState(false);
   const [dateTime, setDateTime] = useState(new Date());
-
   const [showPicker, setShowPicker] = useState<"date" | "time" | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<"from" | "to">("from");
   const [query, setQuery] = useState("");
 
-  // Helpers
   const pad = (n: number) => (n < 10 ? "0" + n : n);
-  const formattedDate = `${dateTime.getFullYear()}-${pad(dateTime.getMonth() + 1)}-${pad(dateTime.getDate())}`;
-  const formattedTime = `${pad(dateTime.getHours())}:${pad(dateTime.getMinutes())}:${pad(dateTime.getSeconds())}`;
+  const formattedDate = `${dateTime.getFullYear()}-${pad(
+    dateTime.getMonth() + 1
+  )}-${pad(dateTime.getDate())}`;
+  const formattedTime = `${pad(dateTime.getHours())}:${pad(
+    dateTime.getMinutes()
+  )}:${pad(dateTime.getSeconds())}`;
 
   const handleSearch = async () => {
     if (!from || !to) return;
@@ -73,17 +81,32 @@ export default function SearchBottomSheet({ navigation }: Props) {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Text style={styles.title}>Trova il tuo percorso</Text>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: theme.colors.surface },
+      ]}
+    >
+      <Text
+        style={[
+          styles.title,
+          { color: theme.colors.onSurface },
+        ]}
+      >
+        Trova il tuo percorso
+      </Text>
 
+      {/* Campo Partenza */}
       <PlaceButton
         label="Partenza"
         value={from?.name}
         address={from?.address}
         icon="arrow-up-circle-outline"
         onPress={() => openModal("from")}
+        iconColor={theme.colors.onSurface} // ✅ colore dinamico
       />
 
+      {/* Scambio */}
       <SwapButton
         onPress={() => {
           const temp = from;
@@ -91,14 +114,17 @@ export default function SearchBottomSheet({ navigation }: Props) {
           setTo(temp);
         }}
         disabled={!from && !to}
+        iconColor={theme.colors.onSurface} // ✅ colore dinamico
       />
 
+      {/* Campo Destinazione */}
       <PlaceButton
         label="Destinazione"
         value={to?.name}
         address={to?.address}
         icon="arrow-down-circle-outline"
         onPress={() => openModal("to")}
+        iconColor={theme.colors.onSurface} // ✅ colore dinamico
       />
 
       {/* Andata/Ritorno */}
@@ -106,8 +132,17 @@ export default function SearchBottomSheet({ navigation }: Props) {
         <Checkbox
           status={roundTrip ? "checked" : "unchecked"}
           onPress={() => setRoundTrip(!roundTrip)}
+          color={theme.colors.primary} // ✅ visibile su dark e light
+          uncheckedColor={theme.colors.onSurfaceVariant}
         />
-        <Text style={styles.checkboxLabel}>Andata/Ritorno</Text>
+        <Text
+          style={[
+            styles.checkboxLabel,
+            { color: theme.colors.onSurface },
+          ]}
+        >
+          Andata/Ritorno
+        </Text>
       </View>
 
       {/* Data/Ora */}
@@ -115,6 +150,7 @@ export default function SearchBottomSheet({ navigation }: Props) {
         date={dateTime}
         onSelectDate={() => setShowPicker("date")}
         onSelectTime={() => setShowPicker("time")}
+        textColor={theme.colors.onSurface} // ✅ miglior contrasto
       />
 
       {showPicker && (
@@ -135,6 +171,7 @@ export default function SearchBottomSheet({ navigation }: Props) {
         style={styles.cta}
         onPress={handleSearch}
         disabled={!from || !to || loading}
+        textColor={theme.colors.onPrimary}
       >
         {loading ? "Ricerca in corso..." : "Cerca Soluzioni"}
       </Button>
@@ -168,7 +205,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 8,
-    backgroundColor: "#fff",
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     paddingBottom: 30,
@@ -194,5 +230,3 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
 });
-
-

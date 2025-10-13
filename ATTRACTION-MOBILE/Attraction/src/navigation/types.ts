@@ -47,6 +47,7 @@ export type ProfileStackParamList = {
   Profile: undefined;
   EditProfile: undefined;
   TransportPreferences: undefined;
+  TripsHistory: undefined;
 };
 
 // MainStack (schermate principali dopo login o accesso ospite)

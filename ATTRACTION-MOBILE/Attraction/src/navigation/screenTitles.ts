@@ -21,6 +21,7 @@ export const SCREEN_TITLES: Record<string, string> = {
   Profile: "Profilo",
   EditProfile: "Modifica Profilo",
   TransportPreferences: "Preferenze di Trasporto",
+  TripsHistory: "Storico Viaggi",
 
   // Drawer
   Settings: "Impostazioni",

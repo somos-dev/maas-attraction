@@ -48,7 +48,7 @@ export default function RouteDetails({ route, busInfo }: RouteDetailsProps) {
         Dettagli del viaggio
       </Text>
       <Divider
-        style={[styles.divider, { backgroundColor: theme.colors.outline }]}
+        style={[styles.divider]}
       />
 
       {segments.map((seg: any, i: number) => {
@@ -211,7 +211,7 @@ export default function RouteDetails({ route, busInfo }: RouteDetailsProps) {
                 <Divider
                   style={[
                     styles.stepsDivider,
-                    { backgroundColor: theme.colors.outline },
+                    
                   ]}
                 />
                 {walkSteps.map((step: any, j: number) => (
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 3,
-    elevation: 2,
+    elevation: 4,
   },
   segmentHeader: {
     flexDirection: "row",

@@ -157,7 +157,7 @@ export default function ProfileScreen() {
         <AppListItem
           icon="history"
           title="Storico viaggi"
-          onPress={() => console.log("Apri Storico")}
+           onPress={() => navigation.navigate("TripsHistory")}
           rightIcon="chevron-right"
         />
       </AppCard>

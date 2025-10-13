@@ -172,11 +172,11 @@ export default function SearchBottomSheet({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 14,  // 🔽 meno spazio laterale
-    paddingTop: 6,          // 🔽 ridotto
+    paddingHorizontal: 14,  //  meno spazio laterale
+    paddingTop: 6,          //  ridotto
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    paddingBottom: 24,      // 🔽 più compatto
+    paddingBottom: 24,      //  più compatto
     borderBottomLeftRadius: 16,
     borderBottomRightRadius: 16,
   },
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   cta: {
     marginTop: 12,
     borderRadius: 8,
-    paddingVertical: 6,     // 🔽 pulsante più snello
+    paddingVertical: 6,     //  pulsante più snello
   },
 });
 

@@ -2,14 +2,15 @@ import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from "react-native";
 import { useTheme } from "react-native-paper";
 import { useGetSearchesQuery } from "../../store/api/searchApi";
+import { reverseGeocode as reverseGeocodeUtil } from "../../utils/reverseGeocode";
 
 interface RecentSearchesProps {
   onSelect: (item: any) => void;
-  reverseGeocode: (lat: number, lon: number) => Promise<string>;
+  reverseGeocode?: (lat: number, lon: number) => Promise<string>;
 }
 
 export default function RecentSearches({ onSelect, reverseGeocode }: RecentSearchesProps) {
-  const theme = useTheme(); // ✅ accedi ai colori del tema
+  const theme = useTheme();
   const { data: allSearches = [], isLoading } = useGetSearchesQuery();
 
   const validSearches = allSearches.filter(
@@ -22,13 +23,16 @@ export default function RecentSearches({ onSelect, reverseGeocode }: RecentSearc
     Record<number, { from: string; to: string }>
   >({});
 
+  // Usa la prop se fornita, altrimenti la util condivisa
+  const doReverse = reverseGeocode ?? reverseGeocodeUtil;
+
   useEffect(() => {
     const resolveAll = async () => {
       try {
         const results = await Promise.all(
           recentSearches.map(async (item) => {
-            const fromName = await reverseGeocode(item.from_lat, item.from_lon);
-            const toName = await reverseGeocode(item.to_lat, item.to_lon);
+            const fromName = await doReverse(item.from_lat, item.from_lon);
+            const toName = await doReverse(item.to_lat, item.to_lon);
             return [item.id, { from: fromName, to: toName }] as const;
           })
         );
@@ -38,7 +42,7 @@ export default function RecentSearches({ onSelect, reverseGeocode }: RecentSearc
       }
     };
     if (recentSearches.length > 0) resolveAll();
-  }, [recentSearches]);
+  }, [recentSearches, doReverse]);
 
   if (isLoading) {
     return (
@@ -62,7 +66,6 @@ export default function RecentSearches({ onSelect, reverseGeocode }: RecentSearc
 
   return (
     <View style={styles.recentSection}>
-      {/* ✅ Colore dinamico del tema per il titolo */}
       <Text style={[styles.recentTitle, { color: theme.colors.onSurface }]}>
         Tratte recenti
       </Text>
@@ -155,3 +158,4 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
   },
 });
+

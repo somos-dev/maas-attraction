@@ -329,7 +329,7 @@ export default function ResultsScreen({ route }: any) {
 const styles = StyleSheet.create({
   mapContainer: { flex: 1, zIndex: 0 },
   bottomSheetBackground: { borderRadius: 20, elevation: 5 },
-  bottomSheetContent: { padding: 16 },
+  bottomSheetContent: { padding: 20 },
   listHeader: {
     flexDirection: "row",
     justifyContent: "space-between",

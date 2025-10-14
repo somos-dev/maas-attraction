@@ -8,6 +8,8 @@ import {
   RefreshControl,
   Pressable,
   ViewToken,
+  Animated,
+  Modal,
 } from "react-native";
 import {
   Text,
@@ -22,10 +24,10 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { ProfileStackParamList } from "../../navigation/types";
 import { useGetSearchesQuery } from "../../store/api/searchApi";
 import { reverseGeocode as reverseGeocodeUtil } from "../../utils/reverseGeocode";
-import { transparent } from "react-native-paper/lib/typescript/styles/themes/v2/colors";
 
 type Props = NativeStackScreenProps<ProfileStackParamList, "TripsHistory">;
-type FilterMode = "all" | "bus" | "metro" | "train" | "bike";
+
+type FilterMode = "all" | "bus" | "eco" | "train" | "bike";
 type SortBy = "recent" | "oldest" | "distance";
 
 const PAGE_SIZE = 48;
@@ -44,28 +46,203 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
-function normalizeModeLabel(modesRaw: string): "bus" | "metro" | "train" | "bike" | "walk" | "other" {
+
+function normalizeModeLabel(
+  modesRaw: string
+): "bus" | "subway" | "tram" | "train" | "bike" | "walk" | "car" | "other" {
   const m = (modesRaw || "").toLowerCase();
-  if (m.includes("subway") || m.includes("metro")) return "metro";
+  if (m.includes("subway") || m.includes("metro")) return "subway";
+  if (m.includes("tram")) return "tram";
   if (m.includes("train")) return "train";
   if (m.includes("bicycle") || m.includes("bike")) return "bike";
   if (m.includes("bus")) return "bus";
   if (m.includes("walk")) return "walk";
+  if (m.includes("car") || m.includes("auto")) return "car";
   return "other";
 }
+
 function getModeIcon(mode: string): string {
   const m = normalizeModeLabel(mode);
   if (m === "bus") return "🚌";
-  if (m === "metro") return "🚇";
+  if (m === "subway") return "🚇";
+  if (m === "tram") return "🚊";
   if (m === "train") return "🚆";
   if (m === "bike") return "🚴";
   if (m === "walk") return "🚶";
   return "🚗";
 }
+
+function modeDisplayIT(norm: ReturnType<typeof normalizeModeLabel>): string {
+  switch (norm) {
+    case "bus": return "Bus";
+    case "subway": return "Metro";
+    case "tram": return "Tram";
+    case "train": return "Treno";
+    case "bike": return "Bici";
+    case "walk": return "A piedi";
+    case "car": return "Auto";
+    default: return "Altro";
+  }
+}
+
+const ECO_SET = new Set(["bus", "train", "bike", "walk", "subway", "tram"]);
+const isEcoMode = (modesRaw: string) => ECO_SET.has(normalizeModeLabel(modesRaw));
+
+const chipLabelIT = (mode: FilterMode) =>
+  mode === "all" ? "Tutte"
+  : mode === "bus" ? "Bus"
+  : mode === "eco" ? "Eco"
+  : mode === "train" ? "Treno"
+  : "Bici";
+
+const selectedModeLabelIT = (mode: FilterMode) =>
+  mode === "all" ? "Tutte le modalità" : chipLabelIT(mode);
+
+const sortLabelIT = (s: SortBy) =>
+  s === "recent" ? "Più recenti" : s === "oldest" ? "Più vecchi" : "Più lunghi";
+
 const round = (n: number) => Number(n.toFixed(GEOCODE_CACHE_PRECISION));
 const coordKey = (lat: number, lon: number) => `${round(lat)},${round(lon)}`;
 const formatLatLon = (lat: number, lon: number) => `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
 const isCoordFallback = (s?: string) => !!s && /-?\d+\.\d+,\s*-?\d+\.\d+/.test(s);
+
+// Modal dei filtri - componente separato per ottimizzazione
+const FiltersModal = React.memo(({
+  visible,
+  onClose,
+  selectedMode,
+  onModeChange,
+  sortBy,
+  onSortChange,
+  dateRange,
+  onDateChange,
+  onReset,
+  theme,
+}: any) => {
+  const [datePickerMode, setDatePickerMode] = useState<"start" | "end">("start");
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const handleDateChange = (field: "start" | "end", date: Date) => {
+    if (date) {
+      onDateChange(field, date);
+      setShowDatePicker(false);
+    }
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+      statusBarTranslucent
+    >
+      <View style={[styles.modalOverlay, { backgroundColor: "rgba(0,0,0,0.3)" }]}>
+        <View style={[styles.modalContent, { backgroundColor: theme.colors.surface }]}>
+          {/* Header del modal */}
+          <View style={styles.modalHeader}>
+            <Text style={[styles.modalTitle, { color: theme.colors.onSurface }]}>Filtri</Text>
+            <IconButton
+              icon="close"
+              size={24}
+              onPress={onClose}
+              iconColor={theme.colors.onSurface}
+            />
+          </View>
+
+          {/* Contenuto scrollabile */}
+          <View style={styles.modalBody}>
+            {/* Sezione Ordina per */}
+            <View style={styles.filterSection}>
+              <Text style={[styles.filterLabel, { color: theme.colors.onSurface }]}>
+                Ordina per
+              </Text>
+              <View style={styles.sortContainer}>
+                {(["recent", "oldest", "distance"] as SortBy[]).map((sort) => (
+                  <TouchableOpacity
+                    key={sort}
+                    style={[
+                      styles.sortOption,
+                      sortBy === sort && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+                    ]}
+                    onPress={() => onSortChange(sort)}
+                  >
+                    <Text style={[styles.sortText, { color: sortBy === sort ? theme.colors.onPrimary : theme.colors.onSurface }]}>
+                      {sortLabelIT(sort)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Sezione Date */}
+            <View style={styles.filterSection}>
+              <Text style={[styles.filterLabel, { color: theme.colors.onSurface }]}>
+                Intervallo date
+              </Text>
+              <View style={styles.dateRangeContainer}>
+                <TouchableOpacity
+                  style={[styles.dateButton, { backgroundColor: theme.colors.primaryContainer }]}
+                  onPress={() => {
+                    setDatePickerMode("start");
+                    setShowDatePicker(true);
+                  }}
+                >
+                  <Text style={[styles.dateButtonText, { color: theme.colors.onPrimaryContainer }]}>
+                    Da: {dateRange.start.toLocaleDateString("it-IT", { day: "2-digit", month: "short" })}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.dateButton, { backgroundColor: theme.colors.primaryContainer }]}
+                  onPress={() => {
+                    setDatePickerMode("end");
+                    setShowDatePicker(true);
+                  }}
+                >
+                  <Text style={[styles.dateButtonText, { color: theme.colors.onPrimaryContainer }]}>
+                    A: {dateRange.end.toLocaleDateString("it-IT", { day: "2-digit", month: "short" })}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {showDatePicker && (
+                <DateTimePicker
+                  value={datePickerMode === "start" ? dateRange.start : dateRange.end}
+                  mode="date"
+                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  onChange={(_, selectedDate) => {
+                    if (selectedDate) handleDateChange(datePickerMode, selectedDate);
+                  }}
+                />
+              )}
+            </View>
+          </View>
+
+          {/* Pulsanti azione */}
+          <View style={[styles.modalFooter, { borderTopColor: theme.colors.outline }]}>
+            <TouchableOpacity
+              style={[styles.resetButton, { backgroundColor: theme.colors.error }]}
+              onPress={onReset}
+            >
+              <Text style={[styles.resetButtonText, { color: theme.colors.onError }]}>
+                Azzera filtri
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.closeButton, { backgroundColor: theme.colors.primary }]}
+              onPress={onClose}
+            >
+              <Text style={[styles.closeButtonText, { color: theme.colors.onPrimary }]}>
+                Applica
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+});
 
 export default function TripsHistoryScreen({ navigation }: Props) {
   const theme = useTheme();
@@ -75,8 +252,6 @@ export default function TripsHistoryScreen({ navigation }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMode, setSelectedMode] = useState<FilterMode>("all");
   const [sortBy, setSortBy] = useState<SortBy>("recent");
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [datePickerMode, setDatePickerMode] = useState<"start" | "end">("start");
   const [dateRange, setDateRange] = useState({
     start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
     end: new Date(),
@@ -91,17 +266,23 @@ export default function TripsHistoryScreen({ navigation }: Props) {
   const geocodingBusyRef = useRef(false);
   const retriedOnceRef = useRef<Set<string>>(new Set());
 
-  // ---- derive list ----
+  // ---- derive list con memoization migliorata ----
   const filteredTrips = useMemo(() => {
     let trips = allSearches
       .filter((s) => s.from_lat !== 0 && s.to_lat !== 0)
       .map((s) => ({ ...s, tripDate: new Date(s.trip_date) }))
       .filter((trip) => {
         if (trip.tripDate < dateRange.start || trip.tripDate > dateRange.end) return false;
+
         if (selectedMode !== "all") {
-          const normal = normalizeModeLabel(trip.modes);
-          if (normal !== selectedMode) return false;
+          const norm = normalizeModeLabel(trip.modes);
+          if (selectedMode === "eco") {
+            if (!isEcoMode(trip.modes)) return false;
+          } else {
+            if (norm !== selectedMode) return false;
+          }
         }
+
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase();
           const rn = resolvedNames[String(trip.id)];
@@ -140,7 +321,7 @@ export default function TripsHistoryScreen({ navigation }: Props) {
   );
   const hasMore = filteredTrips.length > (pageIndex + 1) * PAGE_SIZE;
 
-  // ---- geocoding helpers (hooks BEFORE any return) ----
+  // ---- geocoding helpers ----
   const reverseWithCache = useCallback(async (lat: number, lon: number) => {
     const key = coordKey(lat, lon);
     const cached = geocodeCacheRef.current.get(key);
@@ -186,7 +367,7 @@ export default function TripsHistoryScreen({ navigation }: Props) {
         });
         if (Object.keys(next).length) setResolvedNames((prev) => ({ ...prev, ...next }));
 
-        await new Promise((r) => setTimeout(r, 0)); // yield
+        await new Promise((r) => setTimeout(r, 0));
       }
     } finally {
       geocodingBusyRef.current = false;
@@ -231,7 +412,6 @@ export default function TripsHistoryScreen({ navigation }: Props) {
 
   const handleDateChange = useCallback((field: "start" | "end", date: Date) => {
     setDateRange((prev) => ({ ...prev, [field]: date }));
-    setShowDatePicker(false);
     setPageIndex(0);
   }, []);
 
@@ -263,92 +443,97 @@ export default function TripsHistoryScreen({ navigation }: Props) {
     []
   );
 
-  // 🔒 IMPORTANT: anche questo hook prima di qualsiasi return
+  // Componente card memoizzato per evitare re-render
+  const TripsCard = React.memo(({ item }: { item: any }) => {
+    const id = String(item.id);
+    const rn = resolvedNames[id];
+    const from = rn?.from || formatLatLon(item.from_lat, item.from_lon);
+    const to = rn?.to || formatLatLon(item.to_lat, item.to_lon);
+
+    if ((isCoordFallback(from) || isCoordFallback(to)) && !retriedOnceRef.current.has(id)) {
+      retriedOnceRef.current.add(id);
+      scheduleGeocode([id]);
+    }
+
+    const date = new Date(item.trip_date);
+    const distanceKm = calculateDistance(item.from_lat, item.from_lon, item.to_lat, item.to_lon);
+    const normMode = normalizeModeLabel(item.modes);
+    const modeEmoji = getModeIcon(item.modes);
+    const modeColor =
+      normMode === "bus"
+        ? theme.colors.primary
+        : normMode === "subway" || normMode === "tram"
+        ? theme.colors.secondary
+        : normMode === "train"
+        ? theme.colors.tertiary ?? theme.colors.primary
+        : normMode === "bike"
+        ? "#FF6B6B"
+        : theme.colors.onSurfaceVariant;
+
+    return (
+      <Pressable
+        onPress={() => {
+          scheduleGeocode([id]);
+          onSelectTrip(item);
+        }}
+        android_ripple={{ borderless: false }}
+        accessibilityRole="button"
+        accessibilityLabel={`Tratta da ${from} a ${to}`}
+        accessibilityHint="Apri i dettagli tratta"
+        style={[
+          styles.card,
+          {
+            backgroundColor: theme.colors.backgroundCard ?? theme.colors.surface,
+            borderColor: "transparent",
+          },
+          Platform.select({
+            ios: styles.iosShadow,
+            android: { elevation: 4 },
+          }),
+        ] as any}
+        hitSlop={8}
+      >
+        <View style={styles.topRow}>
+          <View style={[styles.modePill, { borderColor: modeColor + "55" }]}>
+            <Text style={styles.modeEmoji}>{modeEmoji}</Text>
+            <Text style={[styles.modeText, { color: modeColor }]}>{modeDisplayIT(normMode)}</Text>
+          </View>
+          <Text style={[styles.date, { color: theme.colors.onSurfaceVariant }]}>
+            {date.toLocaleString("it-IT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+          </Text>
+          <IconButton icon="chevron-right" size={22} iconColor={theme.colors.onSurfaceVariant} />
+        </View>
+
+        <View style={styles.routeBox}>
+          <Text numberOfLines={1} style={[styles.routeLine, { color: theme.colors.onSurface }]}>
+            <Text style={[styles.routeLabel, { color: theme.colors.onSurfaceVariant }]}>Da: </Text>
+            {from}
+          </Text>
+          <Text numberOfLines={1} style={[styles.routeLine, { color: theme.colors.onSurface }]}>
+            <Text style={[styles.routeLabel, { color: theme.colors.onSurfaceVariant }]}>A: </Text>
+            {to}
+          </Text>
+        </View>
+
+        <View style={styles.footerRow}>
+          <View style={[styles.chipSoft, { borderColor: modeColor + "55" }]}>
+            <Text style={[styles.chipText, { color: modeColor }]}>~ {distanceKm.toFixed(1)} km</Text>
+          </View>
+        </View>
+      </Pressable>
+    );
+  }, (prev, next) => {
+    return prev.item.id === next.item.id &&
+      resolvedNames[String(prev.item.id)] === resolvedNames[String(next.item.id)];
+  });
+
   const renderItem = useCallback(
-    ({ item }: { item: any }) => {
-      const id = String(item.id);
-      const rn = resolvedNames[id];
-      const from = rn?.from || formatLatLon(item.from_lat, item.from_lon);
-      const to = rn?.to || formatLatLon(item.to_lat, item.to_lon);
-
-      if ((isCoordFallback(from) || isCoordFallback(to)) && !retriedOnceRef.current.has(id)) {
-        retriedOnceRef.current.add(id);
-        scheduleGeocode([id]);
-      }
-
-      const date = new Date(item.trip_date);
-      const distanceKm = calculateDistance(item.from_lat, item.from_lon, item.to_lat, item.to_lon);
-      const mode = normalizeModeLabel(item.modes);
-      const modeEmoji = getModeIcon(item.modes);
-      const modeColor =
-        mode === "bus"
-          ? theme.colors.primary
-          : mode === "metro"
-          ? theme.colors.secondary
-          : mode === "train"
-          ? theme.colors.tertiary ?? theme.colors.primary
-          : mode === "bike"
-          ? "#FF6B6B"
-          : theme.colors.onSurfaceVariant;
-
-      return (
-        <Pressable
-          onPress={() => {
-            scheduleGeocode([id]);
-            onSelectTrip(item);
-          }}
-          android_ripple={{ borderless: false }}
-          accessibilityRole="button"
-          accessibilityLabel={`Tratta da ${from} a ${to}`}
-          accessibilityHint="Apri i dettagli tratta"
-          style={[
-            styles.card,
-            {
-              backgroundColor: theme.colors.backgroundCard ?? theme.colors.surface,
-              borderColor: "transparent",
-            },
-            Platform.select({
-              ios: styles.iosShadow,
-              android: { elevation: 4 },
-            }),
-          ] as any}
-          hitSlop={8}
-        >
-          <View style={styles.topRow}>
-            <View style={[styles.modePill, { borderColor: modeColor + "55" }]}>
-              <Text style={styles.modeEmoji}>{modeEmoji}</Text>
-              <Text style={[styles.modeText, { color: modeColor }]}>{item.modes?.toUpperCase?.() ?? "—"}</Text>
-            </View>
-            <Text style={[styles.date, { color: theme.colors.onSurfaceVariant }]}>
-              {date.toLocaleString("it-IT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
-            </Text>
-            <IconButton icon="chevron-right" size={22} iconColor={theme.colors.onSurfaceVariant} />
-          </View>
-
-          <View style={styles.routeBox}>
-            <Text numberOfLines={1} style={[styles.routeLine, { color: theme.colors.onSurface }]}>
-              <Text style={[styles.routeLabel, { color: theme.colors.onSurfaceVariant }]}>Da: </Text>
-              {from}
-            </Text>
-            <Text numberOfLines={1} style={[styles.routeLine, { color: theme.colors.onSurface }]}>
-              <Text style={[styles.routeLabel, { color: theme.colors.onSurfaceVariant }]}>A: </Text>
-              {to}
-            </Text>
-          </View>
-
-          <View style={styles.footerRow}>
-            <View style={[styles.chipSoft, { borderColor: modeColor + "55" }]}>
-              <Text style={[styles.chipText, { color: modeColor }]}>~ {distanceKm.toFixed(1)} km</Text>
-            </View>
-          </View>
-        </Pressable>
-      );
-    },
+    ({ item }: { item: any }) => <TripsCard item={item} />,
     [resolvedNames, scheduleGeocode, onSelectTrip, theme.colors]
   );
 
-  // ---- header (JSX, nessun hook) ----
-  const ListHeader = (
+  // ---- header ottimizzato (non più sticky) ----
+  const ListHeader = React.useMemo(() => (
     <View>
       <View style={styles.searchContainer}>
         <Searchbar
@@ -375,133 +560,53 @@ export default function TripsHistoryScreen({ navigation }: Props) {
         <View style={{ flex: 1 }}>
           <Text style={[styles.count, { color: theme.colors.onSurface }]}>{filteredTrips.length}</Text>
           <Text style={[styles.meta, { color: theme.colors.onSurfaceVariant }]}>
-            {selectedMode === "all" ? "Tutte le modalità"
-              : selectedMode === "bus" ? "Bus"
-              : selectedMode === "metro" ? "Metro"
-              : selectedMode === "train" ? "Treno"
-              : "Bici"} · {sortBy === "recent" ? "Recenti" : sortBy === "oldest" ? "Vecchi" : "Lunghi"} ·{" "}
+            {selectedModeLabelIT(selectedMode)} · {sortLabelIT(sortBy)} ·{" "}
             {dateRange.start.toLocaleDateString("it-IT", { day: "2-digit", month: "short" })} —{" "}
             {dateRange.end.toLocaleDateString("it-IT", { day: "2-digit", month: "short" })}
           </Text>
         </View>
 
-        <TouchableOpacity onPress={resetFilters} style={styles.actionBtn} accessibilityRole="button">
-          <Text style={[styles.actionText, { color: theme.colors.error }]}>Reset</Text>
+        <TouchableOpacity onPress={resetFilters} style={styles.actionBtn} accessibilityRole="button" accessibilityLabel="Azzera filtri">
+          <Text style={[styles.actionText, { color: theme.colors.error }]}>Azzera</Text>
         </TouchableOpacity>
         <IconButton
           icon="tune-variant"
           size={22}
-          onPress={() => setFiltersOpen((v) => !v)}
-          accessibilityLabel="Apri/chiudi filtri"
-          iconColor={filtersOpen ? theme.colors.primary : theme.colors.onSurfaceVariant}
+          onPress={() => setFiltersOpen(true)}
+          accessibilityLabel="Apri i filtri"
+          iconColor={theme.colors.onSurfaceVariant}
         />
       </View>
 
       <View style={styles.quickChips}>
-        {(["all", "bus", "metro", "train", "bike"] as FilterMode[]).map((mode) => (
-          <Chip
-            key={mode}
-            selected={selectedMode === mode}
-            onPress={() => {
-              setSelectedMode(mode);
-              setPageIndex(0);
-            }}
-            style={[styles.chip, selectedMode === mode && { backgroundColor: theme.colors.primary }]}
-            textStyle={{
-              color: selectedMode === mode ? theme.colors.onPrimary : theme.colors.onSurface,
-              fontWeight: "700",
-              fontSize: 12,
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={`Filtro modalità ${mode}`}
-          >
-            {mode === "all" ? "Tutte" : mode.charAt(0).toUpperCase() + mode.slice(1)}
-          </Chip>
-        ))}
+        {(["all", "bus", "eco", "train", "bike"] as FilterMode[]).map((mode) => {
+          const label = chipLabelIT(mode);
+          return (
+            <Chip
+              key={mode}
+              selected={selectedMode === mode}
+              onPress={() => {
+                setSelectedMode(mode);
+                setPageIndex(0);
+              }}
+              style={[styles.chip, selectedMode === mode && { backgroundColor: theme.colors.primary }]}
+              textStyle={{
+                color: selectedMode === mode ? theme.colors.onPrimary : theme.colors.onSurface,
+                fontWeight: "700",
+                fontSize: 12,
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`Filtro modalità ${label}`}
+            >
+              {label}
+            </Chip>
+          );
+        })}
       </View>
-
-      {filtersOpen && (
-        <View style={[styles.filterPanel, { backgroundColor: theme.colors.surface }]} accessibilityLabel="Pannello filtri">
-          <View style={styles.filterSection}>
-            <Text variant="titleSmall" style={[styles.filterLabel, { color: theme.colors.onSurface }]}>
-              Ordina per
-            </Text>
-            <View style={styles.sortContainer}>
-              {(["recent", "oldest", "distance"] as SortBy[]).map((sort) => (
-                <TouchableOpacity
-                  key={sort}
-                  style={[
-                    styles.sortOption,
-                    sortBy === sort && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
-                  ]}
-                  onPress={() => {
-                    setSortBy(sort);
-                    setPageIndex(0);
-                  }}
-                >
-                  <Text style={[styles.sortText, { color: sortBy === sort ? theme.colors.onPrimary : theme.colors.onSurface }]}>
-                    {sort === "recent" ? "Più recenti" : sort === "oldest" ? "Più vecchi" : "Più lunghi"}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          <View style={styles.filterSection}>
-            <Text variant="titleSmall" style={[styles.filterLabel, { color: theme.colors.onSurface }]}>
-              Intervallo date
-            </Text>
-            <View style={styles.dateRangeContainer}>
-              <TouchableOpacity
-                style={[styles.dateButton, { backgroundColor: theme.colors.primaryContainer }]}
-                onPress={() => {
-                  setDatePickerMode("start");
-                  setShowDatePicker(true);
-                }}
-              >
-                <Text style={[styles.dateButtonText, { color: theme.colors.onPrimaryContainer }]}>
-                  Da: {dateRange.start.toLocaleDateString("it-IT", { day: "2-digit", month: "short" })}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.dateButton, { backgroundColor: theme.colors.primaryContainer }]}
-                onPress={() => {
-                  setDatePickerMode("end");
-                  setShowDatePicker(true);
-                }}
-              >
-                <Text style={[styles.dateButtonText, { color: theme.colors.onPrimaryContainer }]}>
-                  A: {dateRange.end.toLocaleDateString("it-IT", { day: "2-digit", month: "short" })}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {showDatePicker && (
-              <DateTimePicker
-                value={datePickerMode === "start" ? dateRange.start : dateRange.end}
-                mode="date"
-                display={Platform.OS === "ios" ? "spinner" : "default"}
-                onChange={(_, selectedDate) => {
-                  if (selectedDate) handleDateChange(datePickerMode, selectedDate);
-                }}
-              />
-            )}
-          </View>
-
-          <TouchableOpacity style={[styles.resetButton, { backgroundColor: theme.colors.error }]} onPress={resetFilters}>
-            <Text style={[styles.resetButtonText, { color: theme.colors.onError }]}>Azzera filtri</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.closeFiltersBtn} onPress={() => setFiltersOpen(false)}>
-            <Text style={{ fontWeight: "700", color: theme.colors.primary }}>Chiudi filtri</Text>
-          </TouchableOpacity>
-        </View>
-      )}
     </View>
-  );
+  ), [filteredTrips, searchQuery, selectedMode, sortBy, dateRange, theme.colors]);
 
-  // ---- render dispatch: UN solo return, nessun hook dopo ----
+  // ---- render ----
   let content: React.ReactNode = null;
 
   if (isLoading) {
@@ -527,7 +632,6 @@ export default function TripsHistoryScreen({ navigation }: Props) {
         keyExtractor={keyExtractor}
         getItemLayout={getItemLayout}
         ListHeaderComponent={ListHeader}
-        stickyHeaderIndices={[0]}
         contentContainerStyle={{ paddingBottom: 16 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -541,9 +645,9 @@ export default function TripsHistoryScreen({ navigation }: Props) {
         }
         removeClippedSubviews
         initialNumToRender={8}
-        maxToRenderPerBatch={8}
+        maxToRenderPerBatch={12}
         updateCellsBatchingPeriod={50}
-        windowSize={7}
+        windowSize={10}
         onEndReachedThreshold={0.5}
         onEndReached={() => {
           if (hasMore) setPageIndex((p) => p + 1);
@@ -571,7 +675,32 @@ export default function TripsHistoryScreen({ navigation }: Props) {
     );
   }
 
-  return <View style={[styles.container, { backgroundColor: theme.colors.background }]}>{content}</View>;
+  return (
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {content}
+      <FiltersModal
+        visible={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        selectedMode={selectedMode}
+        onModeChange={(mode: FilterMode) => {
+          setSelectedMode(mode);
+          setPageIndex(0);
+        }}
+        sortBy={sortBy}
+        onSortChange={(sort: SortBy) => {
+          setSortBy(sort);
+          setPageIndex(0);
+        }}
+        dateRange={dateRange}
+        onDateChange={handleDateChange}
+        onReset={() => {
+          resetFilters();
+          setFiltersOpen(false);
+        }}
+        theme={theme}
+      />
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -603,18 +732,57 @@ const styles = StyleSheet.create({
   quickChips: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 16, paddingBottom: 8 },
   chip: { borderRadius: 20 },
 
-  filterPanel: { marginTop: 8, marginHorizontal: 16, borderRadius: 12, padding: 16 },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: "85%",
+    paddingTop: 0,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0,0,0,0.06)",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  modalBody: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    flexGrow: 1,
+  },
+  modalFooter: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingBottom: 24,
+    borderTopWidth: 1,
+    flexDirection: "row",
+    gap: 12,
+  },
+
   filterSection: { marginBottom: 24 },
-  filterLabel: { fontWeight: "600", marginBottom: 12 },
+  filterLabel: { fontWeight: "600", marginBottom: 12, fontSize: 14 },
   sortContainer: { gap: 8 },
   sortOption: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8, borderWidth: 1.5, borderColor: "rgba(0,0,0,0.1)", alignItems: "center" },
   sortText: { fontSize: 14, fontWeight: "500" },
   dateRangeContainer: { flexDirection: "row", gap: 12 },
   dateButton: { flex: 1, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, alignItems: "center" },
   dateButtonText: { fontSize: 13, fontWeight: "500" },
-  resetButton: { paddingVertical: 12, borderRadius: 8, alignItems: "center", marginTop: 8 },
-  resetButtonText: { fontSize: 15, fontWeight: "600" },
-  closeFiltersBtn: { alignItems: "center", paddingVertical: 10 },
+  resetButton: { flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: "center" },
+  resetButtonText: { fontSize: 14, fontWeight: "600" },
+  closeButton: { flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: "center" },
+  closeButtonText: { fontSize: 14, fontWeight: "600" },
 
   card: {
     borderRadius: 14,
@@ -645,7 +813,3 @@ const styles = StyleSheet.create({
   loadMoreContainer: { paddingVertical: 16, alignItems: "center", justifyContent: "center", gap: 8 },
   loadMoreText: { fontSize: 12, fontWeight: "600" },
 });
-
-
-
-

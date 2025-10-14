@@ -173,7 +173,7 @@ export default function TripDetailsScreen({ route }: any) {
 
 const styles = StyleSheet.create({
   mapContainer: { flex: 1, zIndex: 0 },
-  bottomSheetContent: { padding: 16 },
+  bottomSheetContent: { padding: 20 },
   headerContainer: {
     marginBottom: 16,
     borderWidth: 1,

@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Search, FavoritePlace, Booking, Feedback
+from django.contrib.auth import get_user_model
 
 class SearchSerializer(serializers.ModelSerializer):
     class Meta:
@@ -12,9 +13,6 @@ class FavoritePlaceSerializer(serializers.ModelSerializer):
         fields = ['id', 'address', 'type', 'latitude', 'longitude']  # id is read-only by default
 
 
-from rest_framework import serializers
-from .models import Booking
-
 class BookingSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(source='user.id', read_only=True)  # Expose the user ID
 
@@ -22,25 +20,14 @@ class BookingSerializer(serializers.ModelSerializer):
         model = Booking
         fields = ['id', 'user_id', 'origin', 'destination', 'time', 'mode']
 
-
-from rest_framework import serializers
-from django.contrib.auth import get_user_model
-from .models import Feedback
-
 User = get_user_model()
 
 class FeedbackSerializer(serializers.ModelSerializer):
-    user_id = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(),
-        source='user'  # maps user_id to the Feedback.user foreign key
-    )
-
     class Meta:
         model = Feedback
-        fields = ['user_id', 'text']
+        fields = ['text']  # no need for user_id — we set it from request.user
+        read_only_fields = []
 
-# api/serializers.py
-from rest_framework import serializers
 
 class PlanTripSerializer(serializers.Serializer):
     fromLat = serializers.FloatField()

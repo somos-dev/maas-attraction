@@ -176,22 +176,57 @@ class TrackUserActivityView(AuthenticatedMixin, APIView):
 # ------------------------------
 # Feedback
 # ------------------------------
-
-class FeedbackCreateView(generics.CreateAPIView):
-    queryset = Feedback.objects.all()
+class FeedbackView(generics.RetrieveUpdateAPIView, generics.CreateAPIView):
     serializer_class = FeedbackSerializer
-    permission_classes = [AllowAny]  # or IsAuthenticated
+    permission_classes = [IsAuthenticated]
 
-    def create(self, request, *args, **kwargs):
+    def get_object(self):
+        """Return the current user's feedback if it exists"""
+        feedback, _ = Feedback.objects.get_or_create(user=self.request.user)
+        return feedback
+
+    def get(self, request, *args, **kwargs):
+        """Retrieve user's feedback"""
+        feedback = self.get_object()
+        serializer = self.get_serializer(feedback)
+        return Response({
+            "success": True,
+            "message": "Feedback retrieved successfully",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        """Create feedback only if it doesn't exist"""
+        if Feedback.objects.filter(user=request.user).exists():
+            return Response({
+                "success": False,
+                "message": "Feedback already exists. Use PUT to update it."
+            }, status=status.HTTP_400_BAD_REQUEST)
+
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(user=request.user)
             return Response({
                 "success": True,
                 "message": "Feedback submitted successfully",
                 "data": serializer.data
             }, status=status.HTTP_201_CREATED)
-        return Response({"success": False, "error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({
+            "success": False,
+            "error": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        """Update the user's existing feedback"""
+        feedback = self.get_object()
+        serializer = self.get_serializer(feedback, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({
+            "success": True,
+            "message": "Feedback updated successfully",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
 
 # ------------------------------
 # Plan Trip

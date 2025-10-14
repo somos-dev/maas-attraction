@@ -3,15 +3,17 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.http import Http404
 
 from rest_framework import generics, serializers, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
+from .utils import send_html_email
+
+
 
 from .models import CustomUser
 from .serializers import RegisterSerializer, UserProfileSerializer
@@ -54,40 +56,40 @@ class ActivateAccountView(APIView):
             uid = urlsafe_base64_decode(uidb64).decode()
             user = User.objects.get(pk=uid)
         except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-            return Response({
+            return render(request, "activation_success.html", {
                 "success": False,
-                "error": "Invalid user ID.",
-                "status_code": status.HTTP_400_BAD_REQUEST
-            }, status=status.HTTP_400_BAD_REQUEST)
+                "title": "Invalid Link",
+                "message": "This activation link is invalid or malformed.",
+            })
 
         if user.is_active:
-            return Response({
+            return render(request, "activation_success.html", {
                 "success": False,
-                "error": "Account already activated.",
-                "status_code": status.HTTP_400_BAD_REQUEST
-            }, status=status.HTTP_400_BAD_REQUEST)
+                "title": "Already Activated",
+                "message": "Your account is already active. You can log in now.",
+            })
+
+        if getattr(user, 'is_banned', False):
+            return render(request, "activation_success.html", {
+                "success": False,
+                "title": "Account Banned",
+                "message": "Your account has been banned. Please contact support.",
+            })
 
         if default_token_generator.check_token(user, token):
-            if getattr(user, 'is_banned', False):
-                return Response({
-                    "success": False,
-                    "error": "User is banned.",
-                    "status_code": status.HTTP_403_FORBIDDEN
-                }, status=status.HTTP_403_FORBIDDEN)
-
             user.is_active = True
             user.save()
-            return Response({
+            return render(request, "activation_success.html", {
                 "success": True,
-                "message": "Account activated successfully",
-                "status_code": status.HTTP_200_OK
-            }, status=status.HTTP_200_OK)
+                "title": "Account Activated",
+                "message": "Your account has been successfully activated. You can now log in.",
+            })
 
-        return Response({
+        return render(request, "activation_success.html", {
             "success": False,
-            "error": "Activation link is invalid",
-            "status_code": status.HTTP_400_BAD_REQUEST
-        }, status=status.HTTP_400_BAD_REQUEST)
+            "title": "Invalid or Expired Link",
+            "message": "This activation link is invalid or has expired.",
+        })
     
 # ------------------------------
 # Password Reset Request
@@ -103,24 +105,12 @@ class PasswordResetRequestView(APIView):
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         if not serializer.is_valid():
-            return Response({
-                "success": False,
-                "error": serializer.errors,
-                "status_code": status.HTTP_400_BAD_REQUEST
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"success": False, "error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
         email = serializer.validated_data['email']
-
         try:
             user = User.objects.get(email=email)
-            if getattr(user, 'is_banned', False):
-                return Response({
-                    "success": False,
-                    "error": "User is banned.",
-                    "status_code": status.HTTP_403_FORBIDDEN
-                }, status=status.HTTP_403_FORBIDDEN)
         except User.DoesNotExist:
-            # Do not reveal whether email exists
             return Response({
                 "success": True,
                 "message": "If an account with this email exists, a reset link has been sent.",
@@ -131,15 +121,20 @@ class PasswordResetRequestView(APIView):
         token = default_token_generator.make_token(user)
         reset_link = f"https://attraction.somos.srl/api/auth/password-reset-confirm/{uid}/{token}/"
 
-        subject = "Password Reset Requested"
-        message = f"Click the link to reset your password:\n{reset_link}"
-        send_mail(subject, message, 'noreply@yourdomain.com', [email])
+        send_html_email(
+            user,
+            subject="Reset Your Password",
+            title="Reset Your Password",
+            message="You requested a password reset. Click the button below to reset your password.",
+            link=reset_link
+        )
 
         return Response({
             "success": True,
             "message": "If an account with this email exists, a reset link has been sent.",
             "status_code": status.HTTP_200_OK
         }, status=status.HTTP_200_OK)
+
 
 
 # ------------------------------
@@ -149,53 +144,81 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
     new_password = serializers.CharField(min_length=8)
 
 
+from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
+
 class PasswordResetConfirmView(APIView):
-    serializer_class = PasswordResetConfirmSerializer
     permission_classes = [AllowAny]
 
-    def post(self, request, uidb64, token):
-        serializer = self.serializer_class(data=request.data)
-        if not serializer.is_valid():
-            return Response({
-                "success": False,
-                "error": serializer.errors,
-                "status_code": status.HTTP_400_BAD_REQUEST
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        new_password = serializer.validated_data['new_password']
-
+    def get(self, request, uidb64, token):
+        # Decode user
         try:
             user_id = force_str(urlsafe_base64_decode(uidb64))
             user = User.objects.get(pk=user_id)
         except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-            return Response({
+            return render(request, "password_reset_confirm.html", {
                 "success": False,
-                "error": "Invalid token or user ID.",
-                "status_code": status.HTTP_400_BAD_REQUEST
-            }, status=status.HTTP_400_BAD_REQUEST)
+                "title": "Invalid Link",
+                "message": "The reset link is invalid or malformed.",
+                "show_form": False
+            })
 
         if not default_token_generator.check_token(user, token):
-            return Response({
+            return render(request, "password_reset_confirm.html", {
                 "success": False,
-                "error": "Invalid or expired token.",
-                "status_code": status.HTTP_400_BAD_REQUEST
-            }, status=status.HTTP_400_BAD_REQUEST)
+                "title": "Expired Link",
+                "message": "This reset link has expired.",
+                "show_form": False
+            })
+
+        return render(request, "password_reset_confirm.html", {
+            "success": None,
+            "title": "Reset Your Password",
+            "show_form": True,
+            "uidb64": uidb64,
+            "token": token
+        })
+
+    def post(self, request, uidb64, token):
+        new_password = request.POST.get("new_password")
+        try:
+            user_id = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=user_id)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            return render(request, "password_reset_confirm.html", {
+                "success": False,
+                "title": "Error",
+                "message": "Invalid token or user ID.",
+                "show_form": False
+            })
+
+        if not default_token_generator.check_token(user, token):
+            return render(request, "password_reset_confirm.html", {
+                "success": False,
+                "title": "Invalid or Expired Token",
+                "message": "This reset link is invalid or has expired.",
+                "show_form": False
+            })
 
         if getattr(user, 'is_banned', False):
-            return Response({
+            return render(request, "password_reset_confirm.html", {
                 "success": False,
-                "error": "User is banned.",
-                "status_code": status.HTTP_403_FORBIDDEN
-            }, status=status.HTTP_403_FORBIDDEN)
+                "title": "User Banned",
+                "message": "This user account is banned.",
+                "show_form": False
+            })
 
+        # Set new password
         user.set_password(new_password)
         user.save()
 
-        return Response({
+        return render(request, "password_reset_confirm.html", {
             "success": True,
-            "message": "Password reset successful.",
-            "status_code": status.HTTP_200_OK
-        }, status=status.HTTP_200_OK)
+            "title": "Password Reset Successful",
+            "message": "Your password has been reset successfully.",
+            "show_form": False
+        })
+
 
 
 # ------------------------------
@@ -211,36 +234,109 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
             raise Http404
         return user
 
-    def retrieve(self, request, *args, **kwargs):
-        user = self.get_object()
-        serializer = self.get_serializer(user)
-        return Response({
-            "success": True,
-            "message": "User profile retrieved successfully",
-            "data": serializer.data,
-            "status_code": status.HTTP_200_OK
-        }, status=status.HTTP_200_OK)
-
     def update(self, request, *args, **kwargs):
         if request.content_type != 'application/json':
-            return Response({
+            response = Response({
                 "success": False,
                 "error": "Unsupported media type",
                 "status_code": status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
             }, status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+            print("Response:", response.data)
+            return response
 
-        partial = kwargs.pop('partial', False)
         user = self.get_object()
+        old_email = user.email
+        partial = kwargs.pop('partial', False)
         serializer = self.get_serializer(user, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
+        new_email = serializer.validated_data.get('email', old_email)
 
-        return Response({
+        if new_email != old_email:
+            self.send_email_change_confirmation(user, new_email)
+            response = Response({
+                "success": True,
+                "message": f"Email change is pending. A confirmation email has been sent to {new_email}.",
+                "status_code": status.HTTP_200_OK
+            })
+            print("Response:", response.data)
+            return response
+
+        self.perform_update(serializer)
+        response = Response({
             "success": True,
             "message": "User profile updated successfully",
             "data": serializer.data,
             "status_code": status.HTTP_200_OK
-        }, status=status.HTTP_200_OK)
+        })
+        print("Response:", response.data)
+        return response
+
+
+    def send_email_change_confirmation(self, user, new_email):
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        encoded_new_email = urlsafe_base64_encode(force_bytes(new_email))
+        confirm_link = f"https://attraction.somos.srl/api/auth/confirm-email-change/{uid}/{encoded_new_email}/{token}/"
+
+        send_html_email(
+            user,
+            subject="Confirm Your New Email",
+            title="Confirm Your New Email",
+            message=f"Click the button below to confirm your new email address: {new_email}",
+            link=confirm_link
+        )
+
+
+class ConfirmEmailChangeView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, uidb64, new_email_b64, token):
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+            new_email = force_str(urlsafe_base64_decode(new_email_b64))
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            context = {
+                "success": False,
+                "title": "Invalid Link",
+                "message": "The confirmation link is invalid or malformed."
+            }
+            return self._respond(request, context, status.HTTP_400_BAD_REQUEST)
+
+        if not default_token_generator.check_token(user, token):
+            context = {
+                "success": False,
+                "title": "Invalid or Expired Link",
+                "message": "The email confirmation link is invalid or has expired."
+            }
+            return self._respond(request, context, status.HTTP_400_BAD_REQUEST)
+
+        # Update the email now
+        user.email = new_email
+        user.save()
+
+        context = {
+            "success": True,
+            "title": "Email Changed Successfully",
+            "message": "Email change is confirmed."
+        }
+
+        return self._respond(request, context, status.HTTP_200_OK)
+
+    def _respond(self, request, context, http_status):
+        """Return JSON if Accept header asks for application/json, else render HTML"""
+        if request.headers.get("Accept") == "application/json":
+            response = Response({
+                "success": context["success"],
+                "message": context["message"],
+                "status_code": http_status
+            }, status=http_status)
+            print("Response:", response.data)  # prints JSON to console
+            return response
+        else:
+            html_response = render(request, "email_change_result.html", context, status=http_status)
+            print(f"HTML Response: {context['message']}")  # prints message for browser
+            return html_response
 
 
 # ------------------------------

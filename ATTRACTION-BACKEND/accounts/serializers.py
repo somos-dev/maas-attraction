@@ -6,6 +6,7 @@ from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.conf import settings
+from .utils import send_html_email
 
 class RegisterSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
@@ -37,21 +38,20 @@ class RegisterSerializer(serializers.ModelSerializer):
         user = CustomUser.objects.create_user(**validated_data)
         user.is_active = False
         user.save()
-        self.send_activation_email(user)
-        return user
 
-    def send_activation_email(self, user):
-        from django.contrib.auth.tokens import default_token_generator
-        from django.utils.http import urlsafe_base64_encode
-        from django.utils.encoding import force_bytes
-        from django.core.mail import send_mail
-
+        # Send activation email using HTML template
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
         activation_link = f"https://attraction.somos.srl/api/auth/activate/{uid}/{token}/"
-        subject = "Activate Your Account"
-        message = f"Click the link to activate your account:\n{activation_link}"
-        send_mail(subject, message, 'noreply@somos.srl', [user.email])
+
+        send_html_email(
+            user,
+            subject="Activate Your Account",
+            title="Activate Your Account",
+            message="Welcome! Click the button below to activate your account.",
+            link=activation_link
+        )
+        return user
 
 
 class PasswordResetRequestSerializer(serializers.Serializer):
@@ -88,5 +88,5 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ['id', 'username', 'email', 'type', 'codice_fiscale', 'favorite_places']
-        read_only_fields = ['id', 'type', 'codice_fiscale', 'favorite_places']
+        read_only_fields = ['id', 'codice_fiscale', 'favorite_places']
 

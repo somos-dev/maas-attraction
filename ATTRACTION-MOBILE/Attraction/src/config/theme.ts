@@ -7,14 +7,15 @@ export const lightTheme = {
     ...DefaultLightTheme.colors,
     primary: "#50b948",
     secondary: "#45c3d6",
-    background: "#F5F9F6",
+    background: "#ffffffff",
     surface: "#FFFFFF",
     text: "#333333",
     error: "#D32F2F",
     onPrimary: "#FFFFFF",
     onSecondary: "#FFFFFF",
     onSurface: "#000000ff",
-    onSurfaceVariant: "#a7a9aa"
+    onSurfaceVariant: "#777a7bff",
+    backgroundCard: "#ecf4f1ff"
   },
   fonts: {
     ...DefaultLightTheme.fonts,
@@ -40,15 +41,16 @@ export const darkTheme = {
     ...DefaultDarkTheme.colors,
     primary: "#50b948",     // Verde coerente brand
     secondary: "#45c3d6",   // Blu coerente brand
-    background: "#121212",  // Sfondo principale scuro
-    surface: "#1E1E1E",     // Card/Input scuri
+    background: "#121212ff",  // Sfondo principale scuro
+    surface: "#14201cff",     // Card/Input scuri
     text: "#E0E0E0",        // Testo chiaro
     error: "#CF6679",
     onPrimary: "#FFFFFF",
     onSecondary: "#FFFFFF",
     onSurface: "#E0E0E0",   // Testo su card
-    outline: "#444444",     // Bordi scuri
-    onSurfaceVariant: "#a7a9aa"
+    outline: "#06652bff",     // Bordi scuri
+    onSurfaceVariant: "#a7a9aa",
+    backgroundCard: "#2b332bff"
   },
   fonts: {
     ...DefaultDarkTheme.fonts,

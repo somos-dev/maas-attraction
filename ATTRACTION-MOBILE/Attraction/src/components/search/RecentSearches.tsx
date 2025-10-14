@@ -2,28 +2,37 @@ import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from "react-native";
 import { useTheme } from "react-native-paper";
 import { useGetSearchesQuery } from "../../store/api/searchApi";
+import { reverseGeocode as reverseGeocodeUtil } from "../../utils/reverseGeocode";
 
 interface RecentSearchesProps {
   onSelect: (item: any) => void;
-  reverseGeocode: (lat: number, lon: number) => Promise<string>;
+  reverseGeocode?: (lat: number, lon: number) => Promise<string>;
 }
 
 export default function RecentSearches({ onSelect, reverseGeocode }: RecentSearchesProps) {
   const theme = useTheme();
   const { data: allSearches = [], isLoading } = useGetSearchesQuery();
-  const recentSearches = [...allSearches].slice(-5).reverse();
+
+  const validSearches = allSearches.filter(
+    (s) => s.from_lat !== 0 && s.to_lat !== 0
+  );
+
+  const recentSearches = [...validSearches].slice(-6).reverse();
 
   const [resolvedNames, setResolvedNames] = useState<
     Record<number, { from: string; to: string }>
   >({});
+
+  // Usa la prop se fornita, altrimenti la util condivisa
+  const doReverse = reverseGeocode ?? reverseGeocodeUtil;
 
   useEffect(() => {
     const resolveAll = async () => {
       try {
         const results = await Promise.all(
           recentSearches.map(async (item) => {
-            const fromName = await reverseGeocode(item.from_lat, item.from_lon);
-            const toName = await reverseGeocode(item.to_lat, item.to_lon);
+            const fromName = await doReverse(item.from_lat, item.from_lon);
+            const toName = await doReverse(item.to_lat, item.to_lon);
             return [item.id, { from: fromName, to: toName }] as const;
           })
         );
@@ -33,12 +42,14 @@ export default function RecentSearches({ onSelect, reverseGeocode }: RecentSearc
       }
     };
     if (recentSearches.length > 0) resolveAll();
-  }, [recentSearches]);
+  }, [recentSearches, doReverse]);
 
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Caricamento...</Text>
+        <Text style={[styles.loadingText, { color: theme.colors.onSurfaceVariant }]}>
+          Caricamento...
+        </Text>
       </View>
     );
   }
@@ -46,28 +57,43 @@ export default function RecentSearches({ onSelect, reverseGeocode }: RecentSearc
   if (recentSearches.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>Nessuna ricerca salvata</Text>
+        <Text style={[styles.emptyText, { color: theme.colors.onSurfaceVariant }]}>
+          Nessuna ricerca salvata
+        </Text>
       </View>
     );
   }
 
   return (
     <View style={styles.recentSection}>
-      <Text style={styles.recentTitle}>Tratte recenti</Text>
+      <Text style={[styles.recentTitle, { color: theme.colors.onSurface }]}>
+        Tratte recenti
+      </Text>
+
       {recentSearches.map((item) => (
         <TouchableOpacity
           key={item.id}
-          style={styles.recentItem}
+          style={[
+            styles.recentItem,
+            { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline },
+          ]}
           onPress={() => onSelect(item)}
           activeOpacity={0.7}
         >
-          <Text style={styles.fromText} numberOfLines={1}>
+          <Text style={[styles.fromText, { color: theme.colors.primary }]}>
             ↑ {resolvedNames[item.id]?.from || "Caricamento..."}
           </Text>
-          <Text style={styles.toText} numberOfLines={1}>
+          <Text style={[styles.toText, { color: theme.colors.error }]}>
             ↓ {resolvedNames[item.id]?.to || "Caricamento..."}
           </Text>
-          <Text style={styles.dateText}>{item.trip_date}</Text>
+          <Text style={[styles.dateText, { color: theme.colors.onSurfaceVariant }]}>
+            {new Date(item.trip_date).toLocaleString("it-IT", {
+              day: "2-digit",
+              month: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </Text>
         </TouchableOpacity>
       ))}
     </View>
@@ -86,11 +112,9 @@ const styles = StyleSheet.create({
   },
   recentItem: {
     padding: 14,
-    backgroundColor: "#f9f9f9",
     borderRadius: 10,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#e8e8e8",
     width: "100%",
     ...Platform.select({
       ios: {
@@ -106,19 +130,16 @@ const styles = StyleSheet.create({
   },
   fromText: {
     fontWeight: "600",
-    color: "#2e7d32",
     marginBottom: 4,
     fontSize: 15,
   },
   toText: {
     fontWeight: "600",
-    color: "#c62828",
     marginBottom: 6,
     fontSize: 15,
   },
   dateText: {
     fontSize: 13,
-    color: "#666",
     marginTop: 2,
   },
   loadingContainer: {
@@ -126,7 +147,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   loadingText: {
-    color: "#666",
     fontSize: 15,
   },
   emptyContainer: {
@@ -134,8 +154,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   emptyText: {
-    color: "#999",
     fontSize: 15,
     fontStyle: "italic",
   },
 });
+

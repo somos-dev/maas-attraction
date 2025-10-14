@@ -11,9 +11,11 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useCreateFeedbackMutation } from "../../store/api/feedbackApi";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/store";
+import RestrictedAccess from "../../components/common/RestrictedAccess"; // 👈 aggiunto
 
 export default function FeedbackScreen() {
   const theme = useTheme();
+  const auth = useSelector((state: RootState) => state.auth);
   const user = useSelector((state: RootState) => state.user);
 
   const [rating, setRating] = useState(0);
@@ -41,6 +43,13 @@ export default function FeedbackScreen() {
       console.error("Errore invio feedback:", error);
     }
   };
+
+  // 👇 Se l'utente è anonimo o non loggato, mostriamo RestrictedAccess
+  if (auth.isAnonymous || !auth.access) {
+    return (
+      <RestrictedAccess message="Solo gli utenti registrati possono inviare un feedback." />
+    );
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -119,3 +128,4 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
 });
+

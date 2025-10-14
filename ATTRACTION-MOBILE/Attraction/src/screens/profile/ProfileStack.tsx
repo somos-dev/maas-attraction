@@ -5,6 +5,8 @@ import ProfileScreen from "./ProfileScreen";
 import type { ProfileStackParamList } from "../../navigation/types";
 import EditProfileScreen from "./EditProfileScreen";
 import TransportPreferencesScreen from "./TransportPreferencesScreen";
+import TripsHistoryScreen from "./TripsHistoryScreen";
+
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
 
@@ -34,6 +36,12 @@ export default function ProfileStack() {
         name="TransportPreferences"
         component={TransportPreferencesScreen}
         options={{ title: "Preferenze di Trasporto" }}
+      />
+
+      <Stack.Screen
+        name="TripsHistory"
+        component={TripsHistoryScreen}
+        options={{ title: "Storico Viaggi" }}
       />
     </Stack.Navigator>
   );

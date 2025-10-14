@@ -1,57 +1,55 @@
-// src/components/trip/RouteDetails.tsx
 import React from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { Divider, Chip, useTheme } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 interface RouteDetailsProps {
-  route: any; // dati del percorso normalizzati da normalizeRoutes()
+  route: any; // dati del percorso normalizzati da plan-trip
+  busInfo?: any; // prop opzionale con info da OTP
 }
 
-/**
- * RouteDetails
- * ------------------------------------------------------------------
- * Mostra i dettagli di un itinerario (segmenti/legs).
- * - Coerente con normalizeRoutes() (mobile)
- * - Coerente con normalizeRouteOptionsToRoutes() (web)
- * - Allineato alle API Django (plan-trip)
- */
-export default function RouteDetails({ route }: RouteDetailsProps) {
+export default function RouteDetails({ route, busInfo }: RouteDetailsProps) {
   const theme = useTheme();
 
-  // Priorità: legs (dettagli), fallback su segments (aggregati)
   const segments = route?.legs?.length ? route.legs : route?.segments || [];
 
   if (!segments.length) {
     return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>Nessuna istruzione disponibile.</Text>
+      <View
+        style={[
+          styles.emptyContainer,
+          { backgroundColor: theme.colors.surface },
+        ]}
+      >
+        <Text style={[styles.emptyText, { color: theme.colors.onSurface }]}>
+          Nessuna istruzione disponibile.
+        </Text>
       </View>
     );
   }
 
-  // Config modalità coerente con web e backend
-  const MODE_CONFIG: Record<
-    string,
-    { icon: string; color: string; label: string }
-  > = {
+  const MODE_CONFIG: Record<string, { icon: string; color: string; label: string }> = {
     walk: { icon: "walk", color: "#9E9E9E", label: "A piedi" },
-    bus: { icon: "bus", color: "#2196F3", label: "Bus" },
-    train: { icon: "train", color: "#FF6F00", label: "Treno" },
+    bus: { icon: "bus", color: theme.colors.primary, label: "Bus" },
+    train: { icon: "train", color: "#FFB300", label: "Treno" },
     tram: { icon: "tram", color: "#4CAF50", label: "Tram" },
     subway: { icon: "subway-variant", color: "#E91E63", label: "Metro" },
-    car: { icon: "car", color: "#424242", label: "Auto" },
+    car: { icon: "car", color: "#616161", label: "Auto" },
     bike: { icon: "bike", color: "#8BC34A", label: "Bici" },
   };
 
   return (
     <ScrollView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.colors.surface }]}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={{ paddingBottom: 40 }}
     >
-      <Text style={styles.header}>Dettagli del viaggio</Text>
-      <Divider style={styles.divider} />
+      <Text style={[styles.header, { color: theme.colors.onSurface }]}>
+        Dettagli del viaggio
+      </Text>
+      <Divider
+        style={[styles.divider]}
+      />
 
       {segments.map((seg: any, i: number) => {
         const mode = (seg.type || seg.mode || "walk").toLowerCase();
@@ -63,14 +61,28 @@ export default function RouteDetails({ route }: RouteDetailsProps) {
           ? Math.round(Number(seg.duration_s) / 60)
           : null;
 
-        // step camminata
+        const distanceKm =
+          seg.distance_m != null
+            ? (Number(seg.distance_m) / 1000).toFixed(2)
+            : null;
+
         const walkSteps =
           Array.isArray(seg.walk_steps) && seg.walk_steps.length > 0
             ? seg.walk_steps
             : [];
 
         return (
-          <View key={i} style={styles.segmentCard}>
+          <View
+            key={i}
+            style={[
+              styles.segmentCard,
+              {
+                backgroundColor: theme.colors.backgroundCard,
+                borderColor: "transparent",
+                shadowColor: theme.dark ? "transparent" : "#000",
+              },
+            ]}
+          >
             {/* Header tratta */}
             <View style={styles.segmentHeader}>
               <View
@@ -79,10 +91,19 @@ export default function RouteDetails({ route }: RouteDetailsProps) {
                 <Icon name={config.icon} size={18} color="#fff" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.modeTitle}>{config.label}</Text>
+                <Text
+                  style={[styles.modeTitle, { color: theme.colors.onSurface }]}
+                >
+                  {config.label}
+                </Text>
 
                 {seg.start_time && seg.end_time ? (
-                  <Text style={styles.timeInfo}>
+                  <Text
+                    style={[
+                      styles.timeInfo,
+                      { color: theme.colors.onSurface },
+                    ]}
+                  >
                     🕒{" "}
                     {new Date(seg.start_time).toLocaleTimeString([], {
                       hour: "2-digit",
@@ -95,36 +116,117 @@ export default function RouteDetails({ route }: RouteDetailsProps) {
                     })}
                   </Text>
                 ) : durationMinutes ? (
-                  <Text style={styles.timeInfo}>⏱ {durationMinutes} min</Text>
+                  <Text
+                    style={[
+                      styles.timeInfo,
+                      { color: theme.colors.onSurface },
+                    ]}
+                  >
+                    ⏱ {durationMinutes} min
+                  </Text>
                 ) : null}
+
+                {/* ✅ nuova riga: distanza per tratta */}
+                {distanceKm && (
+                  <Text
+                    style={[
+                      styles.distanceInfo,
+                      { color: theme.colors.onSurfaceVariant },
+                    ]}
+                  >
+                     Distanza: {distanceKm} km
+                  </Text>
+                )}
               </View>
             </View>
 
             {/* Linea bus/treno */}
-            {seg.route && (
+            {mode === "bus" && (
               <View style={styles.chipContainer}>
-                <Chip
-                  icon={config.icon}
-                  style={[styles.routeChip, { borderColor: config.color }]}
-                  textStyle={{ color: config.color, fontWeight: "600" }}
+                {busInfo ? (
+                  <Chip
+                    icon="bus"
+                    style={[
+                      styles.routeChip,
+                      {
+                        borderColor: config.color,
+                        backgroundColor: theme.colors.surface,
+                      },
+                    ]}
+                    textStyle={{
+                      color: config.color,
+                      fontWeight: "600",
+                    }}
+                  >
+                    {busInfo.agency?.name
+                      ? `${busInfo.agency.name} ${busInfo.shortName || ""}`
+                      : `Linea ${busInfo.shortName || seg.route_short || "?"}`}
+                  </Chip>
+                ) : (
+                  <Chip
+                    icon="bus"
+                    style={[
+                      styles.routeChip,
+                      {
+                        borderColor: config.color,
+                        backgroundColor: theme.colors.surface,
+                      },
+                    ]}
+                    textStyle={{
+                      color: config.color,
+                      fontWeight: "600",
+                    }}
+                  >
+                    {seg.bus_name || seg.route_short || "Bus"}
+                  </Chip>
+                )}
+              </View>
+            )}
+
+            {/* Fermate principali */}
+            {busInfo?.patterns?.length > 0 && mode === "bus" && (
+              <View style={{ marginTop: 12 }}>
+                <Text
+                  style={[
+                    styles.stopHeader,
+                    { color: theme.colors.onSurface },
+                  ]}
                 >
-                  Linea {seg.route}
-                </Chip>
+                  Fermate principali:
+                </Text>
+                {busInfo.patterns[0].stops.slice(0, 5).map((stop: any, j: number) => (
+                  <Text
+                    key={j}
+                    style={[styles.stopItem, { color: theme.colors.onSurface }]}
+                  >
+                    • {stop.name}
+                  </Text>
+                ))}
               </View>
             )}
 
             {/* Passi camminata */}
             {walkSteps.length > 0 && (
               <View style={styles.stepsContainer}>
-                <Divider style={styles.stepsDivider} />
+                <Divider
+                  style={[
+                    styles.stepsDivider,
+                    
+                  ]}
+                />
                 {walkSteps.map((step: any, j: number) => (
                   <View key={j} style={styles.stepRow}>
                     <Icon
                       name="arrow-right"
                       size={14}
-                      color={theme.colors.onSurfaceVariant || "#666"}
+                      color={theme.colors.onSurface}
                     />
-                    <Text style={styles.stepText}>
+                    <Text
+                      style={[
+                        styles.stepText,
+                        { color: theme.colors.onSurface },
+                      ]}
+                    >
                       {step.streetName || step.name || "Strada sconosciuta"}{" "}
                       {step.distance_m
                         ? `— ${Math.round(step.distance_m)} m`
@@ -147,21 +249,17 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 17,
     marginBottom: 8,
-    color: "#333",
   },
   divider: { marginBottom: 12 },
   segmentCard: {
-    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#f0f0f0",
-    shadowColor: "#000",
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 3,
-    elevation: 2,
+    elevation: 4,
   },
   segmentHeader: {
     flexDirection: "row",
@@ -176,25 +274,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 10,
   },
-  modeTitle: { fontSize: 15, fontWeight: "700", color: "#333" },
-  timeInfo: { fontSize: 12, color: "#777", marginTop: 4 },
+  modeTitle: { fontSize: 15, fontWeight: "700" },
+  timeInfo: { fontSize: 12, marginTop: 4 },
+  distanceInfo: { fontSize: 12, marginTop: 2, fontStyle: "italic" }, // ✅ coerente graficamente
   chipContainer: { marginTop: 8, flexDirection: "row" },
   routeChip: {
-    backgroundColor: "#fff",
     borderWidth: 1.5,
     marginRight: 8,
   },
   stepsContainer: { marginTop: 8 },
-  stepsDivider: { marginBottom: 8, backgroundColor: "#eee" },
+  stepsDivider: { marginBottom: 8 },
   stepRow: { flexDirection: "row", alignItems: "center", marginBottom: 4 },
-  stepText: { fontSize: 13, color: "#555", marginLeft: 6 },
-  emptyContainer: {
-    padding: 20,
-    alignItems: "center",
-  },
-  emptyText: {
-    color: "#777",
-    fontStyle: "italic",
-    fontSize: 14,
-  },
+  stepText: { fontSize: 13, marginLeft: 6 },
+  stopHeader: { fontWeight: "700", marginBottom: 4 },
+  stopItem: { fontSize: 13, marginLeft: 8, marginBottom: 2 },
+  emptyContainer: { padding: 20, alignItems: "center" },
+  emptyText: { fontStyle: "italic", fontSize: 14 },
 });
+
+
+

@@ -38,7 +38,7 @@ export default function TabNavigator() {
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
         tabBarStyle: {
-          backgroundColor: theme.colors.surface,
+          backgroundColor: theme.colors.background,
           borderTopWidth: 0,
           height: 80,
           paddingTop: 8,

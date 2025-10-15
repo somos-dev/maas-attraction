@@ -350,7 +350,8 @@ function AuthProvider({ children }: AuthProviderProps) {
           // Valid access token exists
           handleSession(accessToken, refreshToken);
           const response = await axiosInstance.get(ENDPOINTS_AUTH.profile);
-          const user = response?.data?.data;
+          console.log('session response', response)
+          const user = response?.data?.data ?? response?.data ?? null;
           console.log('user before refresh', user)
           dispatch({
             type: Types.Initial,
@@ -443,7 +444,8 @@ function AuthProvider({ children }: AuthProviderProps) {
       }
     );
 
-      const data = response.data;
+      const data = response?.data?.data ?? response?.data ?? null;
+      console.log('Login response data:', data);
       handleSession(data?.access, data?.refresh);
 
       const profResponse = await axiosInstance.get(ENDPOINTS_AUTH.profile);
@@ -479,7 +481,8 @@ function AuthProvider({ children }: AuthProviderProps) {
         role: props.role,
       });
 
-      const data = response.data;
+      const data = response?.data?.data ?? response?.data ?? null;
+      console
 
       dispatch({
         type: Types.Register,

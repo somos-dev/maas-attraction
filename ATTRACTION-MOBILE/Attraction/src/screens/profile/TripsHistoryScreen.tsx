@@ -9,7 +9,8 @@ import {
   Pressable,
   ViewToken,
   Animated,
-  Modal,
+  LayoutAnimation,
+  UIManager,
 } from "react-native";
 import {
   Text,
@@ -18,15 +19,21 @@ import {
   IconButton,
   Chip,
   Searchbar,
+  Surface,
+  Menu,
+  Badge,
 } from "react-native-paper";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { ProfileStackParamList } from "../../navigation/types";
 import { useGetSearchesQuery } from "../../store/api/searchApi";
 import { reverseGeocode as reverseGeocodeUtil } from "../../utils/reverseGeocode";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+
+if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 type Props = NativeStackScreenProps<ProfileStackParamList, "TripsHistory">;
-
 type FilterMode = "all" | "bus" | "eco" | "train" | "bike";
 type SortBy = "recent" | "oldest" | "distance";
 
@@ -34,22 +41,31 @@ const PAGE_SIZE = 48;
 const VISIBLE_GEOCODE_BATCH = 8;
 const GEOCODE_CACHE_PRECISION = 4;
 
+// ---- helpers
+const round = (n: number) => Number(n.toFixed(GEOCODE_CACHE_PRECISION));
+const coordKey = (lat: number, lon: number) => `${round(lat)},${round(lon)}`;
+const formatLatLon = (lat: number, lon: number) => `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+const isCoordFallback = (s?: string) => !!s && /-?\d+\.\d+,\s*-?\d+\.\d+/.test(s);
+const sortLabelIT = (s: SortBy) => (s === "recent" ? "Più recenti" : s === "oldest" ? "Più vecchi" : "Più lunghi");
+const chipLabelIT = (m: FilterMode) => (m === "all" ? "Tutte" : m === "bus" ? "Bus" : m === "eco" ? "Eco" : m === "train" ? "Treno" : "Bici");
+const selectedModeLabelIT = (mode: FilterMode) => (mode === "all" ? "Tutte le modalità" : chipLabelIT(mode));
+const fmtDate = (d: Date) =>
+  d.toLocaleString("it-IT", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
     Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) ** 2;
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
 
-function normalizeModeLabel(
-  modesRaw: string
-): "bus" | "subway" | "tram" | "train" | "bike" | "walk" | "car" | "other" {
+// modalità → icona/label/colore (stile uniforme)
+type NormalMode = "bus" | "subway" | "tram" | "train" | "bike" | "walk" | "car" | "other";
+const normalizeModeLabel = (modesRaw: string): NormalMode => {
   const m = (modesRaw || "").toLowerCase();
   if (m.includes("subway") || m.includes("metro")) return "subway";
   if (m.includes("tram")) return "tram";
@@ -59,228 +75,49 @@ function normalizeModeLabel(
   if (m.includes("walk")) return "walk";
   if (m.includes("car") || m.includes("auto")) return "car";
   return "other";
-}
+};
+const MODE_META: Record<NormalMode, { icon: string; label: string; color: string }> = {
+  bus: { icon: "bus", label: "Bus", color: "#2196F3" },
+  subway: { icon: "subway-variant", label: "Metro", color: "#E91E63" },
+  tram: { icon: "tram", label: "Tram", color: "#4CAF50" },
+  train: { icon: "train", label: "Treno", color: "#FF6F00" },
+  bike: { icon: "bike", label: "Bici", color: "#8BC34A" },
+  walk: { icon: "walk", label: "A piedi", color: "#9E9E9E" },
+  car: { icon: "car", label: "Auto", color: "#424242" },
+  other: { icon: "transit-connection-variant", label: "Altro", color: "#6B7280" },
+};
+const getModeMeta = (raw: string) => MODE_META[normalizeModeLabel(raw)];
+const ECO_SET = new Set<NormalMode>(["bus", "train", "bike", "walk", "subway", "tram"]);
+const isEcoMode = (raw: string) => ECO_SET.has(normalizeModeLabel(raw));
 
-function getModeIcon(mode: string): string {
-  const m = normalizeModeLabel(mode);
-  if (m === "bus") return "🚌";
-  if (m === "subway") return "🚇";
-  if (m === "tram") return "🚊";
-  if (m === "train") return "🚆";
-  if (m === "bike") return "🚴";
-  if (m === "walk") return "🚶";
-  return "🚗";
-}
-
-function modeDisplayIT(norm: ReturnType<typeof normalizeModeLabel>): string {
-  switch (norm) {
-    case "bus": return "Bus";
-    case "subway": return "Metro";
-    case "tram": return "Tram";
-    case "train": return "Treno";
-    case "bike": return "Bici";
-    case "walk": return "A piedi";
-    case "car": return "Auto";
-    default: return "Altro";
-  }
-}
-
-const ECO_SET = new Set(["bus", "train", "bike", "walk", "subway", "tram"]);
-const isEcoMode = (modesRaw: string) => ECO_SET.has(normalizeModeLabel(modesRaw));
-
-const chipLabelIT = (mode: FilterMode) =>
-  mode === "all" ? "Tutte"
-  : mode === "bus" ? "Bus"
-  : mode === "eco" ? "Eco"
-  : mode === "train" ? "Treno"
-  : "Bici";
-
-const selectedModeLabelIT = (mode: FilterMode) =>
-  mode === "all" ? "Tutte le modalità" : chipLabelIT(mode);
-
-const sortLabelIT = (s: SortBy) =>
-  s === "recent" ? "Più recenti" : s === "oldest" ? "Più vecchi" : "Più lunghi";
-
-const round = (n: number) => Number(n.toFixed(GEOCODE_CACHE_PRECISION));
-const coordKey = (lat: number, lon: number) => `${round(lat)},${round(lon)}`;
-const formatLatLon = (lat: number, lon: number) => `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-const isCoordFallback = (s?: string) => !!s && /-?\d+\.\d+,\s*-?\d+\.\d+/.test(s);
-
-// Modal dei filtri - componente separato per ottimizzazione
-const FiltersModal = React.memo(({
-  visible,
-  onClose,
-  selectedMode,
-  onModeChange,
-  sortBy,
-  onSortChange,
-  dateRange,
-  onDateChange,
-  onReset,
-  theme,
-}: any) => {
-  const [datePickerMode, setDatePickerMode] = useState<"start" | "end">("start");
-  const [showDatePicker, setShowDatePicker] = useState(false);
-
-  const handleDateChange = (field: "start" | "end", date: Date) => {
-    if (date) {
-      onDateChange(field, date);
-      setShowDatePicker(false);
-    }
-  };
-
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-      statusBarTranslucent
-    >
-      <View style={[styles.modalOverlay, { backgroundColor: "rgba(0,0,0,0.3)" }]}>
-        <View style={[styles.modalContent, { backgroundColor: theme.colors.surface }]}>
-          {/* Header del modal */}
-          <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: theme.colors.onSurface }]}>Filtri</Text>
-            <IconButton
-              icon="close"
-              size={24}
-              onPress={onClose}
-              iconColor={theme.colors.onSurface}
-            />
-          </View>
-
-          {/* Contenuto scrollabile */}
-          <View style={styles.modalBody}>
-            {/* Sezione Ordina per */}
-            <View style={styles.filterSection}>
-              <Text style={[styles.filterLabel, { color: theme.colors.onSurface }]}>
-                Ordina per
-              </Text>
-              <View style={styles.sortContainer}>
-                {(["recent", "oldest", "distance"] as SortBy[]).map((sort) => (
-                  <TouchableOpacity
-                    key={sort}
-                    style={[
-                      styles.sortOption,
-                      sortBy === sort && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
-                    ]}
-                    onPress={() => onSortChange(sort)}
-                  >
-                    <Text style={[styles.sortText, { color: sortBy === sort ? theme.colors.onPrimary : theme.colors.onSurface }]}>
-                      {sortLabelIT(sort)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {/* Sezione Date */}
-            <View style={styles.filterSection}>
-              <Text style={[styles.filterLabel, { color: theme.colors.onSurface }]}>
-                Intervallo date
-              </Text>
-              <View style={styles.dateRangeContainer}>
-                <TouchableOpacity
-                  style={[styles.dateButton, { backgroundColor: theme.colors.primaryContainer }]}
-                  onPress={() => {
-                    setDatePickerMode("start");
-                    setShowDatePicker(true);
-                  }}
-                >
-                  <Text style={[styles.dateButtonText, { color: theme.colors.onPrimaryContainer }]}>
-                    Da: {dateRange.start.toLocaleDateString("it-IT", { day: "2-digit", month: "short" })}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.dateButton, { backgroundColor: theme.colors.primaryContainer }]}
-                  onPress={() => {
-                    setDatePickerMode("end");
-                    setShowDatePicker(true);
-                  }}
-                >
-                  <Text style={[styles.dateButtonText, { color: theme.colors.onPrimaryContainer }]}>
-                    A: {dateRange.end.toLocaleDateString("it-IT", { day: "2-digit", month: "short" })}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {showDatePicker && (
-                <DateTimePicker
-                  value={datePickerMode === "start" ? dateRange.start : dateRange.end}
-                  mode="date"
-                  display={Platform.OS === "ios" ? "spinner" : "default"}
-                  onChange={(_, selectedDate) => {
-                    if (selectedDate) handleDateChange(datePickerMode, selectedDate);
-                  }}
-                />
-              )}
-            </View>
-          </View>
-
-          {/* Pulsanti azione */}
-          <View style={[styles.modalFooter, { borderTopColor: theme.colors.outline }]}>
-            <TouchableOpacity
-              style={[styles.resetButton, { backgroundColor: theme.colors.error }]}
-              onPress={onReset}
-            >
-              <Text style={[styles.resetButtonText, { color: theme.colors.onError }]}>
-                Azzera filtri
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.closeButton, { backgroundColor: theme.colors.primary }]}
-              onPress={onClose}
-            >
-              <Text style={[styles.closeButtonText, { color: theme.colors.onPrimary }]}>
-                Applica
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-});
-
-export default function TripsHistoryScreen({ navigation }: Props) {
+export default function TripsHistoryScreen({}: Props) {
   const theme = useTheme();
   const { data: allSearches = [], isLoading, isError, refetch, isFetching } = useGetSearchesQuery();
 
-  // ---- state/filters ----
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMode, setSelectedMode] = useState<FilterMode>("all");
   const [sortBy, setSortBy] = useState<SortBy>("recent");
-  const [dateRange, setDateRange] = useState({
-    start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    end: new Date(),
-  });
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
 
-  // ---- caches/queues ----
+  // geocoding cache & queue
   const [resolvedNames, setResolvedNames] = useState<Record<string, { from: string; to: string }>>({});
   const geocodeCacheRef = useRef<Map<string, string>>(new Map());
   const queueRef = useRef<Set<string>>(new Set());
   const geocodingBusyRef = useRef(false);
   const retriedOnceRef = useRef<Set<string>>(new Set());
 
-  // ---- derive list con memoization migliorata ----
+  // filtra + ordina
   const filteredTrips = useMemo(() => {
     let trips = allSearches
       .filter((s) => s.from_lat !== 0 && s.to_lat !== 0)
       .map((s) => ({ ...s, tripDate: new Date(s.trip_date) }))
       .filter((trip) => {
-        if (trip.tripDate < dateRange.start || trip.tripDate > dateRange.end) return false;
-
         if (selectedMode !== "all") {
           const norm = normalizeModeLabel(trip.modes);
           if (selectedMode === "eco") {
             if (!isEcoMode(trip.modes)) return false;
-          } else {
-            if (norm !== selectedMode) return false;
-          }
+          } else if (norm !== selectedMode) return false;
         }
 
         if (searchQuery.trim()) {
@@ -313,15 +150,16 @@ export default function TripsHistoryScreen({ navigation }: Props) {
         trips.sort((a, b) => b.tripDate.getTime() - a.tripDate.getTime());
     }
     return trips;
-  }, [allSearches, selectedMode, sortBy, searchQuery, dateRange, resolvedNames]);
+  }, [allSearches, selectedMode, sortBy, searchQuery, resolvedNames]);
 
+  // paginazione
   const paginatedTrips = useMemo(
     () => filteredTrips.slice(0, (pageIndex + 1) * PAGE_SIZE),
     [filteredTrips, pageIndex]
   );
   const hasMore = filteredTrips.length > (pageIndex + 1) * PAGE_SIZE;
 
-  // ---- geocoding helpers ----
+  // geocoding helpers
   const reverseWithCache = useCallback(async (lat: number, lon: number) => {
     const key = coordKey(lat, lon);
     const cached = geocodeCacheRef.current.get(key);
@@ -395,7 +233,9 @@ export default function TripsHistoryScreen({ navigation }: Props) {
 
   useEffect(() => {
     if (paginatedTrips.length === 0) return;
-    const firstIds = paginatedTrips.slice(0, Math.min(paginatedTrips.length, VISIBLE_GEOCODE_BATCH)).map((t) => String(t.id));
+    const firstIds = paginatedTrips
+      .slice(0, Math.min(paginatedTrips.length, VISIBLE_GEOCODE_BATCH))
+      .map((t) => String(t.id));
     scheduleGeocode(firstIds);
   }, [paginatedTrips, scheduleGeocode]);
 
@@ -404,209 +244,239 @@ export default function TripsHistoryScreen({ navigation }: Props) {
       const ids = viewableItems
         .map((v) => v.item?.id)
         .filter((id) => id != null)
-        .map((id) => String(id));
+        .map((id) => String(id as number));
       scheduleGeocode(ids);
     },
     [scheduleGeocode]
   );
 
-  const handleDateChange = useCallback((field: "start" | "end", date: Date) => {
-    setDateRange((prev) => ({ ...prev, [field]: date }));
-    setPageIndex(0);
-  }, []);
-
-  const resetFilters = useCallback(() => {
-    setSearchQuery("");
-    setSelectedMode("all");
-    setSortBy("recent");
-    setDateRange({
-      start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-      end: new Date(),
-    });
-    setPageIndex(0);
-  }, []);
-
-  const onSelectTrip = useCallback(
-    (item: any) => {
-      navigation.getParent()?.navigate("HomeTab" as never, {
-        screen: "Results",
-        params: { searchId: item.id },
-      } as never);
-    },
-    [navigation]
-  );
-
+  // perf FlatList
   const keyExtractor = useCallback((item: any) => String(item.id), []);
-  const ITEM_HEIGHT = 116;
+  const ITEM_HEIGHT = 138;
   const getItemLayout = useCallback(
     (_: any, index: number) => ({ length: ITEM_HEIGHT, offset: ITEM_HEIGHT * index, index }),
     []
   );
 
-  // Componente card memoizzato per evitare re-render
-  const TripsCard = React.memo(({ item }: { item: any }) => {
-    const id = String(item.id);
-    const rn = resolvedNames[id];
-    const from = rn?.from || formatLatLon(item.from_lat, item.from_lon);
-    const to = rn?.to || formatLatLon(item.to_lat, item.to_lon);
+  // ---------- CARD (Surface con background uguale a Results) ----------
+  const TripsCard = React.memo(
+    ({ item }: { item: any }) => {
+      const id = String(item.id);
+      const rn = resolvedNames[id];
+      const from = rn?.from || formatLatLon(item.from_lat, item.from_lon);
+      const to = rn?.to || formatLatLon(item.to_lat, item.to_lon);
+      const isLoadingGeo = !rn;
 
-    if ((isCoordFallback(from) || isCoordFallback(to)) && !retriedOnceRef.current.has(id)) {
-      retriedOnceRef.current.add(id);
-      scheduleGeocode([id]);
-    }
+      if ((isCoordFallback(from) || isCoordFallback(to)) && !retriedOnceRef.current.has(id)) {
+        retriedOnceRef.current.add(id);
+        scheduleGeocode([id]);
+      }
 
-    const date = new Date(item.trip_date);
-    const distanceKm = calculateDistance(item.from_lat, item.from_lon, item.to_lat, item.to_lon);
-    const normMode = normalizeModeLabel(item.modes);
-    const modeEmoji = getModeIcon(item.modes);
-    const modeColor =
-      normMode === "bus"
-        ? theme.colors.primary
-        : normMode === "subway" || normMode === "tram"
-        ? theme.colors.secondary
-        : normMode === "train"
-        ? theme.colors.tertiary ?? theme.colors.primary
-        : normMode === "bike"
-        ? "#FF6B6B"
-        : theme.colors.onSurfaceVariant;
+      const date = new Date(item.trip_date);
+      const distanceKm = calculateDistance(item.from_lat, item.from_lon, item.to_lat, item.to_lon);
+      const meta = getModeMeta(item.modes);
+      const eco = isEcoMode(item.modes);
 
-    return (
-      <Pressable
-        onPress={() => {
-          scheduleGeocode([id]);
-          onSelectTrip(item);
-        }}
-        android_ripple={{ borderless: false }}
-        accessibilityRole="button"
-        accessibilityLabel={`Tratta da ${from} a ${to}`}
-        accessibilityHint="Apri i dettagli tratta"
-        style={[
-          styles.card,
-          {
-            backgroundColor: theme.colors.backgroundCard ?? theme.colors.surface,
-            borderColor: "transparent",
-          },
-          Platform.select({
-            ios: styles.iosShadow,
-            android: { elevation: 4 },
-          }),
-        ] as any}
-        hitSlop={8}
-      >
-        <View style={styles.topRow}>
-          <View style={[styles.modePill, { borderColor: modeColor + "55" }]}>
-            <Text style={styles.modeEmoji}>{modeEmoji}</Text>
-            <Text style={[styles.modeText, { color: modeColor }]}>{modeDisplayIT(normMode)}</Text>
-          </View>
-          <Text style={[styles.date, { color: theme.colors.onSurfaceVariant }]}>
-            {date.toLocaleString("it-IT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
-          </Text>
-          <IconButton icon="chevron-right" size={22} iconColor={theme.colors.onSurfaceVariant} />
-        </View>
+      const scaleAnim = useRef(new Animated.Value(1)).current;
+      const pressIn = () => Animated.spring(scaleAnim, { toValue: 0.98, useNativeDriver: true, speed: 50 }).start();
+      const pressOut = () => Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, speed: 50 }).start();
 
-        <View style={styles.routeBox}>
-          <Text numberOfLines={1} style={[styles.routeLine, { color: theme.colors.onSurface }]}>
-            <Text style={[styles.routeLabel, { color: theme.colors.onSurfaceVariant }]}>Da: </Text>
-            {from}
-          </Text>
-          <Text numberOfLines={1} style={[styles.routeLine, { color: theme.colors.onSurface }]}>
-            <Text style={[styles.routeLabel, { color: theme.colors.onSurfaceVariant }]}>A: </Text>
-            {to}
-          </Text>
-        </View>
+      return (
+        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+          <Pressable
+            onPressIn={pressIn}
+            onPressOut={pressOut}
+            onPress={() => LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)}
+            android_ripple={{ borderless: false, color: meta.color + "22" }}
+            style={{ marginHorizontal: 16, marginBottom: 12 }}
+            accessibilityRole="button"
+            accessibilityLabel={`Tratta ${meta.label} da ${from} a ${to}`}
+          >
+            <Surface
+              elevation={2}
+              style={[
+                styles.card,
+                {
+                  backgroundColor: theme.colors.backgroundCard, // <— stesso sfondo delle Results
+                  borderColor: meta.color + "20",
+                },
+              ]}
+            >
+              {/* Header */}
+              <View style={styles.cardHeader}>
+                <View style={[styles.modePill, { backgroundColor: meta.color + "12" }]}>
+                  <Icon name={meta.icon} size={18} color={meta.color} />
+                  <Text style={[styles.modeText, { color: meta.color }]}>{meta.label}</Text>
+                  
+                </View>
 
-        <View style={styles.footerRow}>
-          <View style={[styles.chipSoft, { borderColor: modeColor + "55" }]}>
-            <Text style={[styles.chipText, { color: modeColor }]}>~ {distanceKm.toFixed(1)} km</Text>
-          </View>
-        </View>
-      </Pressable>
-    );
-  }, (prev, next) => {
-    return prev.item.id === next.item.id &&
-      resolvedNames[String(prev.item.id)] === resolvedNames[String(next.item.id)];
-  });
+                <View style={styles.rightInfo}>
+                  <View style={[styles.dateChip, { backgroundColor: meta.color + "10" }]}>
+                    <Text style={[styles.dateText, { color: meta.color }]}>{fmtDate(date)}</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Rotta */}
+              <View style={styles.routeContainer}>
+                <View style={styles.routeRow}>
+                  <View style={[styles.routeDot, { backgroundColor: meta.color }]} />
+                  {isLoadingGeo ? (
+                    <View style={styles.skeletonText} />
+                  ) : (
+                    <Text numberOfLines={1} style={[styles.locationText, { color: theme.colors.onSurface }]}>
+                      {from}
+                    </Text>
+                  )}
+                </View>
+
+                <View style={[styles.routeLine, { backgroundColor: meta.color + "35" }]} />
+
+                <View style={styles.routeRow}>
+                  <View
+                    style={[
+                      styles.routeDot,
+                      { backgroundColor: meta.color, borderWidth: 2, borderColor: theme.colors.backgroundCard },
+                    ]}
+                  />
+                  {isLoadingGeo ? (
+                    <View style={[styles.skeletonText, { width: "70%" }]} />
+                  ) : (
+                    <Text numberOfLines={1} style={[styles.locationText, { color: theme.colors.onSurface }]}>
+                      {to}
+                    </Text>
+                  )}
+                </View>
+              </View>
+
+              {/* Footer */}
+              <View style={styles.cardFooter}>
+                <View style={[styles.distancePill, { backgroundColor: meta.color + "10" }]}>
+                  <Text style={[styles.distanceText, { color: meta.color }]}>📏 {distanceKm.toFixed(1)} km</Text>
+                </View>
+
+                <View style={[styles.statsBtn, { backgroundColor: meta.color + "12" }]}>
+                  <Text style={[styles.statsText, { color: meta.color }]}>Vedi statistiche</Text>
+                  <Icon name="chevron-right" size={18} color={meta.color} />
+                </View>
+              </View>
+            </Surface>
+          </Pressable>
+        </Animated.View>
+      );
+    },
+    (prev, next) =>
+      prev.item.id === next.item.id &&
+      resolvedNames[String(prev.item.id)] === resolvedNames[String(next.item.id)]
+  );
 
   const renderItem = useCallback(
     ({ item }: { item: any }) => <TripsCard item={item} />,
-    [resolvedNames, scheduleGeocode, onSelectTrip, theme.colors]
+    [resolvedNames, scheduleGeocode, theme.colors]
   );
 
-  // ---- header ottimizzato (non più sticky) ----
-  const ListHeader = React.useMemo(() => (
-    <View>
-      <View style={styles.searchContainer}>
-        <Searchbar
-          placeholder="Cerca per luogo…"
-          onChangeText={(text) => {
-            setSearchQuery(text);
-            setPageIndex(0);
-          }}
-          value={searchQuery}
-          style={styles.searchbar}
-          iconColor={theme.colors.primary}
-          returnKeyType="search"
-          inputStyle={{ minHeight: 44 }}
-          accessibilityLabel="Cerca nello storico"
-        />
-      </View>
-
-      <View
-        style={[
-          styles.filtersBar,
-          { backgroundColor: theme.colors.surface, borderColor: (theme.colors.outline ?? "#000") + "33" },
-        ]}
-      >
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.count, { color: theme.colors.onSurface }]}>{filteredTrips.length}</Text>
-          <Text style={[styles.meta, { color: theme.colors.onSurfaceVariant }]}>
-            {selectedModeLabelIT(selectedMode)} · {sortLabelIT(sortBy)} ·{" "}
-            {dateRange.start.toLocaleDateString("it-IT", { day: "2-digit", month: "short" })} —{" "}
-            {dateRange.end.toLocaleDateString("it-IT", { day: "2-digit", month: "short" })}
-          </Text>
+  // ---------- Header lista: search + contatore + MENU ordinamento (stile Results) ----------
+  const [anchorLayout, setAnchorLayout] = useState<{ x: number; y: number } | null>(null);
+  const ListHeader = useMemo(
+    () => (
+      <View>
+        {/* Search */}
+        <View style={styles.searchContainer}>
+          <Searchbar
+            placeholder="Cerca per luogo…"
+            onChangeText={(text) => {
+              setSearchQuery(text);
+              setPageIndex(0);
+            }}
+            value={searchQuery}
+            style={styles.searchbar}
+            iconColor={theme.colors.primary}
+            returnKeyType="search"
+            inputStyle={{ minHeight: 44 }}
+            accessibilityLabel="Cerca nello storico"
+          />
         </View>
 
-        <TouchableOpacity onPress={resetFilters} style={styles.actionBtn} accessibilityRole="button" accessibilityLabel="Azzera filtri">
-          <Text style={[styles.actionText, { color: theme.colors.error }]}>Azzera</Text>
-        </TouchableOpacity>
-        <IconButton
-          icon="tune-variant"
-          size={22}
-          onPress={() => setFiltersOpen(true)}
-          accessibilityLabel="Apri i filtri"
-          iconColor={theme.colors.onSurfaceVariant}
-        />
-      </View>
+        {/* Barra titolo + menu sort (dropdown come Results) */}
+        <View style={[styles.listHeader, { borderBottomColor: (theme.colors.outline ?? "#eee") + "66" }]}>
+          <Text style={[styles.listTitle, { color: theme.colors.onSurface }]}>
+            {filteredTrips.length} tratte trovate
+          </Text>
 
-      <View style={styles.quickChips}>
-        {(["all", "bus", "eco", "train", "bike"] as FilterMode[]).map((mode) => {
-          const label = chipLabelIT(mode);
-          return (
-            <Chip
-              key={mode}
-              selected={selectedMode === mode}
+          <Menu
+            visible={menuVisible}
+            onDismiss={() => setMenuVisible(false)}
+            anchor={
+              <TouchableOpacity
+                onLayout={(e) => setAnchorLayout(e.nativeEvent.layout)}
+                style={[styles.menuButton, { backgroundColor: theme.colors.primary + "12" }]}
+                onPress={() => setMenuVisible(true)}
+              >
+                <Icon name="filter-variant" size={20} color={theme.colors.primary} />
+                <Text style={[styles.menuText, { color: theme.colors.primary }]}>
+                  {sortLabelIT(sortBy)}
+                </Text>
+                <Icon name="chevron-down" size={20} color={theme.colors.primary} />
+              </TouchableOpacity>
+            }
+          >
+            <Menu.Item
               onPress={() => {
-                setSelectedMode(mode);
+                setSortBy("recent");
                 setPageIndex(0);
+                setMenuVisible(false);
               }}
-              style={[styles.chip, selectedMode === mode && { backgroundColor: theme.colors.primary }]}
-              textStyle={{
-                color: selectedMode === mode ? theme.colors.onPrimary : theme.colors.onSurface,
-                fontWeight: "700",
-                fontSize: 12,
+              title="🕒 Più recenti"
+            />
+            <Menu.Item
+              onPress={() => {
+                setSortBy("oldest");
+                setPageIndex(0);
+                setMenuVisible(false);
               }}
-              accessibilityRole="button"
-              accessibilityLabel={`Filtro modalità ${label}`}
-            >
-              {label}
-            </Chip>
-          );
-        })}
-      </View>
-    </View>
-  ), [filteredTrips, searchQuery, selectedMode, sortBy, dateRange, theme.colors]);
+              title="📅 Più vecchi"
+            />
+            <Menu.Item
+              onPress={() => {
+                setSortBy("distance");
+                setPageIndex(0);
+                setMenuVisible(false);
+              }}
+              title="📏 Più lunghi"
+            />
+          </Menu>
+        </View>
 
-  // ---- render ----
+        {/* Chips modalità (restano, ma più compatti) */}
+        <View style={styles.quickChips}>
+          {(["all", "bus", "eco", "train", "bike"] as FilterMode[]).map((mode) => {
+            const selected = selectedMode === mode;
+            return (
+              <Chip
+                key={mode}
+                selected={selected}
+                onPress={() => {
+                  setSelectedMode(mode);
+                  setPageIndex(0);
+                }}
+                style={[styles.chip, selected && { backgroundColor: theme.colors.primary }]}
+                textStyle={{
+                  color: selected ? theme.colors.onPrimary : theme.colors.onSurface,
+                  fontWeight: "700",
+                  fontSize: 12,
+                }}
+              >
+                {chipLabelIT(mode)}
+              </Chip>
+            );
+          })}
+        </View>
+      </View>
+    ),
+    [filteredTrips.length, searchQuery, selectedMode, sortBy, theme.colors, menuVisible]
+  );
+
+  // ---------- contenuto ----------
   let content: React.ReactNode = null;
 
   if (isLoading) {
@@ -675,136 +545,70 @@ export default function TripsHistoryScreen({ navigation }: Props) {
     );
   }
 
-  return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {content}
-      <FiltersModal
-        visible={filtersOpen}
-        onClose={() => setFiltersOpen(false)}
-        selectedMode={selectedMode}
-        onModeChange={(mode: FilterMode) => {
-          setSelectedMode(mode);
-          setPageIndex(0);
-        }}
-        sortBy={sortBy}
-        onSortChange={(sort: SortBy) => {
-          setSortBy(sort);
-          setPageIndex(0);
-        }}
-        dateRange={dateRange}
-        onDateChange={handleDateChange}
-        onReset={() => {
-          resetFilters();
-          setFiltersOpen(false);
-        }}
-        theme={theme}
-      />
-    </View>
-  );
+  return <View style={[styles.container, { backgroundColor: theme.colors.background }]}>{content}</View>;
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
 
-  loaderContainer: { flex: 1, justifyContent: "center", alignItems: "center", gap: 16 },
-  loadingText: { fontSize: 15, fontWeight: "500" },
-  retryBtn: { marginTop: 8, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10 },
-
+  // header + search
   searchContainer: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 },
   searchbar: { borderRadius: 12 },
 
-  filtersBar: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginHorizontal: 16,
-    marginBottom: 10,
+  listHeader: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    marginBottom: 8,
+  },
+  listTitle: { fontSize: 16, fontWeight: "700" },
+  menuButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     gap: 6,
   },
-  count: { fontSize: 16, fontWeight: "700" },
-  meta: { marginTop: 2, fontSize: 12 },
-  actionBtn: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  actionText: { fontSize: 12, fontWeight: "700" },
+  menuText: { fontSize: 13, fontWeight: "600" },
 
   quickChips: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 16, paddingBottom: 8 },
   chip: { borderRadius: 20 },
 
-  // Modal styles
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-  },
-  modalContent: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: "85%",
-    paddingTop: 0,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(0,0,0,0.06)",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  modalBody: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    flexGrow: 1,
-  },
-  modalFooter: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingBottom: 24,
-    borderTopWidth: 1,
-    flexDirection: "row",
-    gap: 12,
-  },
+  // loading / error
+  loaderContainer: { flex: 1, justifyContent: "center", alignItems: "center", gap: 16 },
+  loadingText: { fontSize: 15, fontWeight: "500" },
+  retryBtn: { marginTop: 8, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10 },
 
-  filterSection: { marginBottom: 24 },
-  filterLabel: { fontWeight: "600", marginBottom: 12, fontSize: 14 },
-  sortContainer: { gap: 8 },
-  sortOption: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8, borderWidth: 1.5, borderColor: "rgba(0,0,0,0.1)", alignItems: "center" },
-  sortText: { fontSize: 14, fontWeight: "500" },
-  dateRangeContainer: { flexDirection: "row", gap: 12 },
-  dateButton: { flex: 1, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, alignItems: "center" },
-  dateButtonText: { fontSize: 13, fontWeight: "500" },
-  resetButton: { flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: "center" },
-  resetButtonText: { fontSize: 14, fontWeight: "600" },
-  closeButton: { flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: "center" },
-  closeButtonText: { fontSize: 14, fontWeight: "600" },
-
+  // card (Surface come Results)
   card: {
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 12,
+    padding: 16,
     borderWidth: 1,
-    marginHorizontal: 16,
-    marginBottom: 12,
   },
-  iosShadow: { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3 },
-  topRow: { flexDirection: "row", alignItems: "center" },
-  modePill: { flexDirection: "row", alignItems: "center", paddingVertical: 4, paddingHorizontal: 8, borderRadius: 999, borderWidth: 1, gap: 6, marginRight: 8, minHeight: 28 },
-  modeEmoji: { fontSize: 18, lineHeight: 20 },
-  modeText: { fontSize: 12, fontWeight: "700", letterSpacing: 0.4 },
-  date: { marginLeft: "auto", fontSize: 12 },
+  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
+  modePill: { flexDirection: "row", alignItems: "center", paddingVertical: 6, paddingHorizontal: 10, borderRadius: 12, gap: 6 },
+  modeText: { fontSize: 13, fontWeight: "700", letterSpacing: 0.3 },
+  ecoBadge: { marginLeft: 4 },
+  rightInfo: { flexDirection: "row", alignItems: "center", gap: 8 },
+  dateChip: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
+  dateText: { fontSize: 12, fontWeight: "600" },
 
-  routeBox: { marginTop: 12, gap: 6 },
-  routeLabel: { fontSize: 12, fontWeight: "700" },
-  routeLine: { fontSize: 14, fontWeight: "600" },
+  routeContainer: { marginVertical: 4 },
+  routeRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  routeDot: { width: 10, height: 10, borderRadius: 5 },
+  routeLine: { width: 3, height: 24, marginLeft: 3.5, marginVertical: 2 },
+  locationText: { fontSize: 15, fontWeight: "600", flex: 1 },
+  skeletonText: { height: 16, width: "80%", backgroundColor: "rgba(0,0,0,0.08)", borderRadius: 8 },
 
-  footerRow: { flexDirection: "row", gap: 8, marginTop: 12 },
-  chipSoft: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, alignSelf: "flex-start" },
-  chipText: { fontSize: 12, fontWeight: "600" },
+  cardFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 10, gap: 12 },
+  distancePill: { paddingVertical: 6, paddingHorizontal: 10, borderRadius: 10 },
+  distanceText: { fontSize: 12, fontWeight: "700" },
+  statsBtn: { flexDirection: "row", alignItems: "center", paddingVertical: 6, paddingHorizontal: 10, borderRadius: 10, gap: 6 },
+  statsText: { fontSize: 13, fontWeight: "700" },
 
   emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: 60 },
   emptyText: { fontSize: 17, fontWeight: "600", marginBottom: 8 },
@@ -813,3 +617,5 @@ const styles = StyleSheet.create({
   loadMoreContainer: { paddingVertical: 16, alignItems: "center", justifyContent: "center", gap: 8 },
   loadMoreText: { fontSize: 12, fontWeight: "600" },
 });
+
+

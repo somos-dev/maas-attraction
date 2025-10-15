@@ -1,13 +1,11 @@
-// Tipi per il feedback
-
+// src/store/types/feedback.ts
 export interface Feedback {
-  id: number;
-  user_id: number; // associato lato backend all'utente autenticato
+  id?: number;         // opzionale: il serializer potrebbe non restituirlo
   text: string;
-  created_at: string;
+  created_at?: string; // opzionali: se il backend li espone
+  updated_at?: string;
 }
 
-export interface FeedbackRequest {
-  text: string; // inviamo solo il testo, il backend ricava user_id
-  user_id: number; // necessario per il backend attuale
-}
+// La request deve combaciare con il serializer DRF (solo text)
+export type FeedbackRequest = Pick<Feedback, "text">;
+

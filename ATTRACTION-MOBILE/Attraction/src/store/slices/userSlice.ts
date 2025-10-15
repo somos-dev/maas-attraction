@@ -1,3 +1,4 @@
+// src/store/slices/userSlice.ts
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 export interface FavoritePlace {
@@ -6,14 +7,16 @@ export interface FavoritePlace {
   type: string;
 }
 
+export type UserType = "student" | "worker" | "other";
+
 export interface User {
-  id?: number; // dal backend (readOnly)
-  username: string;
-  email: string;
-  type?: "student" | "worker" | "other"; // dal backend (readOnly)
-  codice_fiscale?: string; // dal backend (readOnly)
-  favorite_places?: FavoritePlace[]; // dal backend (readOnly)
-  avatar?: string; // extra frontend, non nel backend
+  id?: number;                          // dal backend
+  username: string;                     // editabile
+  email: string;                        // cambia solo dopo conferma via link HTML
+  type?: UserType;                      // editabile (student|worker|other)
+  codice_fiscale?: string;              // read-only dal backend
+  favorite_places?: FavoritePlace[];    // read-only dal backend
+  avatar?: string;                      // extra frontend
 }
 
 const initialState: User | null = null;
@@ -22,7 +25,7 @@ const userSlice = createSlice({
   name: "user",
   initialState,
   reducers: {
-    setUser: (state, action: PayloadAction<User>) => action.payload,
+    setUser: (_state, action: PayloadAction<User>) => action.payload,
     clearUser: () => null,
     updateUser: (state, action: PayloadAction<Partial<User>>) =>
       state ? { ...state, ...action.payload } : state,
@@ -31,5 +34,3 @@ const userSlice = createSlice({
 
 export const { setUser, clearUser, updateUser } = userSlice.actions;
 export default userSlice.reducer;
-
-

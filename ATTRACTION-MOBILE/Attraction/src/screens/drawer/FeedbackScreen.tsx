@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+// src/screens/drawer/FeedbackScreen.tsx
+import React, { useEffect, useState } from "react";
 import { View, StyleSheet, ScrollView } from "react-native";
 import {
   Appbar,
@@ -8,56 +9,70 @@ import {
   useTheme,
 } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { useCreateFeedbackMutation } from "../../store/api/feedbackApi";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/store";
-import RestrictedAccess from "../../components/common/RestrictedAccess"; // 👈 aggiunto
+import RestrictedAccess from "../../components/common/RestrictedAccess";
+import {
+  useGetMyFeedbackQuery,
+  useUpdateFeedbackMutation,
+} from "../../store/api/feedbackApi";
 
 export default function FeedbackScreen() {
   const theme = useTheme();
   const auth = useSelector((state: RootState) => state.auth);
-  const user = useSelector((state: RootState) => state.user);
+
+  // Carica il feedback dell’utente
+  const { data: myFeedback, isFetching } = useGetMyFeedbackQuery(undefined, {
+    skip: !auth.access || auth.isAnonymous,
+  });
+
+  const [updateFeedback, { isLoading: isUpdating }] = useUpdateFeedbackMutation();
 
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [snackbarVisible, setSnackbarVisible] = useState(false);
 
-  const [createFeedback, { isLoading }] = useCreateFeedbackMutation();
+  // Precompila se esiste già un feedback
+  useEffect(() => {
+    if (myFeedback?.text) {
+      setComment(myFeedback.text);
+      // Se il testo inizia con "⭐ X/5", prova a ricavare X
+      const m = myFeedback.text.match(/^⭐\s*(\d)\s*\/\s*5/i);
+      if (m) {
+        const parsed = parseInt(m[1], 10);
+        if (parsed >= 1 && parsed <= 5) setRating(parsed);
+      }
+    }
+  }, [myFeedback]);
 
   const handleSubmit = async () => {
-    if (!user) {
-      console.error("Utente non autenticato");
-      return;
-    }
-
     try {
-      await createFeedback({
-        user_id: user.id, // aggiunto
-        text: `⭐ ${rating}/5\n${comment}`,
-      }).unwrap();
+      const textPayload =
+        rating > 0 ? `⭐ ${rating}/5\n${comment.trim()}` : comment.trim();
+
+      await updateFeedback({ text: textPayload }).unwrap();
 
       setSnackbarVisible(true);
-      setRating(0);
-      setComment("");
     } catch (error) {
-      console.error("Errore invio feedback:", error);
+      console.error("Errore invio/aggiornamento feedback:", error);
     }
   };
 
-  // 👇 Se l'utente è anonimo o non loggato, mostriamo RestrictedAccess
+  // Solo utenti registrati
   if (auth.isAnonymous || !auth.access) {
     return (
       <RestrictedAccess message="Solo gli utenti registrati possono inviare un feedback." />
     );
   }
 
+  const isLoading = isFetching || isUpdating;
+  const disabled = rating === 0 || comment.trim() === "" || isLoading;
+
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <View style={styles.container}>
         {/* Header */}
-        <Appbar.Header
-          style={{ backgroundColor: "transparent", elevation: 0 }}
-        >
+        <Appbar.Header style={{ backgroundColor: "transparent", elevation: 0 }}>
           <Appbar.Content
             title="Feedback"
             titleStyle={{ textAlign: "center", fontSize: 24 }}
@@ -87,14 +102,14 @@ export default function FeedbackScreen() {
           style={styles.input}
         />
 
-        {/* Pulsante invio */}
+        {/* Pulsante invio/aggiorna */}
         <Button
           mode="contained"
           onPress={handleSubmit}
           loading={isLoading}
-          disabled={rating === 0 || comment.trim() === ""}
+          disabled={disabled}
         >
-          Invia
+          {myFeedback ? "Aggiorna" : "Invia"}
         </Button>
 
         {/* Snackbar */}
@@ -103,7 +118,7 @@ export default function FeedbackScreen() {
           onDismiss={() => setSnackbarVisible(false)}
           duration={3000}
         >
-          Grazie per il tuo feedback!
+          {myFeedback ? "Feedback aggiornato!" : "Grazie per il tuo feedback!"}
         </Snackbar>
       </View>
     </ScrollView>
@@ -128,4 +143,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
 });
+
+
 

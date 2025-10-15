@@ -1,58 +1,74 @@
 // src/store/api/userApi.ts
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import type { RootState } from "../store";
-import { API_CONFIG } from "../../config/apiConfig";
-import { User } from "../slices/userSlice";
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseQueryWithReauth } from "./baseQueryWithReauth";
+import type { User } from "../slices/userSlice";
 
-// Tipizzazione della risposta wrapper dell’API
-interface ApiResponse<T> {
+interface ApiEnvelope<T> {
   success: boolean;
   message: string;
-  data: T;
+  data?: T;
   status_code: number;
 }
 
+// Accetta envelope o JSON nudo
+const asUserOrNull = (res: unknown): User | null => {
+  if (!res || typeof res !== "object") return null;
+  const obj = res as any;
+  if ("success" in obj) return (obj.data ?? null) as User | null; // envelope
+  if ("email" in obj || "username" in obj || "type" in obj) return obj as User; // JSON nudo
+  return null;
+};
+
 export const userApi = createApi({
   reducerPath: "userApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: `${API_CONFIG.BASE_URL}auth/`,
-    prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).auth.access;
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
-      return headers;
-    },
-  }),
+  baseQuery: baseQueryWithReauth, // punta a .../api/auth/
+  tagTypes: ["Profile"],
   endpoints: (builder) => ({
-    // GET /profile/
     getProfile: builder.query<User, void>({
       query: () => ({
         url: "profile/",
         method: "GET",
+        headers: { Accept: "application/json" },
       }),
-      // normalizziamo la risposta prendendo solo data
-      transformResponse: (response: ApiResponse<User>) => response.data,
+      transformResponse: (res: unknown): User =>
+        asUserOrNull(res) ?? (res as User),
+      providesTags: ["Profile"],
     }),
 
-    // PUT /profile/
-    updateProfile: builder.mutation<User, { username: string; email: string }>({
+    // PUT: usalo solo se vuoi inviare il payload completo (es. cambio email + altri campi)
+    updateProfile: builder.mutation<
+      User | null,
+      Partial<Pick<User, "username" | "email" | "type">>
+    >({
       query: (body) => ({
         url: "profile/",
         method: "PUT",
         body,
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
       }),
-      transformResponse: (response: ApiResponse<User>) => response.data,
+      transformResponse: (res: unknown): User | null => asUserOrNull(res),
+      invalidatesTags: ["Profile"],
     }),
 
-    // PATCH /profile/
-    patchProfile: builder.mutation<User, Partial<{ username: string; email: string }>>({
+    // PATCH: consigliato per modifiche parziali (username/type o anche email)
+    patchProfile: builder.mutation<
+      User | null,
+      Partial<Pick<User, "username" | "email" | "type">>
+    >({
       query: (body) => ({
         url: "profile/",
         method: "PATCH",
         body,
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
       }),
-      transformResponse: (response: ApiResponse<User>) => response.data,
+      transformResponse: (res: unknown): User | null => asUserOrNull(res),
+      invalidatesTags: ["Profile"],
     }),
   }),
 });
@@ -62,5 +78,10 @@ export const {
   useUpdateProfileMutation,
   usePatchProfileMutation,
 } = userApi;
+
+
+
+
+
 
 

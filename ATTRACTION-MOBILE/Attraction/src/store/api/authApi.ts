@@ -1,16 +1,18 @@
 // src/store/api/authApi.ts
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithReauth } from "./baseQueryWithReauth";
-import type { User } from "../slices/authSlice";
 
-// ---- Request types ----
+// --- Domain types ---
+export type UserType = "student" | "worker" | "other";
+
+// --- Request types ---
 interface RegisterRequest {
   username: string;
   email: string;
   password: string;
   confirm_password: string;
   codice_fiscale?: string;
-  type?: string;
+  type?: UserType; //  tipizzato come nel backend
 }
 
 interface LoginRequest {
@@ -26,24 +28,38 @@ interface ForgotPasswordRequest {
   email: string;
 }
 
+// ⚠️ (DEPRECATO lato mobile) Il reset vero avviene su HTML, non chiamarlo dall’app
+// Lo lasciamo tipizzato solo per completezza, ma NON esporremo la mutation.
 interface ResetPasswordRequest {
   uidb64: string;
   token: string;
   password: string;
 }
 
-// ---- Response types ----
+// --- Response enveloping del backend ---
+interface BackendEnvelope<T = unknown> {
+  success: boolean;
+  message: string;
+  data?: T;
+  status_code: number;
+}
+
+// Dati che tornano in RegisterView (dentro "data")
+interface RegisterData {
+  id: number;
+  username: string;
+  email: string;
+  codice_fiscale?: string;
+  type?: UserType;
+}
+
+// --- Response types ---
 interface LoginResponse {
   access: string;
   refresh: string;
-  user?: User;
 }
 
-interface RegisterResponse {
-  access: string;
-  refresh: string;
-  user?: User;
-}
+type RegisterResponse = BackendEnvelope<RegisterData>;
 
 interface MessageResponse {
   status: number;
@@ -52,8 +68,9 @@ interface MessageResponse {
 
 export const authApi = createApi({
   reducerPath: "authApi",
-  baseQuery: baseQueryWithReauth,
+  baseQuery: baseQueryWithReauth, // deve puntare a .../api/auth/
   endpoints: (builder) => ({
+    // REGISTER: ritorna envelope (NO token)
     register: builder.mutation<RegisterResponse, RegisterRequest>({
       query: (body) => ({
         url: "register/",
@@ -61,6 +78,8 @@ export const authApi = createApi({
         body,
       }),
     }),
+
+    // LOGIN: TokenObtainPairView → solo {access, refresh}
     login: builder.mutation<LoginResponse, LoginRequest>({
       query: (body) => ({
         url: "login/",
@@ -68,6 +87,7 @@ export const authApi = createApi({
         body,
       }),
     }),
+
     logout: builder.mutation<void, LogoutRequest>({
       query: (body) => ({
         url: "logout/",
@@ -75,6 +95,8 @@ export const authApi = createApi({
         body,
       }),
     }),
+
+    // PASSWORD RESET (invio email con link HTML)
     forgotPassword: builder.mutation<MessageResponse, ForgotPasswordRequest>({
       query: (body) => ({
         url: "password-reset/",
@@ -82,13 +104,15 @@ export const authApi = createApi({
         body,
       }),
     }),
-    resetPassword: builder.mutation<MessageResponse, ResetPasswordRequest>({
-      query: ({ uidb64, token, password }) => ({
-        url: `password-reset-confirm/${uidb64}/${token}/`,
-        method: "POST",
-        body: { password },
-      }),
-    }),
+
+    // DEPRECATO: la conferma si fa su pagina HTML, non da app mobile
+    // resetPassword: builder.mutation<MessageResponse, ResetPasswordRequest>({
+    //   query: ({ uidb64, token, password }) => ({
+    //     url: `password-reset-confirm/${uidb64}/${token}/`,
+    //     method: "POST",
+    //     body: { password },
+    //   }),
+    // }),
   }),
 });
 
@@ -97,8 +121,9 @@ export const {
   useLoginMutation,
   useLogoutMutation,
   useForgotPasswordMutation,
-  useResetPasswordMutation,
+  // useResetPasswordMutation, //non esporto
 } = authApi;
+
 
 
 

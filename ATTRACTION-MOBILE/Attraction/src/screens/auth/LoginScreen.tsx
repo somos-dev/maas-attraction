@@ -1,4 +1,4 @@
-
+// src/screens/auth/LoginScreen.tsx
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -12,8 +12,9 @@ import {
 } from "react-native";
 import { useDispatch } from "react-redux";
 import { useLoginMutation } from "../../store/api/authApi";
-import { setCredentials, setAnonymous } from "../../store/slices/authSlice"; //  aggiunto setAnonymous
-import { setUser } from "../../store/slices/userSlice"; 
+import { setCredentials, setAnonymous } from "../../store/slices/authSlice";
+import { setUser, clearUser } from "../../store/slices/userSlice"; // ← aggiunto clearUser
+import { userApi } from "../../store/api/userApi";
 import {
   TextInput,
   Button,
@@ -40,22 +41,24 @@ export default function LoginScreen({ navigation }: any) {
 
   const handleLogin = async () => {
     try {
-      const result = await login({ email, password }).unwrap();
+      // backend restituisce solo token
+      const { access, refresh } = await login({
+        email: email.trim(), // ← trim email
+        password,
+      }).unwrap();
 
-      dispatch(
-        setCredentials({
-          access: result.access,
-          refresh: result.refresh,
-          user: result.user,
-        })
-      );
+      // Salva token nello store (senza user)
+      dispatch(setCredentials({ access, refresh }));
 
-      // 👇 nuova parte: salva anche i dati utente nello userSlice
-      if (result.user) {
-        dispatch(setUser(result.user));
-      }
+      // Dopo il login, recupera il profilo utente
+      const profile = await dispatch(
+        userApi.endpoints.getProfile.initiate()
+      ).unwrap();
 
-      //  niente navigation.replace qui: AppNavigator gestisce il redirect
+      // Salva i dati del profilo nello userSlice
+      dispatch(setUser(profile));
+
+      // AppNavigator gestisce il redirect
     } catch (err) {
       console.error("❌ Login failed:", err);
     }
@@ -72,7 +75,9 @@ export default function LoginScreen({ navigation }: any) {
       >
         <View style={styles.container}>
           {/* Header */}
-          <Appbar.Header style={{ backgroundColor: "transparent", elevation: 0 }}>
+          <Appbar.Header
+            style={{ backgroundColor: "transparent", elevation: 0 }}
+          >
             <Appbar.Content
               title="Login"
               titleStyle={{ textAlign: "center", fontSize: 24 }}
@@ -108,13 +113,9 @@ export default function LoginScreen({ navigation }: any) {
             />
 
             {/* Login */}
-            <Button
-              mode="contained"
-              onPress={handleLogin}
-              style={{ marginTop: 20 }}
-              disabled={isLoading}
-            >
-              {isLoading ? <ActivityIndicator animating={true} /> : "Accedi"}
+           <Button mode="contained" onPress={handleLogin}
+            style={{ marginTop: 20 }} disabled={isLoading} >
+           {isLoading ? <ActivityIndicator animating={true} /> : "Accedi"}
             </Button>
 
             {/* Errori API */}
@@ -126,25 +127,36 @@ export default function LoginScreen({ navigation }: any) {
 
             {/* Link extra */}
             <View style={styles.linkContainer}>
-              <TouchableOpacity onPress={() => navigation.navigate("Register")}>
-                <Text style={[styles.linkText, { color: theme.colors.primary }]}>
+              <TouchableOpacity
+                onPress={() => navigation.navigate("Register")}
+              >
+                <Text
+                  style={[styles.linkText, { color: theme.colors.primary }]}
+                >
                   Non hai un account? Registrati
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={() => navigation.navigate("ForgotPassword")}>
-                <Text style={[styles.linkText, { color: theme.colors.primary }]}>
+              <TouchableOpacity
+                onPress={() => navigation.navigate("ForgotPassword")}
+              >
+                <Text
+                  style={[styles.linkText, { color: theme.colors.primary }]}
+                >
                   Password dimenticata?
                 </Text>
               </TouchableOpacity>
 
-              {/* Accesso anonimo aggiornato */}
+              {/* Accesso anonimo */}
               <TouchableOpacity
                 onPress={() => {
-                  dispatch(setAnonymous()); // imposta utente ospite
+                  dispatch(setAnonymous());
+                  dispatch(clearUser()); // pulisci profilo quando entri come ospite
                 }}
               >
-                <Text style={[styles.linkText, { color: theme.colors.secondary }]}>
+                <Text
+                  style={[styles.linkText, { color: theme.colors.secondary }]}
+                >
                   Salta (Accedi come ospite)
                 </Text>
               </TouchableOpacity>

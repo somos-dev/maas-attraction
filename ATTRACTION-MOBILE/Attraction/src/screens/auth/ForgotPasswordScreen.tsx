@@ -20,7 +20,7 @@ export default function ForgotPasswordScreen({ navigation }: any) {
   const handleForgot = async () => {
     if (!email) return;
     try {
-      // ✅ adesso chiama correttamente /password-reset/
+      // chiama  /password-reset/
       await forgotPassword({ email }).unwrap();
     } catch (err) {
       console.error("❌ Forgot password failed:", err);

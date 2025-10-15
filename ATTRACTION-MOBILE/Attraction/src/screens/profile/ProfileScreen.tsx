@@ -1,3 +1,4 @@
+// src/screens/profile/ProfileScreen.tsx
 import React, { useEffect } from "react";
 import { View, StyleSheet, ScrollView, Alert } from "react-native";
 import {
@@ -26,11 +27,14 @@ export default function ProfileScreen() {
   const theme = useTheme();
   const dispatch = useDispatch();
   const navigation = useNavigation<any>();
+
   const user = useSelector((state: RootState) => state.user);
-  const { access, isAnonymous } = useSelector((state: RootState) => state.auth);
+  const { access, refresh, isAnonymous } = useSelector((state: RootState) => state.auth);
+
   if (isAnonymous) {
     return <RestrictedAccess />;
-      }
+  }
+
   const { data, isSuccess, isFetching } = useGetProfileQuery(undefined, {
     skip: !access || isAnonymous,
   });
@@ -45,11 +49,15 @@ export default function ProfileScreen() {
 
   const handleLogout = async () => {
     try {
-      try {
-        await logoutApi(undefined).unwrap();
-      } catch {
-        // fallback logout locale
+      //  backend richiede il refresh nel body
+      if (refresh) {
+        try {
+          await logoutApi({ refresh }).unwrap();
+        } catch {
+          // Se la chiamata fallisce, proseguiamo con il logout locale
+        }
       }
+      // Logout locale (sempre)
       dispatch(clearAuth());
       dispatch(clearUser());
       dispatch(userApi.util.resetApiState());
@@ -157,7 +165,7 @@ export default function ProfileScreen() {
         <AppListItem
           icon="history"
           title="Storico viaggi"
-           onPress={() => navigation.navigate("TripsHistory")}
+          onPress={() => navigation.navigate("TripsHistory")}
           rightIcon="chevron-right"
         />
       </AppCard>
@@ -196,3 +204,4 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 });
+

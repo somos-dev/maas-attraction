@@ -1,3 +1,4 @@
+// src/screens/auth/RegisterScreen.tsx
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -13,8 +14,8 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { AuthStackParamList } from "../../navigation/types";
 import { useRegisterMutation } from "../../store/api/authApi";
 import { useDispatch } from "react-redux";
-import { setCredentials, setAnonymous } from "../../store/slices/authSlice"; // 👈 include setAnonymous
-import { setUser } from "../../store/slices/userSlice";
+import { setAnonymous } from "../../store/slices/authSlice"; // ✅ togliamo setCredentials
+// import { setUser } from "../../store/slices/userSlice"; // ❌ non serve su register
 import {
   TextInput,
   Button,
@@ -113,7 +114,8 @@ export default function RegisterScreen({ navigation }: Props) {
     }
 
     try {
-      const result = await register({
+      // ✅ il backend ritorna un envelope { success, message, data, status_code }
+      const res = await register({
         username: username.trim(),
         email: email.trim(),
         password,
@@ -122,18 +124,12 @@ export default function RegisterScreen({ navigation }: Props) {
         type: userType || undefined,
       }).unwrap();
 
-      dispatch(
-        setCredentials({
-          access: result.access,
-          refresh: result.refresh,
-          user: result.user,
-        })
-      );
+      // ✅ niente token né user qui: l'attivazione avviene via email HTML
+      // Puoi opzionalmente leggere res.message, ma senza cambiare la UI:
+      console.log("✅ Registrazione:", res?.message);
 
-      if (result.user) {
-        dispatch(setUser(result.user));
-      }
-
+      // Vai al Login: l’utente deve attivare l’account via link nella mail
+      navigation.navigate("Login");
     } catch (err) {
       console.error("Registration failed:", err);
     }
@@ -345,4 +341,3 @@ const styles = StyleSheet.create({
   input: { marginBottom: 10 },
   errorText: { color: "red", fontSize: 12, marginBottom: 10, marginLeft: 4 },
 });
-

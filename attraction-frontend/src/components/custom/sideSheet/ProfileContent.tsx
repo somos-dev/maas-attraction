@@ -100,7 +100,7 @@ const ProfileContent: React.FC = () => {
     handleSave,
     {
       onSuccess: (data) => {
-        toast.success(`Email change is pending. A confirmation email has been sent to abhannan142@gmail.com!`);
+        toast.success(`Email change is pending. A confirmation email has been sent to new email address!`);
         setIsEditing(false);
         // handleDispatch({ type: Types.Login, payload: { user: { ...user, ...formData } } });
       },

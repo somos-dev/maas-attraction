@@ -129,9 +129,9 @@ const ProfileDialog: React.FC = () => {
     handleSave,
     {
       onSuccess: (data) => {
-        toast.success(`Profile updated successfully!`);
+        toast.success(`Email change is pending. A confirmation email has been sent to abhannan142@gmail.com!`);
         setIsEditing(false);
-        handleDispatch({ type: Types.Login, payload: { user: { ...user, ...formData } } });
+        // handleDispatch({ type: Types.Login, payload: { user: { ...user, ...formData } } });
       },
       onError: (errorMsg) => { toast.error(errorMsg); },
       onFieldError: (error) => { },

@@ -23,6 +23,7 @@ import {useCreateSearchMutation} from '../../store/api/searchApi';
 import {useSelector} from 'react-redux';
 import {RootState} from '../../store/store';
 import {useCreatePlaceMutation} from '../../store/api/placesApi';
+import {useRoute} from '@react-navigation/native';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 const HORIZONTAL_PADDING = 16;
@@ -50,6 +51,23 @@ async function reverseGeocode(lat: number, lon: number): Promise<string> {
 }
 
 export default function SearchScreen({navigation}: any) {
+  const route = useRoute();
+  const prefill = route.params?.prefill;
+
+  useEffect(() => {
+    if (prefill) {
+      setFrom({
+        lat: prefill.from_lat,
+        lon: prefill.from_lon,
+        name: 'Punto di partenza',
+      });
+      setTo({
+        lat: prefill.to_lat,
+        lon: prefill.to_lon,
+        name: 'Destinazione',
+      });
+    }
+  }, [prefill]);
   const theme = useTheme();
   const {fetchTrip, loading, error} = useTrip();
   const {results, loading: searching, error: searchError, search} = usePlaces();

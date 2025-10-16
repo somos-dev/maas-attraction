@@ -1,5 +1,6 @@
 // src/screens/home/HomeScreen.tsx
-import React, {useMemo, useRef} from 'react';
+import React, {useMemo, useRef, useEffect} from 'react';
+import {useRoute} from '@react-navigation/native';
 import {View, StyleSheet, Dimensions} from 'react-native';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import BottomSheet, {BottomSheetScrollView} from '@gorhom/bottom-sheet';
@@ -16,6 +17,15 @@ export default function HomeScreen({navigation}: any) {
     () => [height * 0.25, height * 0.5, height * 0.75],
     [],
   );
+  const route = useRoute();
+  const prefill = route.params?.prefill;
+
+  useEffect(() => {
+    if (prefill) {
+      // qui passiamo i dati al SearchBottomSheet tramite ref o prop
+      console.log('📍 Ricevuto prefill:', prefill);
+    }
+  }, [prefill]);
 
   return (
     <GestureHandlerRootView style={{flex: 1}}>
@@ -41,7 +51,7 @@ export default function HomeScreen({navigation}: any) {
         }}>
         <BottomSheetScrollView
           contentContainerStyle={styles.bottomSheetContent}>
-          <SearchBottomSheet navigation={navigation} />
+          <SearchBottomSheet navigation={navigation} prefill={prefill} />
         </BottomSheetScrollView>
       </BottomSheet>
     </GestureHandlerRootView>

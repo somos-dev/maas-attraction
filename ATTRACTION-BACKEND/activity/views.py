@@ -165,12 +165,24 @@ class BookingListCreateView(AuthenticatedMixin, generics.ListCreateAPIView):
 class TrackUserActivityView(AuthenticatedMixin, APIView):
     def get(self, request):
         user = request.user  # Get user from JWT token
-        searches = Search.objects.filter(user=user).order_by("-requested_at")  # or "trip_date"
+        # Fetch the 5 most recent searches
+        searches = Search.objects.filter(user=user).order_by("-requested_at")[:5]
+
         if not searches.exists():
-            return Response({"success": False, "error": "No search activity found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"success": False, "error": "No search activity found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
         serializer = SearchSerializer(searches, many=True)
-        return Response({"success": True, "data": serializer.data}, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "success": True,
+                "message": "Most recent 5 searches retrieved successfully.",
+                "data": serializer.data
+            },
+            status=status.HTTP_200_OK
+        )
 
 
 # ------------------------------

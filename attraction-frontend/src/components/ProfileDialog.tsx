@@ -17,7 +17,7 @@ import axiosInstance from '@/utils/axios';
 import { toast } from 'sonner';
 import { ActionState, useSafeAction } from '@/hooks/use-safe-action';
 import { z } from 'zod';
-import { AuthUser } from '@/@types/auth';
+import { AuthUser, EditProfileResponseType } from '@/@types/auth';
 import useLocales from '@/hooks/useLocales';
 import { Types } from '@/context/JWTContext';
 
@@ -32,7 +32,7 @@ export const editProfileSchema = z.object({
 })
 
 export type EditProfileInputType = z.infer<typeof editProfileSchema>;
-export type EditProfileReturnType = ActionState<EditProfileInputType, AuthUser>;
+export type EditProfileReturnType = ActionState<EditProfileInputType, EditProfileResponseType>;
 
 
 const ProfileDialog: React.FC = () => {
@@ -83,22 +83,22 @@ const ProfileDialog: React.FC = () => {
 
       if (response.status === 200) {
         return {
-          data: response.data as AuthUser,
+          data: response?.data,
           error: null
         }
       } else {
         const errorMessage = response.data?.detail || "Failed to update profile";
         const errorData = response?.data?.error || {};
-      
-      const fieldErrors = {
-        email: errorData?.email || [],
-        username: errorData?.username|| [],
-        password: errorData?.password|| [],
-        confirmPassword: errorData?.confirm_password|| [],
-        codiceFiscale: errorData?.codice_fiscale|| [],
-        role: errorData?.role|| []
-      };
-        return { 
+
+        const fieldErrors = {
+          email: errorData?.email || [],
+          username: errorData?.username || [],
+          password: errorData?.password || [],
+          confirmPassword: errorData?.confirm_password || [],
+          codiceFiscale: errorData?.codice_fiscale || [],
+          role: errorData?.role || []
+        };
+        return {
           error: errorMessage,
           fieldErrors: fieldErrors
         };
@@ -106,30 +106,34 @@ const ProfileDialog: React.FC = () => {
     } catch (error: any) {
       const errorMessage = error?.response?.data?.detail || error?.message || "Failed to update profile";
       const errorData = error?.response?.data || {};
-      
+
       const fieldErrors = {
         email: errorData?.email || [],
-        username: errorData?.username|| [],
-        password: errorData?.password|| [],
-        confirmPassword: errorData?.confirm_password|| [],
-        codiceFiscale: errorData?.codice_fiscale|| [],
-        role: errorData?.role|| []
+        username: errorData?.username || [],
+        password: errorData?.password || [],
+        confirmPassword: errorData?.confirm_password || [],
+        codiceFiscale: errorData?.codice_fiscale || [],
+        role: errorData?.role || []
       };
-        return { 
-          error: errorMessage,
-          fieldErrors: fieldErrors
-        };
+      return {
+        error: errorMessage,
+        fieldErrors: fieldErrors
+      };
     }
   };
 
 
 
-  const { execute, error, fieldErrors, setFieldErrors, isLoading } = useSafeAction(
+  const { execute, error, fieldErrors, setFieldErrors, isLoading } = useSafeAction<
+    EditProfileInputType,
+    EditProfileResponseType
+  >(
     editProfileSchema,
     handleSave,
     {
       onSuccess: (data) => {
-        toast.success(`Email change is pending. A confirmation email has been sent to your new email address!`);
+        console.log('data:', data);
+        toast.success(data?.message || `Email change is pending. A confirmation email has been sent to your new email address!`);
         setIsEditing(false);
         // handleDispatch({ type: Types.Login, payload: { user: { ...user, ...formData } } });
       },

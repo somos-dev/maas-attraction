@@ -80,11 +80,11 @@ const ProfileContent: React.FC = () => {
 
       if (response.status === 200) {
         return {
-          data: response.data as AuthUser,
-          error: null
+          data: response?.data ,
+          error: response?.data?.error || null
         }
       } else {
-        const errorMessage = response.data?.detail || "Failed to update profile";
+        const errorMessage = response.data?.detail || response?.data?.error || "Failed to update profile";
         return { error: errorMessage };
       }
     } catch (error: any) {
@@ -100,7 +100,8 @@ const ProfileContent: React.FC = () => {
     handleSave,
     {
       onSuccess: (data) => {
-        toast.success(`Email change is pending. A confirmation email has been sent to new email address!`);
+        console.log('data:',data)
+        toast.success(data?.message || `Email change is pending. A confirmation email has been sent to your new email address!`);
         setIsEditing(false);
         // handleDispatch({ type: Types.Login, payload: { user: { ...user, ...formData } } });
       },

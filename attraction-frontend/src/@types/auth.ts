@@ -16,6 +16,15 @@ export type ActionMap<M extends { [index: string]: unknown }> = {
 
 export type AuthUser = null | any;
 
+export type EditProfileResponseType = {
+  success?: boolean;
+  message?: string;
+  status_code?: number;
+  [key: string]: any;
+};
+
+
+
 interface FavoritePlace {
   id: string;
   address: string;

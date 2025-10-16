@@ -1,5 +1,4 @@
-// src/screens/auth/LoginScreen.tsx
-import React, { useState, useEffect } from "react";
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -9,154 +8,162 @@ import {
   Platform,
   TouchableOpacity,
   useWindowDimensions,
-} from "react-native";
-import { useDispatch } from "react-redux";
-import { useLoginMutation } from "../../store/api/authApi";
-import { setCredentials, setAnonymous } from "../../store/slices/authSlice";
-import { setUser, clearUser } from "../../store/slices/userSlice"; // ← aggiunto clearUser
-import { userApi } from "../../store/api/userApi";
+  Image,
+} from 'react-native';
+import {useDispatch} from 'react-redux';
+import {useLoginMutation} from '../../store/api/authApi';
+import {setCredentials, setAnonymous} from '../../store/slices/authSlice';
+import {setUser, clearUser} from '../../store/slices/userSlice';
+import {userApi} from '../../store/api/userApi';
 import {
   TextInput,
   Button,
-  Appbar,
   ActivityIndicator,
   useTheme,
-} from "react-native-paper";
-import { mapAuthError } from "../../utils/errorHandler";
+} from 'react-native-paper';
+import {mapAuthError} from '../../utils/errorHandler';
 
-export default function LoginScreen({ navigation }: any) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+export default function LoginScreen({navigation}: any) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [orientation, setOrientation] = useState('P');
 
-  const [login, { isLoading, error }] = useLoginMutation();
+  const [login, {isLoading, error}] = useLoginMutation();
   const dispatch = useDispatch();
   const theme = useTheme();
-  const { width, height } = useWindowDimensions();
-  const [orientation, setOrientation] = useState("P");
+  const {width, height} = useWindowDimensions();
 
   useEffect(() => {
-    setOrientation(width > height ? "L" : "P");
+    setOrientation(width > height ? 'L' : 'P');
   }, [width, height]);
 
   const handleLogin = async () => {
     try {
-      // backend restituisce solo token
-      const { access, refresh } = await login({
-        email: email.trim(), // ← trim email
+      const {access, refresh} = await login({
+        email: email.trim(),
         password,
       }).unwrap();
 
-      // Salva token nello store (senza user)
-      dispatch(setCredentials({ access, refresh }));
+      dispatch(setCredentials({access, refresh}));
 
-      // Dopo il login, recupera il profilo utente
       const profile = await dispatch(
-        userApi.endpoints.getProfile.initiate()
+        userApi.endpoints.getProfile.initiate(),
       ).unwrap();
 
-      // Salva i dati del profilo nello userSlice
       dispatch(setUser(profile));
-
-      // AppNavigator gestisce il redirect
     } catch (err) {
-      console.error("❌ Login failed:", err);
+      console.error('❌ Login failed:', err);
     }
   };
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
+      style={{flex: 1, backgroundColor: theme.colors.background}}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={styles.scrollContainer}
-      >
+        contentContainerStyle={styles.scrollContainer}>
         <View style={styles.container}>
-          {/* Header */}
-          <Appbar.Header
-            style={{ backgroundColor: "transparent", elevation: 0 }}
-          >
-            <Appbar.Content
-              title="Login"
-              titleStyle={{ textAlign: "center", fontSize: 24 }}
+          {/* Logo centrale */}
+          <View style={styles.logoContainer}>
+            <Image
+              source={require('../../assets/images/logo/Attraction.scritta.png')}
+              style={styles.logo}
+              resizeMode="contain"
             />
-          </Appbar.Header>
+          </View>
 
+          {/* Form */}
           <View style={styles.formContainer}>
-            {/* Email */}
             <TextInput
               label="Email"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
               keyboardType="email-address"
+              mode="outlined" // 👈 usa il bordo outline (più elegante)
+              outlineStyle={{borderRadius: 12}} // 👈 bordi morbidi
               style={styles.input}
-              left={<TextInput.Icon icon="email" />}
+              left={<TextInput.Icon icon="email-outline" />}
+              theme={{
+                roundness: 12,
+                colors: {
+                  background: '#fff',
+                  primary: theme.colors.primary,
+                  text: '#333',
+                  placeholder: '#aaa',
+                },
+              }}
             />
 
-            {/* Password */}
             <TextInput
               label="Password"
               secureTextEntry={!showPassword}
               value={password}
               onChangeText={setPassword}
+              mode="outlined"
+              outlineStyle={{borderRadius: 12}}
               style={styles.input}
-              left={<TextInput.Icon icon="lock" />}
+              left={<TextInput.Icon icon="lock-outline" />}
               right={
                 <TextInput.Icon
-                  icon={showPassword ? "eye-off" : "eye"}
+                  icon={showPassword ? 'eye-off-outline' : 'eye-outline'}
                   onPress={() => setShowPassword(!showPassword)}
                 />
               }
+              theme={{
+                roundness: 12,
+                colors: {
+                  background: '#fff',
+                  primary: theme.colors.primary,
+                  text: '#333',
+                  placeholder: '#aaa',
+                },
+              }}
             />
 
-            {/* Login */}
-           <Button mode="contained" onPress={handleLogin}
-            style={{ marginTop: 20 }} disabled={isLoading} >
-           {isLoading ? <ActivityIndicator animating={true} /> : "Accedi"}
+            <Button
+              mode="contained"
+              onPress={handleLogin}
+              style={styles.loginButton}
+              contentStyle={{paddingVertical: 8}}
+              labelStyle={{fontSize: 16, fontWeight: '600'}}
+              disabled={isLoading}>
+              {isLoading ? (
+                <ActivityIndicator animating={true} color="white" />
+              ) : (
+                'Accedi'
+              )}
             </Button>
 
-            {/* Errori API */}
             {error && (
-              <Text style={{ color: theme.colors.error, marginTop: 10 }}>
-                {mapAuthError(error, "login")}
+              <Text style={styles.errorText}>
+                {mapAuthError(error, 'login')}
               </Text>
             )}
 
-            {/* Link extra */}
             <View style={styles.linkContainer}>
-              <TouchableOpacity
-                onPress={() => navigation.navigate("Register")}
-              >
-                <Text
-                  style={[styles.linkText, { color: theme.colors.primary }]}
-                >
+              <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+                <Text style={[styles.linkText, {color: theme.colors.primary}]}>
                   Non hai un account? Registrati
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={() => navigation.navigate("ForgotPassword")}
-              >
-                <Text
-                  style={[styles.linkText, { color: theme.colors.primary }]}
-                >
+                onPress={() => navigation.navigate('ForgotPassword')}>
+                <Text style={[styles.linkText, {color: theme.colors.primary}]}>
                   Password dimenticata?
                 </Text>
               </TouchableOpacity>
 
-              {/* Accesso anonimo */}
               <TouchableOpacity
                 onPress={() => {
                   dispatch(setAnonymous());
-                  dispatch(clearUser()); // pulisci profilo quando entri come ospite
-                }}
-              >
+                  dispatch(clearUser());
+                }}>
                 <Text
-                  style={[styles.linkText, { color: theme.colors.secondary }]}
-                >
+                  style={[styles.linkText, {color: theme.colors.secondary}]}>
                   Salta (Accedi come ospite)
                 </Text>
               </TouchableOpacity>
@@ -171,27 +178,58 @@ export default function LoginScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
-    justifyContent: "center",
+    justifyContent: 'center',
   },
   container: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: 'center',
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 30,
+    marginTop: 60,
+  },
+  logo: {
+    width: 300, // ← ingrandito
+    height: 120,
   },
   formContainer: {
-    width: "90%",
+    width: '90%',
     maxWidth: 400,
-    alignSelf: "center",
+    alignSelf: 'center',
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 25,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 6},
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 4,
   },
   input: {
-    marginBottom: 10,
+    marginBottom: 14,
+    backgroundColor: 'white',
+    fontSize: 16,
+  },
+  loginButton: {
+    marginTop: 10,
+    borderRadius: 10,
+    elevation: 2,
+  },
+  errorText: {
+    color: 'red',
+    marginTop: 12,
+    textAlign: 'center',
+    fontSize: 14,
   },
   linkContainer: {
     marginTop: 30,
-    alignItems: "center",
+    alignItems: 'center',
   },
   linkText: {
-    textDecorationLine: "underline",
-    textAlign: "center",
+    textDecorationLine: 'underline',
+    textAlign: 'center',
     marginVertical: 6,
+    fontSize: 14,
   },
 });

@@ -147,12 +147,42 @@ class BookingListCreateView(AuthenticatedMixin, generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            # Automatically assign the logged-in user
-            serializer.save(user=request.user)
+            # compute distance in km: prefer distance_km, fallback to total_distance_m (meters from PlanTrip)
+            distance = serializer.validated_data.get('distance_km')
+            if distance is None and 'total_distance_m' in serializer.validated_data:
+                try:
+                    total_m = serializer.validated_data.get('total_distance_m')
+                    if total_m is not None:
+                        distance = float(total_m) / 1000.0
+                except (TypeError, ValueError):
+                    distance = None
+            mode = serializer.validated_data.get('mode', '') or ''
+            mode_key = mode.lower()
+
+            # emission factors in kg CO2 per passenger-km (typical average values)
+            EMISSION_FACTORS = {
+                'car': 0.192,    # kg CO2 per vehicle-km (approx per passenger assuming 1 pax)
+                'bus': 0.089,    # kg CO2 per passenger-km (average bus passenger)
+                'scooter': 0.021,
+                'bicycle': 0.0,
+                'walk': 0.0,
+            }
+
+            co2 = None
+            if distance is not None:
+                factor = EMISSION_FACTORS.get(mode_key, EMISSION_FACTORS['car'])
+                try:
+                    co2 = round(float(distance) * float(factor), 4)
+                except (TypeError, ValueError):
+                    co2 = None
+
+            # save booking with computed fields
+            booking = serializer.save(user=request.user, distance_km=distance, co2_kg=co2)
+            response_data = BookingSerializer(booking).data
             return Response({
                 "success": True,
                 "message": "Booking created successfully",
-                "data": serializer.data
+                "data": response_data
             }, status=status.HTTP_201_CREATED)
         return Response({"success": False, "error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 

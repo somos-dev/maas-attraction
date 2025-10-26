@@ -15,10 +15,32 @@ class FavoritePlaceSerializer(serializers.ModelSerializer):
 
 class BookingSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(source='user.id', read_only=True)  # Expose the user ID
+    # allow client to send distance_km; co2_kg is calculated server-side and read-only
+    distance_km = serializers.FloatField(required=False, allow_null=True)
+    # allow client to send total distance in meters (e.g. from PlanTrip) — write-only
+    total_distance_m = serializers.IntegerField(write_only=True, required=False)
+    co2_kg = serializers.FloatField(read_only=True)
 
     class Meta:
         model = Booking
-        fields = ['id', 'user_id', 'origin', 'destination', 'time', 'mode']
+        fields = ['id', 'user_id', 'origin', 'destination', 'time', 'mode', 'distance_km', 'total_distance_m', 'co2_kg']
+
+    def create(self, validated_data):
+        """Handle write-only `total_distance_m` before creating the Booking instance.
+
+        If the client sends `total_distance_m` (meters) we convert it to km and store
+        it in `distance_km` so the model creation doesn't receive an unexpected
+        keyword. Any extra kwargs (like `user` or `co2_kg`) are expected to already
+        be present in `validated_data` when save() is called.
+        """
+        total_m = validated_data.pop('total_distance_m', None)
+        if total_m is not None and validated_data.get('distance_km') is None:
+            try:
+                validated_data['distance_km'] = float(total_m) / 1000.0
+            except (TypeError, ValueError):
+                # leave distance_km unset if conversion fails; let model/validators handle it
+                pass
+        return super().create(validated_data)
 
 User = get_user_model()
 

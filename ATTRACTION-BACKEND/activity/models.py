@@ -55,6 +55,10 @@ class Booking(models.Model):
     destination = models.CharField(max_length=255)
     time = models.DateTimeField()
     mode = models.CharField(max_length=100)
+    # distance in kilometers for this booking (optional)
+    distance_km = models.FloatField(null=True, blank=True, default=None)
+    # computed CO2 consumption in kilograms for this booking (optional)
+    co2_kg = models.FloatField(null=True, blank=True, default=None)
 
     def __str__(self):
         return f"Booking by {self.user} from {self.origin} to {self.destination} at {self.time}"

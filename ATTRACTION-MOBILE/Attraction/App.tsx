@@ -5,23 +5,27 @@
  * @format
  */
 
-import React from "react";
-import { Provider, useSelector } from "react-redux";
-import { PersistGate } from "redux-persist/integration/react";
-import { PaperProvider } from "react-native-paper";
+import React from 'react';
+import {Provider, useSelector} from 'react-redux';
+import {PersistGate} from 'redux-persist/integration/react';
+import {PaperProvider} from 'react-native-paper';
+import {StatusBar} from 'react-native';
+import {store, persistor, RootState} from './src/store/store';
+import AppNavigator from './src/navigation/AppNavigator';
+import {lightTheme, darkTheme} from './src/config/theme';
 
-import { store, persistor, RootState } from "./src/store/store"; 
-import AppNavigator from "./src/navigation/AppNavigator";
-import { lightTheme, darkTheme } from "./src/config/theme";
+//  import AsyncStorage from '@react-native-async-storage/async-storage';
+//   AsyncStorage.clear();
 
-  //  import AsyncStorage from '@react-native-async-storage/async-storage';
-  //   AsyncStorage.clear();
-
-  function ThemedApp() {
+function ThemedApp() {
   const isDark = useSelector((state: RootState) => state.theme.isDarkTheme);
 
   return (
     <PaperProvider theme={isDark ? darkTheme : lightTheme}>
+      <StatusBar
+        barStyle="dark-content" // 👈 testo scuro
+        backgroundColor="#FFFFFF" // 👈 sfondo chiaro
+      />
       <AppNavigator />
     </PaperProvider>
   );

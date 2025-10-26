@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {View, StyleSheet} from 'react-native';
 import {Button, Text, useTheme, Snackbar} from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -13,9 +13,15 @@ import {usePlaces, Place} from '../../hooks/usePlaces';
 
 interface Props {
   navigation: any;
+  prefill?: {
+    from_lat: number;
+    from_lon: number;
+    to_lat: number;
+    to_lon: number;
+  };
 }
 
-export default function SearchBottomSheet({navigation}: Props) {
+export default function SearchBottomSheet({navigation, prefill}: Props) {
   const theme = useTheme();
   const {routes, loading, error, fetchTrip} = useTrip();
   const {results, loading: searching, error: searchError, search} = usePlaces();
@@ -35,6 +41,26 @@ export default function SearchBottomSheet({navigation}: Props) {
   const formattedTime = `${pad(dateTime.getHours())}:${pad(
     dateTime.getMinutes(),
   )}:${pad(dateTime.getSeconds())}`;
+
+  useEffect(() => {
+    if (prefill) {
+      setFrom({
+        name: 'Partenza selezionata',
+        address: '',
+        lat: prefill.from_lat,
+        lon: prefill.from_lon,
+      });
+
+      setTo({
+        name: 'Destinazione selezionata',
+        address: '',
+        lat: prefill.to_lat,
+        lon: prefill.to_lon,
+      });
+    }
+    console.log('📍 Ricevuto prefill NUOVO:', prefill);
+    setTimeout(() => handleSearch(), 600);
+  }, [prefill]);
 
   const handleSearch = async () => {
     if (!from || !to) return;

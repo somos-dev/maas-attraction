@@ -20,10 +20,12 @@ class BookingSerializer(serializers.ModelSerializer):
     # allow client to send total distance in meters (e.g. from PlanTrip) — write-only
     total_distance_m = serializers.IntegerField(write_only=True, required=False)
     co2_kg = serializers.FloatField(read_only=True)
+    # CO2 saved compared to baseline (car) in kilograms — computed server-side
+    co2_saved_kg = serializers.FloatField(read_only=True)
 
     class Meta:
         model = Booking
-        fields = ['id', 'user_id', 'origin', 'destination', 'time', 'mode', 'distance_km', 'total_distance_m', 'co2_kg']
+        fields = ['id', 'user_id', 'origin', 'destination', 'time', 'mode', 'distance_km', 'total_distance_m', 'co2_kg', 'co2_saved_kg']
 
     def create(self, validated_data):
         """Handle write-only `total_distance_m` before creating the Booking instance.

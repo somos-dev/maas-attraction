@@ -175,9 +175,17 @@ class BookingListCreateView(AuthenticatedMixin, generics.ListCreateAPIView):
                     co2 = round(float(distance) * float(factor), 4)
                 except (TypeError, ValueError):
                     co2 = None
+            # compute CO2 saved compared to baseline (car)
+            co2_saved = None
+            if distance is not None and co2 is not None:
+                try:
+                    baseline = float(distance) * float(EMISSION_FACTORS['car'])
+                    co2_saved = round(max(0.0, baseline - float(co2)), 4)
+                except (TypeError, ValueError):
+                    co2_saved = None
 
             # save booking with computed fields
-            booking = serializer.save(user=request.user, distance_km=distance, co2_kg=co2)
+            booking = serializer.save(user=request.user, distance_km=distance, co2_kg=co2, co2_saved_kg=co2_saved)
             response_data = BookingSerializer(booking).data
             return Response({
                 "success": True,

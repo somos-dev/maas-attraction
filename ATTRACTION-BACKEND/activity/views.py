@@ -136,6 +136,36 @@ class BookingListCreateView(AuthenticatedMixin, generics.ListCreateAPIView):
     queryset = Booking.objects.all()
     serializer_class = BookingSerializer
 
+    def get_queryset(self):
+        """Return bookings for the requesting user by default.
+
+        If a `user_id` (or `user`) query parameter is provided and the
+        requesting user is staff, return bookings for that user id.
+        This prevents regular users from listing all bookings.
+        """
+        request = self.request
+        qs = Booking.objects.all()
+        # By default only return the current user's bookings
+        try:
+            user = request.user
+        except Exception:
+            return qs.none()
+
+        # allow staff to filter by user_id
+        user_id = request.query_params.get('user_id') or request.query_params.get('user')
+        if user_id:
+            # only allow filtering by other users for staff
+            if getattr(user, 'is_staff', False):
+                return qs.filter(user__id=user_id)
+            # allow non-staff to query their own id explicitly
+            try:
+                if int(user_id) == int(user.id):
+                    return qs.filter(user=user)
+            except Exception:
+                pass
+
+        return qs.filter(user=user)
+
     def list(self, request, *args, **kwargs):
         serializer = self.get_serializer(self.get_queryset(), many=True)
         return Response({

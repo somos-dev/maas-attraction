@@ -1,29 +1,30 @@
 export const SCREEN_TITLES: Record<string, string> = {
   // Auth
-  Login: "Accedi",
-  Register: "Registrati",
-  ForgotPassword: "Recupera password",
-  ResetPassword: "Reimposta password",
- 
+  Login: 'Accedi',
+  Register: 'Registrati',
+  ForgotPassword: 'Recupera password',
+  ResetPassword: 'Reimposta password',
+
   // Main
-  Home: "Home",
-  Search: "Cerca destinazione",
-  Results: "Risultati della ricerca",
-  TripDetails: "Dettagli del viaggio",
+  Home: 'Home',
+  Search: 'Cerca destinazione',
+  Results: 'Risultati della ricerca',
+  TripDetails: 'Dettagli del viaggio',
 
   // Lines
-  Lines: "Linee",
+  Lines: 'Linee',
 
   // Services
-  Services: "Servizi",
+  Services: 'Servizi',
 
   // Profile
-  Profile: "Profilo",
-  EditProfile: "Modifica Profilo",
-  TransportPreferences: "Preferenze di Trasporto",
-  TripsHistory: "Storico Viaggi",
+  Profile: 'Profilo',
+  EditProfile: 'Modifica Profilo',
+  TransportPreferences: 'Preferenze di Trasporto',
+  TripsHistory: 'Storico Viaggi',
+  Gamification: 'Badge e Ricompense',
 
   // Drawer
-  Settings: "Impostazioni",
-  Feedback: "Valutaci",
+  Settings: 'Impostazioni',
+  Feedback: 'Valutaci',
 };

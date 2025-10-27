@@ -60,13 +60,13 @@ export default function TransportPreferencesScreen() {
       ]}
       showsVerticalScrollIndicator={false}>
       {/* Header */}
-      <View style={styles.header}>
+      {/* <View style={styles.header}>
         <Text
           variant="headlineSmall"
           style={[styles.title, {color: theme.colors.onBackground}]}>
           Impostazioni
         </Text>
-      </View>
+      </View> */}
 
       {/* Tipo di Percorso */}
       <AppCard title="Tipo di Percorso">

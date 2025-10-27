@@ -1,49 +1,53 @@
-import React from "react";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { useTheme } from "react-native-paper"; // 👈 aggiunto
-import ProfileScreen from "./ProfileScreen";
-import type { ProfileStackParamList } from "../../navigation/types";
-import EditProfileScreen from "./EditProfileScreen";
-import TransportPreferencesScreen from "./TransportPreferencesScreen";
-import TripsHistoryScreen from "./TripsHistoryScreen";
-
+import React from 'react';
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import {useTheme} from 'react-native-paper'; // 👈 aggiunto
+import ProfileScreen from './ProfileScreen';
+import type {ProfileStackParamList} from '../../navigation/types';
+import EditProfileScreen from './EditProfileScreen';
+import TransportPreferencesScreen from './TransportPreferencesScreen';
+import TripsHistoryScreen from './TripsHistoryScreen';
+import BookingsDashboardScreen from './BookingsDashboardScreen';
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
 
 export default function ProfileStack() {
-  const theme = useTheme(); 
+  const theme = useTheme();
 
   return (
     <Stack.Navigator
       screenOptions={{
         headerShadowVisible: false,
-        headerStyle: { backgroundColor: theme.colors.surface },
-        headerTintColor: theme.colors.onSurface, 
-      }}
-    >
+        headerStyle: {backgroundColor: theme.colors.surface},
+        headerTintColor: theme.colors.onSurface,
+      }}>
       <Stack.Screen
         name="Profile"
         component={ProfileScreen}
-        options={{ title: "Profilo" }}
+        options={{title: 'Profilo'}}
       />
       <Stack.Screen
         name="EditProfile"
         component={EditProfileScreen}
-        options={{ title: "Modifica Profilo" }}
+        options={{title: 'Modifica Profilo'}}
       />
 
       <Stack.Screen
         name="TransportPreferences"
         component={TransportPreferencesScreen}
-        options={{ title: "Preferenze di Trasporto" }}
+        options={{title: 'Preferenze di Trasporto'}}
+      />
+
+      <Stack.Screen
+        name="Gamification"
+        component={BookingsDashboardScreen}
+        options={{title: 'Badge e Ricompense'}}
       />
 
       <Stack.Screen
         name="TripsHistory"
         component={TripsHistoryScreen}
-        options={{ title: "Storico Viaggi" }}
+        options={{title: 'Storico Viaggi'}}
       />
     </Stack.Navigator>
   );
 }
-

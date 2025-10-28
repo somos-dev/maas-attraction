@@ -13,6 +13,8 @@ import AppFooter from '../components/common/footer/AppFooter';
 import TabNavigator from './TabNavigator';
 import SettingsScreen from '../screens/drawer/SettingsScreen';
 import FeedbackScreen from '../screens/drawer/FeedbackScreen';
+import InformazioniScreen from '../screens/drawer/InformazioniScreen';
+import PrivacyScreen from '../screens/drawer/PrivacyScreen';
 
 import type {DrawerParamList} from './types';
 import {SCREEN_TITLES} from './screenTitles';
@@ -131,10 +133,16 @@ function CustomDrawerContent(props: any) {
             icon={({color, size}) => (
               <Icon source="information-outline" color={color} size={size} />
             )}
-            onPress={() => {
-              console.log('Apri informazioni app');
-              props.navigation.closeDrawer();
-            }}
+            onPress={() => handleMenuItemPress('Informazioni')}
+            style={styles.drawerItem}
+            labelStyle={styles.drawerLabel}
+          />
+          <DrawerItem
+            label="Informativa Privacy"
+            icon={({color, size}) => (
+              <Icon source="shield-check-outline" color={color} size={size} />
+            )}
+            onPress={() => handleMenuItemPress('Privacy')}
             style={styles.drawerItem}
             labelStyle={styles.drawerLabel}
           />
@@ -207,6 +215,52 @@ export default function DrawerNavigator() {
               />
               <Appbar.Content
                 title={SCREEN_TITLES.Feedback}
+                titleStyle={[
+                  theme.typography?.headerTitle,
+                  {color: theme.colors.onSurface},
+                ]}
+              />
+            </Appbar.Header>
+          ),
+        })}
+      />
+      <Drawer.Screen
+        name="Informazioni"
+        component={InformazioniScreen}
+        options={({navigation}) => ({
+          title: 'Informazioni',
+          headerShown: true,
+          header: () => (
+            <Appbar.Header>
+              <Appbar.BackAction
+                color={theme.colors.onSurface}
+                onPress={() => navigation.goBack()}
+              />
+              <Appbar.Content
+                title="Informazioni"
+                titleStyle={[
+                  theme.typography?.headerTitle,
+                  {color: theme.colors.onSurface},
+                ]}
+              />
+            </Appbar.Header>
+          ),
+        })}
+      />
+      <Drawer.Screen
+        name="Privacy"
+        component={PrivacyScreen}
+        options={({navigation}) => ({
+          title: 'Informativa Privacy',
+          headerShown: true,
+          header: () => (
+            <Appbar.Header>
+              <Appbar.BackAction
+                color={theme.colors.onSurface}
+                onPress={() => navigation.goBack()}
+              />
+              <Appbar.Content
+                title="Informativa Privacy"
                 titleStyle={[
                   theme.typography?.headerTitle,
                   {color: theme.colors.onSurface},

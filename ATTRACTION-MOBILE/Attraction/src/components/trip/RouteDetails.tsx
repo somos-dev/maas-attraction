@@ -37,7 +37,7 @@ export default function RouteDetails({route, busInfo}: RouteDetailsProps) {
     tram: {icon: 'tram', color: '#4CAF50', label: 'Tram'},
     subway: {icon: 'subway-variant', color: '#E91E63', label: 'Metro'},
     car: {icon: 'car', color: '#616161', label: 'Auto'},
-    bike: {icon: 'bike', color: '#8BC34A', label: 'Bici'},
+    bike: {icon: 'scooter', color: '#8BC34A', label: 'Monopattino'},
   };
 
   return (

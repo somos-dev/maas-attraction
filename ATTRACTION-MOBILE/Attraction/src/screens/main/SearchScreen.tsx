@@ -55,19 +55,38 @@ export default function SearchScreen({navigation}: any) {
   const prefill = route.params?.prefill;
 
   useEffect(() => {
-    if (prefill) {
-      setFrom({
-        lat: prefill.from_lat,
-        lon: prefill.from_lon,
-        name: 'Punto di partenza',
-      });
-      setTo({
-        lat: prefill.to_lat,
-        lon: prefill.to_lon,
-        name: 'Destinazione',
+    if (!route.params?.prefill) return;
+
+    const {from_lat, from_lon, to_lat, to_lon} = route.params.prefill;
+
+    // Aggiorna "Partenza" se fornita
+    if (from_lat && from_lon) {
+      reverseGeocode(from_lat, from_lon).then(name => {
+        setFrom({
+          lat: from_lat,
+          lon: from_lon,
+          name: name || 'Punto di partenza',
+        });
       });
     }
-  }, [prefill]);
+
+    // Aggiorna "Destinazione" se fornita
+    if (to_lat && to_lon) {
+      reverseGeocode(to_lat, to_lon).then(name => {
+        setTo({
+          lat: to_lat,
+          lon: to_lon,
+          name: name || 'Destinazione',
+        });
+      });
+    }
+
+    console.log(
+      '📍 Aggiornato dinamicamente da prefill:',
+      route.params.prefill,
+    );
+  }, [route.params?.prefill]);
+
   const theme = useTheme();
   const {fetchTrip, loading, error} = useTrip();
   const {results, loading: searching, error: searchError, search} = usePlaces();

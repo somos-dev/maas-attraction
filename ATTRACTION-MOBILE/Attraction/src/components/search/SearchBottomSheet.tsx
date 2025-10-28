@@ -43,24 +43,30 @@ export default function SearchBottomSheet({navigation, prefill}: Props) {
   )}:${pad(dateTime.getSeconds())}`;
 
   useEffect(() => {
-    if (prefill) {
+    if (!prefill) return;
+
+    console.log('🔁 Prefill ricevuto nel BottomSheet:', prefill);
+
+    // 🔹 aggiorna Partenza solo se ci sono coordinate
+    if (prefill.from_lat && prefill.from_lon) {
       setFrom({
-        name: 'Partenza selezionata',
+        name: 'Partenza selezionata sulla mappa',
         address: '',
         lat: prefill.from_lat,
         lon: prefill.from_lon,
       });
+    }
 
+    // 🔹 aggiorna Destinazione solo se ci sono coordinate
+    if (prefill.to_lat && prefill.to_lon) {
       setTo({
-        name: 'Destinazione selezionata',
+        name: 'Destinazione selezionata sulla mappa',
         address: '',
         lat: prefill.to_lat,
         lon: prefill.to_lon,
       });
     }
-    console.log('📍 Ricevuto prefill NUOVO:', prefill);
-    setTimeout(() => handleSearch(), 600);
-  }, [prefill]);
+  }, [prefill]); // 👈 non singole proprietà: l’oggetto intero
 
   const handleSearch = async () => {
     if (!from || !to) return;

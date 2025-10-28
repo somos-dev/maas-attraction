@@ -1,21 +1,34 @@
-import React, {useState, useEffect, memo, useRef, useMemo} from 'react';
+import React, {useState, useEffect, useRef, useMemo, memo} from 'react';
 import {
   View,
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Platform,
   Dimensions,
 } from 'react-native';
-import {Text, Divider, useTheme, Surface, Menu} from 'react-native-paper';
+import {Text, Surface, Menu, useTheme} from 'react-native-paper';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import BottomSheet, {BottomSheetScrollView} from '@gorhom/bottom-sheet';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useNavigation} from '@react-navigation/native';
 import MapView from '../../components/maps/MapView';
-import AppButton from '../../components/common/button/AppButton';
+import {isPointInAnyFeature} from '../../utils/geoUtils';
+import drtArea from '../../config/drtArea.json';
+import scooters from '../../config/scooters.json';
 
 const {height} = Dimensions.get('window');
+
+const co2ByMode: Record<string, number> = {
+  walk: 0,
+  bike: 0,
+  bus: 80,
+  train: 41,
+  tram: 35,
+  car: 180,
+  subway: 50,
+  navetta: 0,
+  scooter: 0,
+};
 
 const MODE_CONFIG: Record<
   string,
@@ -28,61 +41,12 @@ const MODE_CONFIG: Record<
   subway: {icon: 'subway-variant', color: '#E91E63', label: 'Metro'},
   car: {icon: 'car', color: '#424242', label: 'Auto'},
   bike: {icon: 'bike', color: '#8BC34A', label: 'Bici'},
+  navetta: {icon: 'bus', color: '#E53935', label: 'Navetta Unical'},
+  scooter: {icon: 'scooter', color: '#00BFA5', label: 'Monopattini Unical'},
 };
-
-const co2ByMode: Record<string, number> = {
-  walk: 0,
-  bike: 0,
-  bus: 80,
-  train: 41,
-  tram: 35,
-  car: 180,
-  subway: 50,
-};
-
-// Timeline dei segmenti
-const SegmentTimeline = memo(({segments}: any) => {
-  if (!segments || segments.length === 0) return null;
-  return (
-    <View style={styles.timeline}>
-      {segments.map((seg: any, i: number) => {
-        const config = MODE_CONFIG[seg.mode?.toLowerCase()] || MODE_CONFIG.walk;
-        const isLast = i === segments.length - 1;
-        return (
-          <View key={i} style={styles.timelineItem}>
-            <View style={styles.timelineIndicator}>
-              <View
-                style={[styles.timelineDot, {backgroundColor: config.color}]}>
-                <Icon name={config.icon} size={12} color="#fff" />
-              </View>
-              {!isLast && (
-                <View
-                  style={[
-                    styles.timelineLine,
-                    seg.mode === 'walk' && styles.timelineLineDashed,
-                    {backgroundColor: config.color},
-                  ]}
-                />
-              )}
-            </View>
-
-            <View style={styles.timelineContent}>
-              <Text style={styles.segmentMode}>{config.label}</Text>
-              {seg.name && <Text style={styles.segmentName}>{seg.name}</Text>}
-              <Text style={styles.segmentDistance}>
-                {((seg.distance_m || 0) / 1000).toFixed(1)} km
-              </Text>
-            </View>
-          </View>
-        );
-      })}
-    </View>
-  );
-});
 
 const CompactRouteItem = memo(({item, onSelect, onDetails, selected}: any) => {
   const theme = useTheme();
-
   const firstLeg = item.legs?.[0];
   const lastLeg = item.legs?.[item.legs.length - 1];
   const startTime = firstLeg?.start_time ? new Date(firstLeg.start_time) : null;
@@ -95,7 +59,12 @@ const CompactRouteItem = memo(({item, onSelect, onDetails, selected}: any) => {
   );
 
   const estimatedCO2 = segments.reduce((sum: number, seg: any) => {
-    const mode = seg.mode?.toLowerCase() || 'walk';
+    const mode =
+      seg.name === 'Navetta Unical'
+        ? 'navetta'
+        : seg.name === 'Monopattini Unical'
+        ? 'scooter'
+        : seg.mode?.toLowerCase() || 'walk';
     const factor = co2ByMode[mode] ?? 0;
     const dist = Number(seg.distance_m) || 0;
     return sum + (dist / 1000) * factor;
@@ -111,7 +80,6 @@ const CompactRouteItem = memo(({item, onSelect, onDetails, selected}: any) => {
           elevation: 3,
         },
       ]}>
-      {/* --- Riga superiore: orari + durata + freccia attiva --- */}
       <View style={styles.topRow}>
         <TouchableOpacity
           activeOpacity={0.85}
@@ -137,11 +105,7 @@ const CompactRouteItem = memo(({item, onSelect, onDetails, selected}: any) => {
           </Text>
         </TouchableOpacity>
 
-        {/* Freccia: apre i dettagli */}
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => onDetails(item)}
-          hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+        <TouchableOpacity onPress={() => onDetails(item)}>
           <Icon
             name="chevron-right"
             size={28}
@@ -152,10 +116,14 @@ const CompactRouteItem = memo(({item, onSelect, onDetails, selected}: any) => {
         </TouchableOpacity>
       </View>
 
-      {/* --- Timeline centrale con icone e distanze --- */}
       <View style={styles.segmentLine}>
         {segments.map((seg: any, i: number) => {
-          const mode = seg.mode?.toLowerCase();
+          const mode =
+            seg.name === 'Navetta Unical'
+              ? 'navetta'
+              : seg.name === 'Monopattini Unical'
+              ? 'scooter'
+              : seg.mode?.toLowerCase() || 'walk';
           const config = MODE_CONFIG[mode] || MODE_CONFIG.walk;
           const isLast = i === segments.length - 1;
           const dist = (seg.distance_m / 1000).toFixed(1);
@@ -169,8 +137,7 @@ const CompactRouteItem = memo(({item, onSelect, onDetails, selected}: any) => {
                 <Icon name={config.icon} size={18} color="#fff" />
               </View>
               <Text
-                style={[styles.segmentLabel, {color: theme.colors.onSurface}]}
-                numberOfLines={1}>
+                style={[styles.segmentLabel, {color: theme.colors.onSurface}]}>
                 {label}
               </Text>
               <Text
@@ -186,14 +153,13 @@ const CompactRouteItem = memo(({item, onSelect, onDetails, selected}: any) => {
         })}
       </View>
 
-      {/* --- Riga inferiore: info sintetiche --- */}
       <View style={styles.bottomInfoRow}>
         <Text style={[styles.infoText, {color: theme.colors.onSurfaceVariant}]}>
-          📏 {(totalDistance / 1000).toFixed(1)} km totali
+          {(totalDistance / 1000).toFixed(1)} km totali
         </Text>
         {estimatedCO2 > 0 && (
           <Text style={[styles.co2Text, {color: theme.colors.secondary}]}>
-            🌿 {Math.round(estimatedCO2)} g CO₂
+            {Math.round(estimatedCO2)} g CO₂
           </Text>
         )}
       </View>
@@ -201,151 +167,20 @@ const CompactRouteItem = memo(({item, onSelect, onDetails, selected}: any) => {
   );
 });
 
-// Card singola rotta
-const RouteItem = memo(({item, onSelect, selected, onDetails}: any) => {
-  const theme = useTheme();
-
-  const firstLeg = item.legs?.[0];
-  const lastLeg = item.legs?.[item.legs.length - 1];
-  const startTime = firstLeg?.start_time ? new Date(firstLeg.start_time) : null;
-  const endTime = lastLeg?.end_time ? new Date(lastLeg.end_time) : null;
-
-  const segments = item.segments || item.legs || [];
-
-  const totalDistance = segments.reduce(
-    (sum: number, s: any) => sum + (Number(s.distance_m) || 0),
-    0,
-  );
-  const walkDistance = segments
-    .filter((s: any) => s.mode?.toLowerCase() === 'walk')
-    .reduce((sum: number, s: any) => sum + (Number(s.distance_m) || 0), 0);
-
-  const estimatedCO2 = segments.reduce((sum: number, seg: any) => {
-    const mode = seg.mode?.toLowerCase() || 'walk';
-    const factor = co2ByMode[mode] ?? 0;
-    const dist = Number(seg.distance_m) || 0;
-    return sum + (dist / 1000) * factor;
-  }, 0);
-
-  return (
-    <TouchableOpacity activeOpacity={0.85} onPress={() => onSelect(item)}>
-      <Surface
-        style={[
-          styles.card,
-          {backgroundColor: theme.colors.backgroundCard},
-          selected && {
-            borderColor: theme.colors.primary,
-            borderWidth: 2,
-            elevation: 4,
-          },
-        ]}>
-        {/* Header con orari e durata */}
-        <View style={styles.headerRow}>
-          <View style={{flex: 1}}>
-            {startTime && endTime ? (
-              <Text style={[styles.timeText, {color: theme.colors.onSurface}]}>
-                🕒{' '}
-                {startTime.toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}{' '}
-                →{' '}
-                {endTime.toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </Text>
-            ) : (
-              <Text
-                style={[
-                  styles.timeText,
-                  {color: theme.colors.onSurfaceVariant},
-                ]}>
-                Orario non disponibile
-              </Text>
-            )}
-            <Text
-              style={[
-                styles.distanceText,
-                {color: theme.colors.onSurfaceVariant},
-              ]}>
-              {item.duration} min totali
-            </Text>
-          </View>
-
-          {/* Icone mezzi */}
-          <View style={styles.modesRow}>
-            {[...new Set(segments.map((s: any) => s.mode) || [])].map(
-              (mode: string, i: number) => {
-                const config =
-                  MODE_CONFIG[mode?.toLowerCase()] || MODE_CONFIG.walk;
-                return (
-                  <View
-                    key={i}
-                    style={[styles.modeIcon, {backgroundColor: config.color}]}>
-                    <Icon name={config.icon} size={16} color="#fff" />
-                  </View>
-                );
-              },
-            )}
-          </View>
-        </View>
-
-        <Divider style={styles.divider} />
-
-        {/* Info */}
-        <View style={styles.infoRow}>
-          <View>
-            <Text
-              style={[styles.infoText, {color: theme.colors.onSurfaceVariant}]}>
-              🚶‍♂️ {(walkDistance / 1000).toFixed(1)} km a piedi
-            </Text>
-            <Text
-              style={[styles.infoText, {color: theme.colors.onSurfaceVariant}]}>
-              📏 {(totalDistance / 1000).toFixed(1)} km totali
-            </Text>
-          </View>
-
-          {estimatedCO2 > 0 && (
-            <View
-              style={[
-                styles.co2Badge,
-                {backgroundColor: theme.colors.secondary + '20'},
-              ]}>
-              <Icon name="leaf" size={14} color={theme.colors.primary} />
-              <Text style={[styles.co2Text, {color: theme.colors.primary}]}>
-                {Math.round(estimatedCO2)} g CO₂
-              </Text>
-            </View>
-          )}
-        </View>
-
-        <SegmentTimeline segments={segments} />
-
-        <View style={styles.detailsButtonContainer}>
-          <AppButton
-            label="Dettagli"
-            onPress={() => onDetails(item)}
-            style={styles.detailsButton}
-          />
-        </View>
-      </Surface>
-    </TouchableOpacity>
-  );
-});
-
 export default function ResultsScreen({route}: any) {
   const theme = useTheme();
   const navigation = useNavigation<any>();
   const {routes} = route.params;
-  const [selectedRoute, setSelectedRoute] = useState<any | null>(
-    routes?.[0] || null,
-  );
 
+  const [selectedRoute, setSelectedRoute] = useState(routes?.[0] || null);
+  const [showDrtArea, setShowDrtArea] = useState(false);
+  const [hasNavetta, setHasNavetta] = useState(false);
+  const [hasScooters, setHasScooters] = useState(false);
   const [filterMode, setFilterMode] = useState<'fastest' | 'eco' | 'walk'>(
     'fastest',
   );
   const [menuVisible, setMenuVisible] = useState(false);
+  const [showSheet, setShowSheet] = useState(false);
 
   const bottomSheetRef = useRef<BottomSheet>(null);
   const mapRef = useRef<any>(null);
@@ -353,24 +188,55 @@ export default function ResultsScreen({route}: any) {
     () => [height * 0.25, height * 0.55, height * 0.85],
     [],
   );
-  const [showSheet, setShowSheet] = useState(false);
+
+  // 🔹 Attiva o disattiva area DRT in base alla rotta selezionata
+  useEffect(() => {
+    if (!selectedRoute) return;
+
+    const normalize = (val: any) =>
+      String(val || '')
+        .trim()
+        .toLowerCase();
+
+    const isNavetta =
+      normalize(selectedRoute.id) === 'navetta-unical' ||
+      normalize(selectedRoute.name) === 'navetta unical' ||
+      selectedRoute?.legs?.some?.(
+        (l: any) => normalize(l?.name) === 'navetta unical',
+      );
+
+    const isScooter =
+      normalize(selectedRoute.id) === 'scooter-unical' ||
+      normalize(selectedRoute.name) === 'monopattini unical' ||
+      selectedRoute?.legs?.some?.(
+        (l: any) => normalize(l?.name) === 'monopattini unical',
+      );
+
+    setShowDrtArea(isNavetta);
+    setHasNavetta(isNavetta);
+    setHasScooters(isScooter);
+  }, [selectedRoute]);
 
   useEffect(() => {
-    const timeout = setTimeout(() => setShowSheet(true), 300);
-    return () => clearTimeout(timeout);
+    const t = setTimeout(() => setShowSheet(true), 300);
+    return () => clearTimeout(t);
   }, []);
 
-  const handleOpenDetails = (trip: any) => {
+  const handleOpenDetails = (trip: any) =>
     navigation.navigate('TripDetails', {trip});
-  };
 
-  // 🧠 Ordinamento e filtraggio
   const sortedRoutes = useMemo(() => {
     if (!routes) return [];
 
+    // Calcolo CO₂ per ogni rotta
     const withCO2 = routes.map((r: any) => {
       const totalCO2 = r.segments?.reduce((sum: number, seg: any) => {
-        const mode = seg.mode?.toLowerCase();
+        const mode =
+          seg.name === 'Navetta Unical'
+            ? 'navetta'
+            : seg.name === 'Monopattini Unical'
+            ? 'scooter'
+            : seg.mode?.toLowerCase() || 'walk';
         const dist = Number(seg.distance_m) || 0;
         const factor = co2ByMode[mode] ?? 0;
         return sum + (dist / 1000) * factor;
@@ -378,52 +244,90 @@ export default function ResultsScreen({route}: any) {
       return {...r, totalCO2};
     });
 
-    if (filterMode === 'eco') {
-      return withCO2.sort((a, b) => {
-        const aEco = !a.segments?.some((s: any) => s.mode === 'car');
-        const bEco = !b.segments?.some((s: any) => s.mode === 'car');
-        if (aEco !== bEco) return aEco ? -1 : 1; // eco first
-        return (a.totalCO2 || Infinity) - (b.totalCO2 || Infinity);
+    // Duplico eventuale rotta "walk" per navetta e scooter (sempre)
+    const walkRoute = withCO2.find((r: any) =>
+      r.segments?.every((s: any) => s.mode === 'walk'),
+    );
+
+    if (walkRoute) {
+      withCO2.unshift({
+        ...walkRoute,
+        id: 'navetta-unical',
+        name: 'Navetta Unical',
+        segments: walkRoute.segments.map((s: any) => ({
+          ...s,
+          mode: 'navetta',
+          name: 'Navetta Unical',
+        })),
+        legs: walkRoute.legs.map((l: any) => ({
+          ...l,
+          type: 'bus',
+          name: 'Navetta Unical',
+        })),
+      });
+
+      withCO2.unshift({
+        ...walkRoute,
+        id: 'scooter-unical',
+        name: 'Monopattini Unical',
+        segments: walkRoute.segments.map((s: any) => ({
+          ...s,
+          mode: 'scooter',
+          name: 'Monopattini Unical',
+        })),
+        legs: walkRoute.legs.map((l: any) => ({
+          ...l,
+          type: 'bike',
+          name: 'Monopattini Unical',
+        })),
       });
     }
 
+    // Filtri attivi
+    if (filterMode === 'eco') {
+      return withCO2.sort((a, b) => a.totalCO2 - b.totalCO2);
+    }
+
     if (filterMode === 'walk') {
-      //  Mostra solo percorsi completamente pedonali
       return withCO2.filter(r =>
         r.segments?.every((s: any) => s.mode === 'walk'),
       );
     }
 
-    // Default: più veloce
+    // Default = più veloce
     return withCO2.sort((a, b) => a.duration - b.duration);
   }, [routes, filterMode]);
 
   return (
     <GestureHandlerRootView style={{flex: 1}}>
-      {/* Mappa */}
-      <View style={styles.mapContainer} pointerEvents="box-none">
+      {/* MAPPA */}
+      <View style={styles.mapContainer}>
         <MapView
           ref={mapRef}
           route={selectedRoute}
           showStops
           showMarkers
-          highlightColor={theme.colors.primary}
+          highlightColor={
+            selectedRoute?.id === 'navetta-unical'
+              ? '#E53935'
+              : selectedRoute?.id === 'scooter-unical'
+              ? '#00BFA5'
+              : theme.colors.primary
+          }
+          drtArea={showDrtArea ? drtArea : null} // 👈 solo se selezionata Navetta
+          scooters={hasScooters ? scooters : null}
         />
       </View>
 
-      {/* BottomSheet */}
+      {/* BOTTOMSHEET */}
       {showSheet && (
         <BottomSheet
           ref={bottomSheetRef}
           index={0}
           snapPoints={snapPoints}
-          backgroundStyle={[
-            styles.bottomSheetBackground,
-            {backgroundColor: theme.colors.surface},
-          ]}>
+          backgroundStyle={{backgroundColor: theme.colors.surface}}>
           <BottomSheetScrollView
             contentContainerStyle={styles.bottomSheetContent}>
-            {/* Header con menu */}
             <View style={styles.listHeader}>
               <Text style={[styles.listTitle, {color: theme.colors.onSurface}]}>
                 {sortedRoutes.length} soluzioni trovate
@@ -446,7 +350,7 @@ export default function ResultsScreen({route}: any) {
                       {filterMode === 'fastest'
                         ? 'Più veloce'
                         : filterMode === 'eco'
-                        ? 'Eco-sostenibile'
+                        ? 'Eco'
                         : 'Solo a piedi'}
                     </Text>
                     <Icon
@@ -461,24 +365,69 @@ export default function ResultsScreen({route}: any) {
                     setFilterMode('fastest');
                     setMenuVisible(false);
                   }}
-                  title="🏃‍♂️ Più veloce"
+                  title="Più veloce"
                 />
                 <Menu.Item
                   onPress={() => {
                     setFilterMode('eco');
                     setMenuVisible(false);
                   }}
-                  title="🌱 Eco-sostenibile"
+                  title="Eco-sostenibile"
                 />
                 <Menu.Item
                   onPress={() => {
                     setFilterMode('walk');
                     setMenuVisible(false);
                   }}
-                  title="🚶‍♀️ Solo a piedi"
+                  title="Solo a piedi"
                 />
               </Menu>
             </View>
+
+            {/* Banner Monopattini */}
+            {hasScooters && (
+              <View
+                style={{
+                  backgroundColor: 'rgba(0,191,165,0.1)',
+                  padding: 10,
+                  borderRadius: 8,
+                  marginBottom: 10,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                }}>
+                <Icon
+                  name="scooter"
+                  size={20}
+                  color="#00BFA5"
+                  style={{marginRight: 6}}
+                />
+                <Text style={{color: '#00BFA5', fontWeight: '600'}}>
+                  Monopattini Unical disponibili nell’area
+                </Text>
+              </View>
+            )}
+            {/* Banner Navetta */}
+            {hasNavetta && (
+              <View
+                style={{
+                  backgroundColor: 'rgba(229,57,53,0.1)',
+                  padding: 10,
+                  borderRadius: 8,
+                  marginBottom: 10,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                }}>
+                <Icon
+                  name="bus"
+                  size={20}
+                  color="#E53935"
+                  style={{marginRight: 6}}
+                />
+                <Text style={{color: '#E53935', fontWeight: '600'}}>
+                  Servizio serale attivo dalle 20:00 alle 23:45
+                </Text>
+              </View>
+            )}
 
             <FlatList
               data={sortedRoutes}
@@ -501,79 +450,24 @@ export default function ResultsScreen({route}: any) {
 }
 
 const styles = StyleSheet.create({
-  mapContainer: {flex: 1, zIndex: 0},
-  bottomSheetBackground: {borderRadius: 20, elevation: 5},
+  mapContainer: {flex: 1},
   bottomSheetContent: {padding: 20},
   listHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   listTitle: {fontSize: 16, fontWeight: '700'},
   menuButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(80, 185, 72, 0.1)',
+    backgroundColor: 'rgba(80,185,72,0.1)',
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  menuText: {
-    fontSize: 13,
-    marginHorizontal: 4,
-    fontWeight: '500',
-  },
-  card: {
-    marginBottom: 12,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  headerRow: {flexDirection: 'row', justifyContent: 'space-between'},
-  timeText: {fontSize: 14, fontWeight: '600'},
-  distanceText: {fontSize: 12},
-  modesRow: {flexDirection: 'row', gap: 6},
-  modeIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  divider: {marginVertical: 10},
-  infoRow: {flexDirection: 'row', justifyContent: 'space-between'},
-  infoText: {fontSize: 12},
-  co2Badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  co2Text: {fontSize: 12, fontWeight: '600', marginLeft: 4},
-  timeline: {marginTop: 4},
-  timelineItem: {flexDirection: 'row', marginBottom: 12},
-  timelineIndicator: {alignItems: 'center', marginRight: 12},
-  timelineDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  timelineLine: {width: 3, flex: 1, minHeight: 20},
-  timelineLineDashed: {opacity: 0.4},
-  timelineContent: {flex: 1},
-  segmentMode: {fontSize: 14, fontWeight: '600'},
-  segmentName: {fontSize: 13},
-  segmentDistance: {fontSize: 12, color: '#999'},
-  detailsButtonContainer: {alignItems: 'flex-end', marginTop: 8},
-  detailsButton: {marginTop: 6},
+  menuText: {fontSize: 13, marginHorizontal: 4, fontWeight: '500'},
   cardCompact: {
     borderRadius: 10,
     paddingVertical: 10,
@@ -589,26 +483,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 6,
   },
-  timeText: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  durationText: {
-    fontSize: 13,
-    marginLeft: 8,
-  },
+  timeText: {fontSize: 15, fontWeight: '600'},
+  durationText: {fontSize: 13, marginLeft: 8},
   segmentLine: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-    marginBottom: 6,
-    flexWrap: 'wrap',
-  },
-  segmentItem: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 6,
+    flexWrap: 'wrap',
+    marginBottom: 6,
   },
+  segmentItem: {alignItems: 'center', marginHorizontal: 6},
   modeCircleBig: {
     width: 28,
     height: 28,
@@ -617,16 +501,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 3,
   },
-  segmentLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    textAlign: 'center',
-    maxWidth: 60,
-  },
-  segmentDistance: {
-    fontSize: 10,
-    textAlign: 'center',
-  },
+  segmentLabel: {fontSize: 11, fontWeight: '600', textAlign: 'center'},
+  segmentDistance: {fontSize: 10, textAlign: 'center'},
   segmentDivider: {
     position: 'absolute',
     right: -20,
@@ -634,19 +510,12 @@ const styles = StyleSheet.create({
     width: 28,
     height: 2,
     backgroundColor: '#ccc',
-    zIndex: -1,
   },
   bottomInfoRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: 4,
   },
-  infoText: {
-    fontSize: 12,
-  },
-  co2Text: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
+  infoText: {fontSize: 12},
+  co2Text: {fontSize: 12, fontWeight: '600'},
 });

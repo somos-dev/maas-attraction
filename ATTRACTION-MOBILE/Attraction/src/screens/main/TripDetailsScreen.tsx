@@ -1,6 +1,6 @@
 import React, {useMemo, useRef, useState, useEffect} from 'react';
-import {View, StyleSheet, Dimensions, Alert} from 'react-native';
-import {Text, useTheme, Button, Snackbar} from 'react-native-paper';
+import {View, StyleSheet, Dimensions, Linking, Platform} from 'react-native';
+import {Text, useTheme, Button} from 'react-native-paper';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import BottomSheet, {BottomSheetScrollView} from '@gorhom/bottom-sheet';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -8,7 +8,8 @@ import MapView from '../../components/maps/MapView';
 import RouteDetails from '../../components/trip/RouteDetails';
 import {useCreateBookingMutation} from '../../store/api/bookingApi';
 import {useSelector} from 'react-redux';
-import {RootState} from '../../store/store'; // 🔹 importa il tipo del root state
+import {RootState} from '../../store/store';
+import scooters from '../../config/scooters.json';
 
 const {height} = Dimensions.get('window');
 
@@ -64,14 +65,18 @@ export default function TripDetailsScreen({route}: any) {
 
   const [showSheet, setShowSheet] = useState(false);
   const [busInfo, setBusInfo] = useState<any>(null);
-  const [confirmed, setConfirmed] = useState(false); // 🔹 nuovo stato locale
+  const [confirmed, setConfirmed] = useState(false);
+  const [showScooters, setShowScooters] = useState(false);
 
-  // 🔹 RTK Mutation
   const [createBooking, {isLoading}] = useCreateBookingMutation();
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
-
-  // 🔹 Auth
   const {access} = useSelector((state: RootState) => state.auth);
+
+  const isNavetta =
+    trip?.id === 'navetta-unical' ||
+    trip?.legs?.some?.((l: any) => l.name === 'Navetta Unical');
+  const isScooter =
+    trip?.id === 'scooter-unical' ||
+    trip?.legs?.some?.((l: any) => l.name === 'Monopattini Unical');
 
   useEffect(() => {
     const timeout = setTimeout(() => setShowSheet(true), 300);
@@ -79,21 +84,19 @@ export default function TripDetailsScreen({route}: any) {
   }, []);
 
   useEffect(() => {
-    if (trip?.legs?.length) {
-      const busLeg = trip.legs.find(
-        (leg: any) => leg.mode?.toLowerCase() === 'bus',
-      );
-      if (busLeg?.route) {
-        fetchRouteDetails(busLeg.route).then(info => {
-          setBusInfo(info);
-        });
-      }
+    if (!trip?.legs?.length || isNavetta || isScooter) return;
+    const busLeg = trip.legs.find(
+      (leg: any) => leg.mode?.toLowerCase() === 'bus',
+    );
+    if (busLeg?.route) {
+      fetchRouteDetails(busLeg.route).then(info => {
+        setBusInfo(info);
+      });
     }
-  }, [trip]);
+  }, [trip, isNavetta, isScooter]);
 
   const handleConfirmTrip = async () => {
     if (!trip) return;
-
     try {
       const body = {
         origin: trip.fromStationName,
@@ -104,16 +107,27 @@ export default function TripDetailsScreen({route}: any) {
         total_distance_m: Math.round(trip.distance * 1000),
       };
 
-      console.log('📦 Sending booking:', body);
-
       await createBooking(body).unwrap();
-
-      setConfirmed(true); // ✅ segna come confermato
-      setSnackbarVisible(true);
+      setConfirmed(true);
     } catch (err) {
       console.error('❌ Errore invio booking:', err);
-      Alert.alert('Errore', 'Impossibile confermare il viaggio.');
     }
+  };
+
+  const handleOpenNavettaApp = () => {
+    const url =
+      Platform.OS === 'ios'
+        ? 'https://apps.apple.com/us/app/navetta-unical/id6670558959'
+        : 'https://play.google.com/store/apps/details?id=srl.somos.drtunical&hl=it';
+    Linking.openURL(url);
+  };
+
+  const handleOpenScooterApp = () => {
+    const url =
+      Platform.OS === 'ios'
+        ? 'https://apps.apple.com/it/app/helbiz/id1505393700'
+        : 'https://play.google.com/store/apps/details?id=com.helbiz.android';
+    Linking.openURL(url);
   };
 
   if (!trip) {
@@ -141,11 +155,13 @@ export default function TripDetailsScreen({route}: any) {
       {/* Mappa */}
       <View style={styles.mapContainer} pointerEvents="box-none">
         <MapView
+          key={showScooters ? 'withScooters' : 'noScooters'}
           ref={mapRef}
           route={trip}
           showStops
           showMarkers
-          highlightColor={theme.colors.primary}
+          highlightColor={isNavetta ? '#E53935' : theme.colors.primary}
+          scooters={showScooters ? scooters : []}
         />
       </View>
 
@@ -178,49 +194,107 @@ export default function TripDetailsScreen({route}: any) {
                   borderColor: theme.colors.outline,
                 },
               ]}>
-              <Text
-                style={[styles.headerTitle, {color: theme.colors.onSurface}]}>
-                {trip.fromStationName} → {trip.toStationName}
-              </Text>
-              <Text
-                style={[
-                  styles.headerSubtitle,
-                  {color: theme.colors.onSurfaceVariant},
-                ]}>
-                Durata: {trip.duration} min · Distanza: {trip.distance} km
-              </Text>
-
-              {/* 🔹 Se non loggato */}
-              {!access && (
-                <Text
-                  style={[
-                    styles.loginNotice,
-                    {color: theme.colors.onSurfaceVariant},
-                  ]}>
-                  🔒 Accedi per salvare le informazioni di viaggio
-                </Text>
+              {/* 🔴 Header Navetta */}
+              {isNavetta && (
+                <>
+                  <View style={styles.row}>
+                    <Icon name="bus" size={22} color="#E53935" />
+                    <Text style={[styles.headerTitle, {color: '#E53935'}]}>
+                      Navetta Unical
+                    </Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.headerSubtitle,
+                      {color: theme.colors.onSurfaceVariant},
+                    ]}>
+                    Servizio serale gratuito · dalle 20:00 alle 23:45
+                  </Text>
+                  <Button
+                    mode="contained"
+                    style={[styles.confirmBtn, {backgroundColor: '#E53935'}]}
+                    onPress={handleOpenNavettaApp}>
+                    Apri app Navetta Unical
+                  </Button>
+                </>
               )}
 
-              {/* 🔹 Se loggato e non ancora confermato */}
-              {access && !confirmed && (
-                <Button
-                  mode="contained"
-                  style={styles.confirmBtn}
-                  onPress={handleConfirmTrip}
-                  loading={isLoading}>
-                  Conferma viaggio
-                </Button>
+              {/* 🛴 Header Monopattini */}
+              {isScooter && (
+                <>
+                  <View style={styles.row}>
+                    <Icon name="scooter" size={22} color="#00BFA5" />
+                    <Text style={[styles.headerTitle, {color: '#00BFA5'}]}>
+                      Monopattini Unical
+                    </Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.headerSubtitle,
+                      {color: theme.colors.onSurfaceVariant},
+                    ]}>
+                    Noleggia un monopattino nell’area del Campus
+                  </Text>
+
+                  <Button
+                    mode="contained"
+                    style={[styles.confirmBtn, {backgroundColor: '#00BFA5'}]}
+                    onPress={() => setShowScooters(prev => !prev)}>
+                    {showScooters
+                      ? 'Nascondi monopattini'
+                      : 'Mostra monopattini su mappa'}
+                  </Button>
+                </>
               )}
 
-              {/* 🔹 Se già confermato */}
-              {access && confirmed && (
-                <Text
-                  style={[
-                    styles.confirmedText,
-                    {color: theme.colors.primary, fontWeight: '600'},
-                  ]}>
-                  ✅ Viaggio confermato
-                </Text>
+              {/* 🟢 Percorsi standard */}
+              {!isNavetta && !isScooter && (
+                <>
+                  <Text
+                    style={[
+                      styles.headerTitle,
+                      {color: theme.colors.onSurface},
+                    ]}>
+                    {trip.fromStationName} → {trip.toStationName}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.headerSubtitle,
+                      {color: theme.colors.onSurfaceVariant},
+                    ]}>
+                    Durata: {trip.duration} min · Distanza: {trip.distance} km
+                  </Text>
+
+                  {!access && (
+                    <Text
+                      style={[
+                        styles.loginNotice,
+                        {color: theme.colors.onSurfaceVariant},
+                      ]}>
+                      🔒 Accedi per salvare le informazioni di viaggio
+                    </Text>
+                  )}
+
+                  {access && !confirmed && (
+                    <Button
+                      mode="contained"
+                      style={styles.confirmBtn}
+                      onPress={handleConfirmTrip}
+                      loading={isLoading}>
+                      Conferma viaggio
+                    </Button>
+                  )}
+
+                  {access && confirmed && (
+                    <Text
+                      style={[
+                        styles.confirmedText,
+                        {color: theme.colors.primary, fontWeight: '600'},
+                      ]}>
+                      ✅ Viaggio confermato
+                    </Text>
+                  )}
+                </>
               )}
             </View>
 
@@ -228,14 +302,6 @@ export default function TripDetailsScreen({route}: any) {
           </BottomSheetScrollView>
         </BottomSheet>
       )}
-
-      <Snackbar
-        visible={snackbarVisible}
-        onDismiss={() => setSnackbarVisible(false)}
-        duration={2500}
-        style={{backgroundColor: theme.colors.primary}}>
-        ✅ Viaggio confermato con successo!
-      </Snackbar>
     </GestureHandlerRootView>
   );
 }
@@ -253,32 +319,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 4,
+    marginLeft: 6,
   },
-  headerSubtitle: {
-    fontSize: 13,
-    marginBottom: 12,
-  },
-  loginNotice: {
-    fontSize: 14,
-    fontStyle: 'italic',
-    marginTop: 4,
-  },
-  confirmBtn: {
-    marginTop: 4,
-    borderRadius: 8,
-  },
-  confirmedText: {
-    marginTop: 6,
-    fontSize: 15,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 16,
-    marginTop: 12,
-    fontWeight: '500',
-  },
+  row: {flexDirection: 'row', alignItems: 'center', marginBottom: 8},
+  headerSubtitle: {fontSize: 13, marginBottom: 12},
+  loginNotice: {fontSize: 14, fontStyle: 'italic', marginTop: 4},
+  confirmBtn: {marginTop: 4, borderRadius: 8},
+  confirmedText: {marginTop: 6, fontSize: 15},
+  emptyContainer: {flex: 1, justifyContent: 'center', alignItems: 'center'},
+  emptyText: {fontSize: 16, marginTop: 12, fontWeight: '500'},
 });

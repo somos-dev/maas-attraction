@@ -20,7 +20,6 @@ import {
   Snackbar,
   TextInput,
   Button,
-  Menu,
   Divider,
 } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -52,16 +51,6 @@ interface PlaceSearchModalProps {
   onSelect: (place: Place) => void;
 }
 
-const recentPlaces: Place[] = [
-  {
-    name: 'Posizione Attuale',
-    address: 'Usa la tua posizione GPS',
-    lat: 0,
-    lon: 0,
-    category: 'current',
-  },
-];
-
 export default function PlaceSearchModal({
   visible,
   type,
@@ -77,6 +66,7 @@ export default function PlaceSearchModal({
   const {access} = useSelector((state: RootState) => state.auth);
   const {location, fetchLocation} = useCurrentLocation();
   const [createPlace] = useCreatePlaceMutation();
+
   const {
     data: rawData,
     isFetching,
@@ -91,11 +81,10 @@ export default function PlaceSearchModal({
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [favoriteModalVisible, setFavoriteModalVisible] = useState(false);
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
-  const [menuVisible, setMenuVisible] = useState(false);
 
-  // Dati del form
+  // Dati del form per salvataggio preferito
   const [favAddress, setFavAddress] = useState('');
-  const [favType, setFavType] = useState('Casa');
+  const [favType, setFavType] = useState<'Casa' | 'Lavoro' | 'Altro'>('Casa');
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -122,11 +111,15 @@ export default function PlaceSearchModal({
           category: 'current',
         });
       } else {
-        onSelect(place);
+        Alert.alert(
+          'Posizione non disponibile',
+          'Assicurati che i permessi GPS siano attivi.',
+        );
       }
     } else {
       onSelect(place);
     }
+    onClose();
   };
 
   const openFavoriteModal = (place: Place) => {
@@ -200,7 +193,7 @@ export default function PlaceSearchModal({
     }
   };
 
-  const displayData = localQuery.length >= 2 ? results : recentPlaces;
+  const displayData = localQuery.length >= 2 ? results : [];
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
@@ -231,7 +224,41 @@ export default function PlaceSearchModal({
             />
           </View>
 
-          {/* 🔹 Preferiti rapidi */}
+          {/* 🔹 Posizione Attuale */}
+          <View style={styles.currentLocationContainer}>
+            <TouchableOpacity
+              style={styles.currentLocationButton}
+              onPress={async () => {
+                await fetchLocation();
+                if (location) {
+                  onSelect({
+                    name: 'Posizione Attuale',
+                    address: 'La tua posizione',
+                    lat: location.lat,
+                    lon: location.lon,
+                    category: 'current',
+                  });
+                  onClose();
+                } else {
+                  Alert.alert(
+                    'Posizione non disponibile',
+                    'Assicurati che i permessi GPS siano attivi.',
+                  );
+                }
+              }}>
+              <Icon
+                name="crosshairs-gps"
+                size={22}
+                color={theme.colors.primary}
+                style={{marginRight: 10}}
+              />
+              <Text style={{fontSize: 16, color: theme.colors.onSurface}}>
+                Usa la mia posizione attuale
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* 🔹 Preferiti */}
           {access && favoritePlaces.length > 0 && (
             <View style={styles.quickSelectContainer}>
               <View style={styles.quickSelectHeader}>
@@ -355,64 +382,40 @@ export default function PlaceSearchModal({
                 outlineStyle={{borderRadius: 12}}
                 style={styles.input}
                 left={<TextInput.Icon icon="map-marker-outline" />}
-                theme={{
-                  roundness: 12,
-                  colors: {
-                    background: '#fff',
-                    primary: theme.colors.primary,
-                    text: '#333',
-                    placeholder: '#aaa',
-                  },
-                }}
               />
 
               <Text style={styles.label}>Tipo</Text>
-              <Menu
-                visible={menuVisible}
-                onDismiss={() => setMenuVisible(false)}
-                anchor={
-                  <Button
-                    mode="outlined"
-                    onPress={() => setMenuVisible(true)}
-                    icon={
-                      favType === 'Casa'
-                        ? 'home'
-                        : favType === 'Lavoro'
-                        ? 'briefcase'
-                        : 'star-outline'
-                    }
-                    contentStyle={{justifyContent: 'space-between'}}
-                    style={styles.dropdownButton}>
-                    {favType}
-                  </Button>
-                }>
-                <Menu.Item
-                  onPress={() => {
-                    setFavType('Casa');
-                    setMenuVisible(false);
-                  }}
-                  title="Casa"
-                  leadingIcon="home"
-                />
-                <Divider />
-                <Menu.Item
-                  onPress={() => {
-                    setFavType('Lavoro');
-                    setMenuVisible(false);
-                  }}
-                  title="Lavoro"
-                  leadingIcon="briefcase"
-                />
-                <Divider />
-                <Menu.Item
-                  onPress={() => {
-                    setFavType('Altro');
-                    setMenuVisible(false);
-                  }}
-                  title="Altro"
-                  leadingIcon="star-outline"
-                />
-              </Menu>
+              <Button
+                mode="outlined"
+                onPress={() => {
+                  const next =
+                    favType === 'Casa'
+                      ? 'Lavoro'
+                      : favType === 'Lavoro'
+                      ? 'Altro'
+                      : 'Casa';
+                  setFavType(next);
+                }}
+                icon={
+                  favType === 'Casa'
+                    ? 'home'
+                    : favType === 'Lavoro'
+                    ? 'briefcase'
+                    : 'star-outline'
+                }
+                contentStyle={{justifyContent: 'space-between'}}
+                style={styles.dropdownButton}>
+                {favType}
+              </Button>
+              <Text
+                style={{
+                  textAlign: 'center',
+                  fontSize: 12,
+                  color: '#666',
+                  marginTop: 4,
+                }}>
+                Tocca per cambiare tipo
+              </Text>
 
               <Button
                 mode="contained"
@@ -459,6 +462,27 @@ const styles = StyleSheet.create({
   headerTitle: {fontSize: 18, fontWeight: 'bold'},
   searchContainer: {padding: 12},
   searchbar: {elevation: 2, backgroundColor: 'white', fontSize: 16},
+
+  // Posizione attuale
+  currentLocationContainer: {
+    paddingHorizontal: 12,
+    marginBottom: 8,
+  },
+  currentLocationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+
   listRow: {flexDirection: 'row', alignItems: 'center', paddingRight: 8},
   loadingContainer: {
     flex: 1,

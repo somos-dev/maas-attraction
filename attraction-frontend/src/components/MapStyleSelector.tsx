@@ -6,6 +6,8 @@ import { Card } from '@/components/ui/card';
 import { Mountain, Satellite, Map, Moon, Navigation, User } from 'lucide-react';
 import { useProfileStore } from '@/store/profileStore';
 import { useMapStore } from '@/store/mapStore';
+import AdminControlPanel from './AdminControlPanel';
+import useAuth from '@/hooks/useAuth';
 
 interface MapStyleSelectorProps {
 }
@@ -13,6 +15,7 @@ interface MapStyleSelectorProps {
 const MapStyleSelector: React.FC<MapStyleSelectorProps> = ({
 
 }) => {
+  const { user } = useAuth();
 
   const mapStyles = [
     { value: 'streets', label: 'Streets', icon: Map },
@@ -51,7 +54,7 @@ const MapStyleSelector: React.FC<MapStyleSelectorProps> = ({
           variant={is3D ? "default" : "outline"}
           size="sm"
           onClick={toggle3D}
-          className="w-full max-w-20 hidden sm:inline-block h-10"
+          className="w-full max-w-20 hidden sm:inline-block h-9"
         >
           {is3D ? "Exit 3D" : "3D View"}
         </Button>
@@ -59,10 +62,15 @@ const MapStyleSelector: React.FC<MapStyleSelectorProps> = ({
           variant={is3D ? "default" : "outline"}
           size="sm"
           onClick={toggle3D}
-          className="w-full max-w-10 sm:hidden h-10"
+          className="w-full max-w-10 sm:hidden h-9"
         >
           {"3D"}
         </Button>
+
+        {/* Admin Control Panel - Only show if user is admin */}
+        {user.type === 'admin' &&
+        <AdminControlPanel/>}
+
               {/* Right section - Profile button */}
         {/* <Button
           variant="outline"

@@ -37,7 +37,7 @@ export type EditProfileReturnType = ActionState<EditProfileInputType, EditProfil
 
 const ProfileDialog: React.FC = () => {
   const { isProfileOpen, setProfileClose } = useProfileStore();
-  const { logout, user, handleDispatch } = useAuth();
+  const { logout, user } = useAuth();
   const { translate } = useLocales();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({ email: '', username: '' });

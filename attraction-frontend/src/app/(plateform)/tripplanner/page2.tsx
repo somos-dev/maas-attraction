@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import MapLibre from '@/components/MapLibre';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/AppSidebar';
@@ -17,34 +17,28 @@ import { store } from '@/redux/store/store';
 import { useProfileStore } from '@/store/profileStore';
 import MobileBottomSheet from '@/components/MobileBottomSheet';
 import { reverseNominatim } from '@/hooks/use-nomination';
-import { useAdminStore } from '@/store/adminStore';
-import { calculateTripAnalytics } from '@/utils/adminUtils';
-import { useGetTripHistoryQuery } from '@/redux/services/tripHistoryApi';
 
 interface PageProps {
-  // Add optional prop to enable admin mode (e.g., for admin users)
-  userRole?: 'user' | 'admin';
 }
 
-const Page = ({ userRole = 'user' }: PageProps) => {
+
+const Page = ({ }: PageProps) => {
   const { origin, setOrigin, destination, setDestination, userLocation, setUserLocation, setUserLocationName } = useLocationStore();
   const { routes, setSelectedRouteIndex } = useRoutesStore()
+
   const { currentTrip, setCurrentTrip } = useTripManagerStore()
   const { isSidebarOpen, setIsSidebarOpen } = useSidebarStore()
   const { isProfileOpen } = useProfileStore()
-  const { isAdminMode, setHeatmapData, tripHistory } = useAdminStore()
   const isMobile = useIsMobile();
 
-  // Fetch trip history using RTK Query when admin mode is enabled
-  const { isLoading: isTripHistoryLoading } = useGetTripHistoryQuery(undefined, {
-    skip: !isAdminMode, // Only fetch when admin mode is enabled
-  });
 
-  const { setDetailsOpen, setPanelOpen } = usePanelStore()
+  const {setDetailsOpen, setPanelOpen } = usePanelStore()
+
 
   useEffect(() => {
     console.log("Profile", isProfileOpen)
   }, [isProfileOpen])
+
 
   // Get user's location on initial load
   useEffect(() => {
@@ -58,11 +52,12 @@ const Page = ({ userRole = 'user' }: PageProps) => {
         },
         (error) => {
           console.error("Error getting location:", error);
+          // Don't show error to user as it's optional
         },
         {
           enableHighAccuracy: false,
           timeout: 10000,
-          maximumAge: 300000
+          maximumAge: 300000 // 5 minutes
         }
       );
     }
@@ -79,28 +74,17 @@ const Page = ({ userRole = 'user' }: PageProps) => {
     getUserLocationName();
   }, [userLocation, setUserLocationName])
 
-  // Calculate analytics when trip history is available
-  useEffect(() => {
-    if (isAdminMode && tripHistory && tripHistory.length > 0) {
-      console.log('Calculating analytics for', tripHistory.length, 'trips');
-      
-      const analytics = calculateTripAnalytics(tripHistory);
-      setHeatmapData(analytics);
-      
-      console.log('Analytics calculated:', analytics);
-    }
-  }, [isAdminMode, tripHistory, setHeatmapData]);
 
   const handleMapClick = (lat: number, lon: number) => {
-    // Disable map click functionality in admin mode
-    if (isAdminMode) return;
-
     if (!origin) {
       setOrigin({ lat, lon });
     } else if (!destination) {
       setDestination({ lat, lon });
 
       if (origin) {
+        const originRoute: [number, number] = [origin.lat, origin.lon]
+        // const newRoutes = generateMockRoutes(originRoute, [lat, lon]);
+        // setRoutes(newRoutes);
         setSelectedRouteIndex(0);
         setPanelOpen();
       }
@@ -111,6 +95,7 @@ const Page = ({ userRole = 'user' }: PageProps) => {
     setSelectedRouteIndex(index);
     setDetailsOpen();
 
+    // Update current trip with selected route
     if (currentTrip && routes[index]) {
       setCurrentTrip({
         ...currentTrip,
@@ -119,15 +104,22 @@ const Page = ({ userRole = 'user' }: PageProps) => {
     }
   };
 
+
+
   return (
     <SidebarProvider
-      open={isSidebarOpen} 
-      onOpenChange={setIsSidebarOpen}
+      open={isSidebarOpen} onOpenChange={setIsSidebarOpen}
     >
       <Provider store={store}>
         <AppSidebar />
+        {/* Side Sheet */}
+        {/* <SideSheets
+      handleRouteSelect={handleRouteSelect}
+      /> */}
 
-        <SideSheets handleRouteSelect={handleRouteSelect} />
+        <SideSheets
+          handleRouteSelect={handleRouteSelect}
+        />
 
         {/* Main layout */}
         <div className="min-h-screen flex w-full bg-gray-50">
@@ -136,31 +128,31 @@ const Page = ({ userRole = 'user' }: PageProps) => {
             <div className="absolute inset-0">
               <MapLibre
                 onMapClick={handleMapClick}
-                isAdminMode={isAdminMode}
               />
             </div>
 
             {/* Map Navbar */}
             <MapNavbar />
 
-            {/* Loading indicator for trip history */}
-            {isAdminMode && isTripHistoryLoading && (
-              <div className="absolute top-32 right-4 z-10 bg-white shadow-lg rounded-lg p-4 border border-gray-200">
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                  <span className="text-sm text-gray-600">Loading trip history...</span>
-                </div>
-              </div>
-            )}
-
-            {/* Mobile Bottom Sheet - Hide in admin mode */}
-            {isMobile && (
+            {/* Search and routes panel */}
+            {/* {isMobile &&
               <span className="">
-                <MobileBottomSheet handleRouteSelect={handleRouteSelect} />
+                <BottomSheet
+                  handleRouteSelect={handleRouteSelect}
+                />
               </span>
-            )}
-          </div>
+            } */}
 
+
+            {isMobile &&
+              <span className="">
+                <MobileBottomSheet
+                  handleRouteSelect={handleRouteSelect}
+                />
+              </span>
+            }
+
+          </div>
           {/* Profile Dialog */}
           <ProfileDialog />
         </div>

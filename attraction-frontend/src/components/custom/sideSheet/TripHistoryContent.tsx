@@ -26,7 +26,7 @@ interface LocationName {
 
 const TripHistoryContent = (props: Props) => {
   const { data: tripHistory, isLoading, error, refetch } = useGetTripHistoryQuery()
-  const [deleteTripHistoryItem, { isLoading: isDeleting }] = useDeleteTripHistoryItemMutation()
+  const [deleteTripHistoryItem] = useDeleteTripHistoryItemMutation()
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
   const [locationNames, setLocationNames] = useState<LocationName>({})
   const [loadingLocations, setLoadingLocations] = useState<Set<string>>(new Set())
@@ -76,7 +76,7 @@ const TripHistoryContent = (props: Props) => {
   // Load location names for visible trips
   useEffect(() => {
     if (!tripHistory) return
-
+    console.log(tripHistory)
     const lastWeekTrips = filterLastWeekTrips(tripHistory)
     const groupedTrips = groupTripsByDate(lastWeekTrips)
     

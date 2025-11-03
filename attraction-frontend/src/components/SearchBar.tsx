@@ -4,19 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Navigation, X, Loader2, Search } from 'lucide-react';
 import { useMap } from "@/context/MapContext";
-import { reverseNominatim, useNominatimSearch } from '@/hooks/use-nomination'; // Assuming this hook exists and works
+import { useNominatimSearch } from '@/hooks/use-nomination'; // Assuming this hook exists and works
 import { useLocationStore } from '@/store/locationStore';
 import DateTimePicker from './DateTimePicker';
 import { toast } from 'sonner'; // Assuming you use sonner for toasts
 import { useRoutesStore } from '@/store/routesStore'; // Assuming this store exists
 import Hint from './hint'; // Assuming this component exists
 import { useStopsStore } from '@/store/stopsStore'; // Assuming this store exists
-import { usePanelStore } from '@/store/panelStore';
-import { useFetchRoutesStore } from '@/store/fetchRoutesStore';
 import { useFetchRoutes } from '@/hooks/use-fetch-routes';
 import { useInputStateStore } from '@/store/inputsStateStore';
-import { set } from 'date-fns';
-import { useShouldFetchStore } from '@/store/shouldFetchStore';
 import useLocales from '@/hooks/useLocales';
 
 
@@ -52,12 +48,11 @@ const SearchBar: React.FC<SearchBarProps> = ({ }) => {
   // Refs for click-outside detection
   const originContainerRef = useRef<HTMLDivElement>(null);
   const destinationContainerRef = useRef<HTMLDivElement>(null);
-  const { selectedDate, selectedTime, setSelectedDate, setSelectedTime, travelMode, travelType, setTravelMode, setTravelType } = useFetchRoutesStore()
 
 
 
   // Zustand Store Interactions
-  const { routes, setRoutes, setSelectedRouteIndex } = useRoutesStore();
+  const { setRoutes, setSelectedRouteIndex } = useRoutesStore();
   const {
     origin, originName, setOriginName, setOrigin,
     destination, destinationName, setDestinationName, setDestination,
@@ -65,7 +60,6 @@ const SearchBar: React.FC<SearchBarProps> = ({ }) => {
   const { map, originMarker, destinationMarker } = useMap(); // MapRef and markerRefs
   const { stops } = useStopsStore(); // RawStop[] from useStopsStore
   const { originInputText, setDestInputText, setOriginInputText, destInputText } = useInputStateStore()
-  const {shouldFetch, toggleShouldFetch ,setShouldFetch} = useShouldFetchStore()
 
   // Local state for debounced queries for Nominatim and filtered stops
   const [debouncedOriginQuery, setDebouncedOriginQuery] = useState('');
@@ -270,7 +264,6 @@ const SearchBar: React.FC<SearchBarProps> = ({ }) => {
     setShowDestinationResults(false);
     setDestActiveIdx(-1);
     if (map.current) map.current.flyTo({ center: [parseFloat(r.lon), parseFloat(r.lat)], zoom: 13 });
-    setShouldFetch(true)
   }, [map, setDestination, setDestinationName]);
 
   const selectDestStopResult = useCallback((r: Stop) => {

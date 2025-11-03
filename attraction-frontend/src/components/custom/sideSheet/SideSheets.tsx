@@ -9,6 +9,7 @@ import ProfileContent from './ProfileContent';
 import SettingsContent from './SettingsContent';
 import TripHistoryContent from './TripHistoryContent';
 import Logo from '@/components/logo'
+import AdminControlPanelContent from './AdminControlPanelContent';
 
 type Props = {
     handleRouteSelect: (index: number) => void;
@@ -30,7 +31,8 @@ const SideSheets = ({handleRouteSelect}: Props) => {
                 return <ProfileContent/>
             case 'settings':
                 return <SettingsContent/>
-            
+            case 'Administrator':
+                return <AdminControlPanelContent/>      
     }}
 
 

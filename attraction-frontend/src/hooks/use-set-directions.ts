@@ -1,22 +1,18 @@
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { useFetchRoutesStore } from "@/store/fetchRoutesStore";
-import { usePanelStore } from "@/store/panelStore";
-import { useRoutesStore } from "@/store/routesStore";
 import { useLocationStore } from '@/store/locationStore';
 import { useMap } from "@/context/MapContext";
 import { useCustomSideSheetStore } from "@/store/customSideSheet";
 import { useInputStateStore } from "@/store/inputsStateStore";
-import { useShouldFetchStore } from "@/store/shouldFetchStore";
 
 export const useSetDirections = () => {
   const { setOrigin, setOriginName, setDestination, setDestinationName,setOriginAndDestination } = useLocationStore();
   const { setSelectedDate, setSelectedTime, setTravelMode, setTravelType } = useFetchRoutesStore();
-  const { setCurrentContent, setSideSheetOpen } = useCustomSideSheetStore();
+  const { setCurrentContent } = useCustomSideSheetStore();
 
   const { map } = useMap(); // MapRef and markerRefs  
   const {originInputText, setDestInputText, setOriginInputText, destInputText} = useInputStateStore()
-  const {shouldFetch, setShouldFetch} = useShouldFetchStore()
 
   // Accept a destination object and optional origin, if no origin provided use current location
   let Orglat: number | undefined;
@@ -74,8 +70,6 @@ export const useSetDirections = () => {
     },
     [
       map,
-      // shouldFetch,
-      setShouldFetch,
       setDestination,
       setDestinationName,
       setSelectedDate,

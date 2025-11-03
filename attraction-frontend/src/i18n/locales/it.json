@@ -8,9 +8,11 @@
     "directions": "Indicazioni",
     "favorites": "Preferiti",
     "profile": "Profilo",
+    "administrator": "Amministratore View",
     "settings": "Impostazioni"
   },
   "account": "Account",
+  "administrator": "Amministratore View",
   "language": {
     "title": "Lingua",
     "description": "Seleziona la tua lingua preferita",

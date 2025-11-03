@@ -8,6 +8,7 @@ import { useCustomSideSheetStore } from '@/store/customSideSheet'
 import RandomContent from './RandomContent'
 import { useLocationStore } from '@/store/locationStore'
 import useLocales from '@/hooks/useLocales'
+import AdminControlPanelContent from './custom/sideSheet/AdminControlPanelContent'
 
 type Props = {
     handleRouteSelect: (index: number) => void
@@ -31,7 +32,7 @@ const MobileBottomSheet = ({ handleRouteSelect }: Props) => {
             case 'saved-locations':
                 return <SavedContent />
             default:
-                return <DirectionsContent handleRouteSelect={handleRouteSelect} />
+                return <AdminControlPanelContent />
 
         }
     }

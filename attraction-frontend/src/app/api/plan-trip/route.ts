@@ -20,6 +20,9 @@ export type Legs = {
   distance_m:number;
   walk_steps:[];
   route?: string;
+  authority_name?: string;
+  authority_id?: string;
+  bus_name?: string;
 };
 
 export type Segments = {

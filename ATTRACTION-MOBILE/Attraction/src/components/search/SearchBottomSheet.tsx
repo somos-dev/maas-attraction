@@ -1,47 +1,72 @@
-import React, { useState } from "react";
-import { View, StyleSheet } from "react-native";
-import {
-  Button,
-  Checkbox,
-  Text,
-  useTheme,
-  Snackbar,
-} from "react-native-paper";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import React, {useState, useEffect} from 'react';
+import {View, StyleSheet} from 'react-native';
+import {Button, Text, useTheme, Snackbar} from 'react-native-paper';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
-import PlaceButton from "./PlaceButton";
-import SwapButton from "./SwapButton";
-import DateTimeSelector from "./DateTimeSelector";
-import PlaceSearchModal from "./PlaceSearchModal";
+import PlaceButton from './PlaceButton';
+import SwapButton from './SwapButton';
+import DateTimeSelector from './DateTimeSelector';
+import PlaceSearchModal from './PlaceSearchModal';
 
-import { useTrip } from "../../hooks/useTrip";
-import { usePlaces, Place } from "../../hooks/usePlaces";
+import {useTrip} from '../../hooks/useTrip';
+import {usePlaces, Place} from '../../hooks/usePlaces';
 
 interface Props {
   navigation: any;
+  prefill?: {
+    from_lat: number;
+    from_lon: number;
+    to_lat: number;
+    to_lon: number;
+  };
 }
 
-export default function SearchBottomSheet({ navigation }: Props) {
+export default function SearchBottomSheet({navigation, prefill}: Props) {
   const theme = useTheme();
-  const { routes, loading, error, fetchTrip } = useTrip();
-  const { results, loading: searching, error: searchError, search } = usePlaces();
+  const {routes, loading, error, fetchTrip} = useTrip();
+  const {results, loading: searching, error: searchError, search} = usePlaces();
 
   const [from, setFrom] = useState<Place | null>(null);
   const [to, setTo] = useState<Place | null>(null);
-  const [roundTrip, setRoundTrip] = useState(false);
   const [dateTime, setDateTime] = useState(new Date());
-  const [showPicker, setShowPicker] = useState<"date" | "time" | null>(null);
+  const [showPicker, setShowPicker] = useState<'date' | 'time' | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalType, setModalType] = useState<"from" | "to">("from");
-  const [query, setQuery] = useState("");
+  const [modalType, setModalType] = useState<'from' | 'to'>('from');
+  const [query, setQuery] = useState('');
 
-  const pad = (n: number) => (n < 10 ? "0" + n : n);
+  const pad = (n: number) => (n < 10 ? '0' + n : n);
   const formattedDate = `${dateTime.getFullYear()}-${pad(
-    dateTime.getMonth() + 1
+    dateTime.getMonth() + 1,
   )}-${pad(dateTime.getDate())}`;
   const formattedTime = `${pad(dateTime.getHours())}:${pad(
-    dateTime.getMinutes()
+    dateTime.getMinutes(),
   )}:${pad(dateTime.getSeconds())}`;
+
+  useEffect(() => {
+    if (!prefill) return;
+
+    console.log('🔁 Prefill ricevuto nel BottomSheet:', prefill);
+
+    // 🔹 aggiorna Partenza solo se ci sono coordinate
+    if (prefill.from_lat && prefill.from_lon) {
+      setFrom({
+        name: 'Partenza selezionata sulla mappa',
+        address: '',
+        lat: prefill.from_lat,
+        lon: prefill.from_lon,
+      });
+    }
+
+    // 🔹 aggiorna Destinazione solo se ci sono coordinate
+    if (prefill.to_lat && prefill.to_lon) {
+      setTo({
+        name: 'Destinazione selezionata sulla mappa',
+        address: '',
+        lat: prefill.to_lat,
+        lon: prefill.to_lon,
+      });
+    }
+  }, [prefill]); // 👈 non singole proprietà: l’oggetto intero
 
   const handleSearch = async () => {
     if (!from || !to) return;
@@ -54,74 +79,70 @@ export default function SearchBottomSheet({ navigation }: Props) {
       time: formattedTime,
       requested_date: formattedDate,
       requested_time: formattedTime,
-      roundTrip,
-      mode: "all" as const,
+      roundTrip: false, // 👈 tolto il toggle
+      mode: 'all' as const,
     };
 
     const foundRoutes = await fetchTrip(params);
-    navigation.navigate("Results", { routes: foundRoutes });
+    navigation.navigate('Results', {routes: foundRoutes});
   };
 
-  const openModal = (type: "from" | "to") => {
+  const openModal = (type: 'from' | 'to') => {
     setModalType(type);
-    setQuery("");
+    setQuery('');
     setModalVisible(true);
   };
 
   const handleSelectPlace = (place: Place) => {
-    if (modalType === "from") setFrom(place);
+    if (modalType === 'from') setFrom(place);
     else setTo(place);
     setModalVisible(false);
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.surface }]}>
-      <Text style={[styles.title, { color: theme.colors.onSurface }]}>
+    <View style={[styles.container, {backgroundColor: theme.colors.surface}]}>
+      <Text style={[styles.title, {color: theme.colors.onSurface}]}>
         Trova il tuo percorso
       </Text>
 
-      <PlaceButton
-        label="Partenza"
-        value={from?.name}
-        address={from?.address}
-        icon="arrow-up-circle-outline"
-        onPress={() => openModal("from")}
-      />
+      {/* Riga Partenza con pulsante swap */}
+      <View style={styles.row}>
+        <View style={{flex: 1}}>
+          <PlaceButton
+            label="Partenza"
+            value={from?.name}
+            address={from?.address}
+            icon="arrow-up-circle-outline"
+            onPress={() => openModal('from')}
+          />
+        </View>
 
-      <SwapButton
-        onPress={() => {
-          const temp = from;
-          setFrom(to);
-          setTo(temp);
-        }}
-        disabled={!from && !to}
-        iconColor={theme.colors.onSurface}
-      />
+        <SwapButton
+          onPress={() => {
+            const temp = from;
+            setFrom(to);
+            setTo(temp);
+          }}
+          disabled={!from && !to}
+          iconColor={theme.colors.onSurfaceVariant}
+          style={styles.swapButton}
+        />
+      </View>
 
+      {/* Destinazione */}
       <PlaceButton
         label="Destinazione"
         value={to?.name}
         address={to?.address}
         icon="arrow-down-circle-outline"
-        onPress={() => openModal("to")}
+        onPress={() => openModal('to')}
       />
 
-      <View style={styles.checkboxRow}>
-        <Checkbox
-          status={roundTrip ? "checked" : "unchecked"}
-          onPress={() => setRoundTrip(!roundTrip)}
-          color={theme.colors.primary}
-          uncheckedColor={theme.colors.onSurfaceVariant}
-        />
-        <Text style={[styles.checkboxLabel, { color: theme.colors.onSurface }]}>
-          Andata/Ritorno
-        </Text>
-      </View>
-
+      {/* Data e ora */}
       <DateTimeSelector
         date={dateTime}
-        onSelectDate={() => setShowPicker("date")}
-        onSelectTime={() => setShowPicker("time")}
+        onSelectDate={() => setShowPicker('date')}
+        onSelectTime={() => setShowPicker('time')}
         textColor={theme.colors.onSurface}
       />
 
@@ -142,9 +163,8 @@ export default function SearchBottomSheet({ navigation }: Props) {
         style={styles.cta}
         onPress={handleSearch}
         disabled={!from || !to || loading}
-        textColor={theme.colors.onPrimary}
-      >
-        {loading ? "Ricerca in corso..." : "Cerca Soluzioni"}
+        textColor={theme.colors.onPrimary}>
+        {loading ? 'Ricerca in corso...' : 'Cerca soluzioni'}
       </Button>
 
       <Snackbar visible={!!error} onDismiss={() => {}}>
@@ -156,7 +176,7 @@ export default function SearchBottomSheet({ navigation }: Props) {
         type={modalType}
         query={query}
         onClose={() => setModalVisible(false)}
-        onQueryChange={(q) => {
+        onQueryChange={q => {
           setQuery(q);
           search(q);
         }}
@@ -172,33 +192,30 @@ export default function SearchBottomSheet({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 14,  //  meno spazio laterale
-    paddingTop: 6,          //  ridotto
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 16,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    paddingBottom: 24,      //  più compatto
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
   },
   title: {
-    fontSize: 17,
-    fontWeight: "700",
-    marginBottom: 10,
-    textAlign: "center",
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 8,
+    textAlign: 'center',
   },
-  checkboxRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 6,
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
   },
-  checkboxLabel: {
-    fontSize: 14,
-    marginLeft: 4,
+  swapButton: {
+    marginLeft: 6,
+    alignSelf: 'center',
   },
   cta: {
-    marginTop: 12,
+    marginTop: 10,
     borderRadius: 8,
-    paddingVertical: 6,     //  pulsante più snello
+    paddingVertical: 6,
   },
 });
-

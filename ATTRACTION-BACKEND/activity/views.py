@@ -136,6 +136,36 @@ class BookingListCreateView(AuthenticatedMixin, generics.ListCreateAPIView):
     queryset = Booking.objects.all()
     serializer_class = BookingSerializer
 
+    def get_queryset(self):
+        """Return bookings for the requesting user by default.
+
+        If a `user_id` (or `user`) query parameter is provided and the
+        requesting user is staff, return bookings for that user id.
+        This prevents regular users from listing all bookings.
+        """
+        request = self.request
+        qs = Booking.objects.all()
+        # By default only return the current user's bookings
+        try:
+            user = request.user
+        except Exception:
+            return qs.none()
+
+        # allow staff to filter by user_id
+        user_id = request.query_params.get('user_id') or request.query_params.get('user')
+        if user_id:
+            # only allow filtering by other users for staff
+            if getattr(user, 'is_staff', False):
+                return qs.filter(user__id=user_id)
+            # allow non-staff to query their own id explicitly
+            try:
+                if int(user_id) == int(user.id):
+                    return qs.filter(user=user)
+            except Exception:
+                pass
+
+        return qs.filter(user=user)
+
     def list(self, request, *args, **kwargs):
         serializer = self.get_serializer(self.get_queryset(), many=True)
         return Response({
@@ -147,12 +177,50 @@ class BookingListCreateView(AuthenticatedMixin, generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            # Automatically assign the logged-in user
-            serializer.save(user=request.user)
+            # compute distance in km: prefer distance_km, fallback to total_distance_m (meters from PlanTrip)
+            distance = serializer.validated_data.get('distance_km')
+            if distance is None and 'total_distance_m' in serializer.validated_data:
+                try:
+                    total_m = serializer.validated_data.get('total_distance_m')
+                    if total_m is not None:
+                        distance = float(total_m) / 1000.0
+                except (TypeError, ValueError):
+                    distance = None
+            mode = serializer.validated_data.get('mode', '') or ''
+            mode_key = mode.lower()
+
+            # emission factors in kg CO2 per passenger-km (typical average values)
+            EMISSION_FACTORS = {
+                'car': 0.192,    # kg CO2 per vehicle-km (approx per passenger assuming 1 pax)
+                'bus': 0.089,    # kg CO2 per passenger-km (average bus passenger)
+                'scooter': 0.021,
+                'bicycle': 0.0,
+                'walk': 0.0,
+            }
+
+            co2 = None
+            if distance is not None:
+                factor = EMISSION_FACTORS.get(mode_key, EMISSION_FACTORS['car'])
+                try:
+                    co2 = round(float(distance) * float(factor), 4)
+                except (TypeError, ValueError):
+                    co2 = None
+            # compute CO2 saved compared to baseline (car)
+            co2_saved = None
+            if distance is not None and co2 is not None:
+                try:
+                    baseline = float(distance) * float(EMISSION_FACTORS['car'])
+                    co2_saved = round(max(0.0, baseline - float(co2)), 4)
+                except (TypeError, ValueError):
+                    co2_saved = None
+
+            # save booking with computed fields
+            booking = serializer.save(user=request.user, distance_km=distance, co2_kg=co2, co2_saved_kg=co2_saved)
+            response_data = BookingSerializer(booking).data
             return Response({
                 "success": True,
                 "message": "Booking created successfully",
-                "data": serializer.data
+                "data": response_data
             }, status=status.HTTP_201_CREATED)
         return Response({"success": False, "error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -165,12 +233,24 @@ class BookingListCreateView(AuthenticatedMixin, generics.ListCreateAPIView):
 class TrackUserActivityView(AuthenticatedMixin, APIView):
     def get(self, request):
         user = request.user  # Get user from JWT token
-        searches = Search.objects.filter(user=user).order_by("-requested_at")  # or "trip_date"
+        # Fetch the 5 most recent searches
+        searches = Search.objects.filter(user=user).order_by("-requested_at")[:5]
+
         if not searches.exists():
-            return Response({"success": False, "error": "No search activity found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"success": False, "error": "No search activity found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
         serializer = SearchSerializer(searches, many=True)
-        return Response({"success": True, "data": serializer.data}, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "success": True,
+                "message": "Most recent 5 searches retrieved successfully.",
+                "data": serializer.data
+            },
+            status=status.HTTP_200_OK
+        )
 
 
 # ------------------------------

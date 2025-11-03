@@ -46,7 +46,7 @@ class FeedbackAdmin(admin.ModelAdmin):
 
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user_display', 'origin', 'destination', 'time', 'mode')
+    list_display = ('id', 'user_display', 'origin', 'destination', 'time', 'mode', 'distance_km', 'co2_kg', 'co2_saved_kg')
 
     def user_display(self, obj):
         return obj.user.id if obj.user else 'N/A'

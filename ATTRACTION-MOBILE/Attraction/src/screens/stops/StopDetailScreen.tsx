@@ -80,12 +80,13 @@ type Props = NativeStackScreenProps<any, 'StopDetail'>;
 
 type PatternGroup = {
   id: string;
-  label: string; // Andata / Ritorno / name fallback
+  label: string;
   nameBase?: string | null;
+  routeId?: string | null; // 👈 aggiungi questo
   routeShort?: string | null;
   routeMode?: string | null;
   trips: Array<{
-    departureEpoch: number; // epoch seconds
+    departureEpoch: number;
     isRealtime: boolean;
     headsign?: string | null;
   }>;
@@ -268,6 +269,7 @@ export default function StopDetailScreen({route, navigation}: Props) {
 
       return {
         id: p?.pattern?.id ?? Math.random().toString(36),
+        routeId: p?.pattern?.route?.gtfsId ?? null, // 👈 aggiungi qui
         label,
         nameBase: dirParsed.base ?? p?.pattern?.name ?? null,
         routeShort: p?.pattern?.route?.shortName ?? null,
@@ -478,7 +480,20 @@ export default function StopDetailScreen({route, navigation}: Props) {
                         />
                       )}
                       right={() => (
-                        <Button compact mode="text" onPress={() => {}}>
+                        <Button
+                          compact
+                          mode="text"
+                          onPress={() => {
+                            if (g.routeId) {
+                              goToLineDetail(
+                                g.routeId, // 👈 usa la route corretta
+                                g.routeShort ?? g.nameBase,
+                                g.nameBase,
+                                null,
+                                g.routeMode ?? 'bus',
+                              );
+                            }
+                          }}>
                           Dettagli
                         </Button>
                       )}

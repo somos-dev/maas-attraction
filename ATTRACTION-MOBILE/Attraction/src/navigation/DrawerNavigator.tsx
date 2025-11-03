@@ -1,36 +1,26 @@
-import React from "react";
+import React from 'react';
 import {
   createDrawerNavigator,
   DrawerContentScrollView,
   DrawerItem,
-} from "@react-navigation/drawer";
-import {
-  useTheme,
-  Appbar,
-  Text,
-  Divider,
-  Icon,
-} from "react-native-paper";
-import {
-  View,
-  StyleSheet,
-  Share,
-  Image,
-  Dimensions,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import LinearGradient from "react-native-linear-gradient";
+} from '@react-navigation/drawer';
+import {useTheme, Appbar, Text, Divider, Icon} from 'react-native-paper';
+import {View, StyleSheet, Share, Image, Dimensions} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import LinearGradient from 'react-native-linear-gradient';
 
-import AppFooter from "../components/common/footer/AppFooter";
-import TabNavigator from "./TabNavigator";
-import SettingsScreen from "../screens/drawer/SettingsScreen";
-import FeedbackScreen from "../screens/drawer/FeedbackScreen";
+import AppFooter from '../components/common/footer/AppFooter';
+import TabNavigator from './TabNavigator';
+import SettingsScreen from '../screens/drawer/SettingsScreen';
+import FeedbackScreen from '../screens/drawer/FeedbackScreen';
+import InformazioniScreen from '../screens/drawer/InformazioniScreen';
+import PrivacyScreen from '../screens/drawer/PrivacyScreen';
 
-import type { DrawerParamList } from "./types";
-import { SCREEN_TITLES } from "./screenTitles";
+import type {DrawerParamList} from './types';
+import {SCREEN_TITLES} from './screenTitles';
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
-const { width } = Dimensions.get("window");
+const {width} = Dimensions.get('window');
 
 function CustomDrawerContent(props: any) {
   const theme = useTheme();
@@ -43,31 +33,29 @@ function CustomDrawerContent(props: any) {
   const handleShareApp = async () => {
     try {
       await Share.share({
-        title: "Fai conoscere Attraction",
+        title: 'Fai conoscere Attraction',
         message:
-          "Scopri Attraction \nL’app per muoverti in modo sostenibile!\nhttps://attraction-app.example.com",
+          'Scopri Attraction \nL’app per muoverti in modo sostenibile!\nhttps://maas.somos.srl',
       });
     } catch (err) {
-      console.log("Share error", err);
+      console.log('Share error', err);
     }
   };
 
   return (
     <View
-      style={[styles.drawerContainer, { backgroundColor: theme.colors.surface }]}
-    >
+      style={[styles.drawerContainer, {backgroundColor: theme.colors.surface}]}>
       {/* HEADER con gradiente responsive */}
-      <SafeAreaView edges={["top"]} style={{ backgroundColor: "transparent" }}>
+      <SafeAreaView edges={['top']} style={{backgroundColor: 'transparent'}}>
         <LinearGradient
           colors={[theme.colors.secondary, theme.colors.primary]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.headerContainer}
-        >
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 0}}
+          style={styles.headerContainer}>
           <View style={styles.headerContent}>
             <Text style={styles.headerText}>all your mobility</Text>
             <Image
-              source={require("../assets/images/logo/logo.png")}
+              source={require('../assets/images/logo/logo.png')}
               style={styles.logo}
             />
           </View>
@@ -77,40 +65,38 @@ function CustomDrawerContent(props: any) {
       <DrawerContentScrollView
         {...props}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: 0 }}
-      >
+        contentContainerStyle={{paddingTop: 0}}>
         {/* Sezione App */}
         <View style={styles.menuSection}>
           <Text
             variant="labelLarge"
-            style={[styles.sectionTitle, { color: theme.colors.onSurface }]}
-          >
-            Applicazione
+            style={[styles.sectionTitle, {color: theme.colors.onSurface}]}>
+            Menù
           </Text>
 
           <DrawerItem
             label={SCREEN_TITLES.Settings}
-            icon={({ color, size }) => (
+            icon={({color, size}) => (
               <Icon source="cog-outline" color={color} size={size} />
             )}
-            onPress={() => handleMenuItemPress("Settings")}
+            onPress={() => handleMenuItemPress('Settings')}
             style={styles.drawerItem}
             labelStyle={styles.drawerLabel}
           />
 
           <DrawerItem
             label={SCREEN_TITLES.Feedback}
-            icon={({ color, size }) => (
+            icon={({color, size}) => (
               <Icon source="message-text-outline" color={color} size={size} />
             )}
-            onPress={() => handleMenuItemPress("Feedback")}
+            onPress={() => handleMenuItemPress('Feedback')}
             style={styles.drawerItem}
             labelStyle={styles.drawerLabel}
           />
 
           <DrawerItem
             label="Fai conoscere Attraction"
-            icon={({ color, size }) => (
+            icon={({color, size}) => (
               <Icon source="share-variant-outline" color={color} size={size} />
             )}
             onPress={handleShareApp}
@@ -125,33 +111,38 @@ function CustomDrawerContent(props: any) {
         <View style={styles.menuSection}>
           <Text
             variant="labelLarge"
-            style={[styles.sectionTitle, { color: theme.colors.onSurface }]}
-          >
+            style={[styles.sectionTitle, {color: theme.colors.onSurface}]}>
             Supporto
           </Text>
 
-          <DrawerItem
+          {/* <DrawerItem
             label="Aiuto"
-            icon={({ color, size }) => (
+            icon={({color, size}) => (
               <Icon source="help-circle-outline" color={color} size={size} />
             )}
             onPress={() => {
-              console.log("Apri sezione aiuto");
+              console.log('Apri sezione aiuto');
               props.navigation.closeDrawer();
             }}
             style={styles.drawerItem}
             labelStyle={styles.drawerLabel}
-          />
+          /> */}
 
           <DrawerItem
             label="Informazioni"
-            icon={({ color, size }) => (
+            icon={({color, size}) => (
               <Icon source="information-outline" color={color} size={size} />
             )}
-            onPress={() => {
-              console.log("Apri informazioni app");
-              props.navigation.closeDrawer();
-            }}
+            onPress={() => handleMenuItemPress('Informazioni')}
+            style={styles.drawerItem}
+            labelStyle={styles.drawerLabel}
+          />
+          <DrawerItem
+            label="Informativa Privacy"
+            icon={({color, size}) => (
+              <Icon source="shield-check-outline" color={color} size={size} />
+            )}
+            onPress={() => handleMenuItemPress('Privacy')}
             style={styles.drawerItem}
             labelStyle={styles.drawerLabel}
           />
@@ -170,27 +161,26 @@ export default function DrawerNavigator() {
   return (
     <Drawer.Navigator
       initialRouteName="TabsRoot"
-      drawerContent={(props) => <CustomDrawerContent {...props} />}
+      drawerContent={props => <CustomDrawerContent {...props} />}
       screenOptions={{
         headerShown: false,
-        drawerStyle: { backgroundColor: theme.colors.surface, width: "80%" },
+        drawerStyle: {backgroundColor: theme.colors.surface, width: '80%'},
         drawerActiveTintColor: theme.colors.primary,
         drawerInactiveTintColor: theme.colors.onSurface,
-        drawerType: "front",
+        drawerType: 'front',
         swipeEnabled: true,
         swipeEdgeWidth: 50,
-      }}
-    >
+      }}>
       <Drawer.Screen
         name="TabsRoot"
         component={TabNavigator}
-        options={{ drawerItemStyle: { display: "none" } }}
+        options={{drawerItemStyle: {display: 'none'}}}
       />
 
       <Drawer.Screen
         name="Settings"
         component={SettingsScreen}
-        options={({ navigation }) => ({
+        options={({navigation}) => ({
           title: SCREEN_TITLES.Settings,
           headerShown: true,
           header: () => (
@@ -203,7 +193,7 @@ export default function DrawerNavigator() {
                 title={SCREEN_TITLES.Settings}
                 titleStyle={[
                   theme.typography?.headerTitle,
-                  { color: theme.colors.onSurface },
+                  {color: theme.colors.onSurface},
                 ]}
               />
             </Appbar.Header>
@@ -214,7 +204,7 @@ export default function DrawerNavigator() {
       <Drawer.Screen
         name="Feedback"
         component={FeedbackScreen}
-        options={({ navigation }) => ({
+        options={({navigation}) => ({
           title: SCREEN_TITLES.Feedback,
           headerShown: true,
           header: () => (
@@ -227,7 +217,53 @@ export default function DrawerNavigator() {
                 title={SCREEN_TITLES.Feedback}
                 titleStyle={[
                   theme.typography?.headerTitle,
-                  { color: theme.colors.onSurface },
+                  {color: theme.colors.onSurface},
+                ]}
+              />
+            </Appbar.Header>
+          ),
+        })}
+      />
+      <Drawer.Screen
+        name="Informazioni"
+        component={InformazioniScreen}
+        options={({navigation}) => ({
+          title: 'Informazioni',
+          headerShown: true,
+          header: () => (
+            <Appbar.Header>
+              <Appbar.BackAction
+                color={theme.colors.onSurface}
+                onPress={() => navigation.goBack()}
+              />
+              <Appbar.Content
+                title="Informazioni"
+                titleStyle={[
+                  theme.typography?.headerTitle,
+                  {color: theme.colors.onSurface},
+                ]}
+              />
+            </Appbar.Header>
+          ),
+        })}
+      />
+      <Drawer.Screen
+        name="Privacy"
+        component={PrivacyScreen}
+        options={({navigation}) => ({
+          title: 'Informativa Privacy',
+          headerShown: true,
+          header: () => (
+            <Appbar.Header>
+              <Appbar.BackAction
+                color={theme.colors.onSurface}
+                onPress={() => navigation.goBack()}
+              />
+              <Appbar.Content
+                title="Informativa Privacy"
+                titleStyle={[
+                  theme.typography?.headerTitle,
+                  {color: theme.colors.onSurface},
                 ]}
               />
             </Appbar.Header>
@@ -239,43 +275,43 @@ export default function DrawerNavigator() {
 }
 
 const styles = StyleSheet.create({
-  drawerContainer: { flex: 1 },
+  drawerContainer: {flex: 1},
 
   headerContainer: {
-    width: "100%",
+    width: '100%',
     minHeight: 160,
-    justifyContent: "center",
+    justifyContent: 'center',
   },
 
   headerContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
     paddingHorizontal: 20,
   },
 
   headerText: {
     fontSize: width > 600 ? 22 : 18,
-    fontWeight: "700",
-    color: "#fff",
+    fontWeight: '700',
+    color: '#fff',
     marginRight: width > 600 ? 20 : 12,
   },
 
   logo: {
     width: width > 600 ? 120 : 80,
     height: width > 600 ? 120 : 80,
-    resizeMode: "contain",
+    resizeMode: 'contain',
     marginRight: width > 600 ? 30 : 20,
   },
 
-  menuSection: { marginTop: 10 },
+  menuSection: {marginTop: 10},
   sectionTitle: {
     paddingHorizontal: 20,
     paddingVertical: 10,
-    fontWeight: "600",
+    fontWeight: '600',
   },
-  drawerItem: { marginHorizontal: 10, borderRadius: 8 },
-  drawerLabel: { fontSize: 15, marginLeft: 8, fontWeight: "400" },
-  divider: { marginVertical: 15, marginHorizontal: 20 },
-  footer: { alignItems: "center", marginTop: "auto" },
+  drawerItem: {marginHorizontal: 10, borderRadius: 8},
+  drawerLabel: {fontSize: 15, marginLeft: 8, fontWeight: '400'},
+  divider: {marginVertical: 15, marginHorizontal: 20},
+  footer: {alignItems: 'center', marginTop: 'auto'},
 });

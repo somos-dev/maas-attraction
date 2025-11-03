@@ -8,17 +8,15 @@ import {
   Chip,
   List,
   Divider,
-  IconButton,
   Card,
 } from 'react-native-paper';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import type {RootStackParamList} from '../../navigation/AppStack';
 
-// Stesso endpoint dell’altro screen
 const OTP_GRAPHQL_URL =
   'https://otp.somos.srl/otp/routers/default/index/graphql';
 
-// Query dettagli route: nome, operator, mode, patterns con fermate
+// 🔹 Query dettagli route
 const ROUTE_DETAILS_QUERY = `
   query RouteDetails($routeId: String!) {
     route(id: $routeId) {
@@ -46,46 +44,66 @@ const ROUTE_DETAILS_QUERY = `
   }
 `;
 
+// 🔹 Query orari fermata
+const STOP_TIMES_QUERY = `
+  query StopTimes($stopId: String!) {
+    stop(id: $stopId) {
+      gtfsId
+      name
+      stoptimesForPatterns(numberOfDepartures: 8) {
+        pattern { route { shortName } }
+        stoptimes {
+          scheduledDeparture
+          realtimeDeparture
+          realtime
+          serviceDay
+        }
+      }
+    }
+  }
+`;
+
 type Props = NativeStackScreenProps<RootStackParamList, 'LineDetail'>;
 
-const parseDirection = (s?: string) => {
-  if (!s) return {label: null as string | null, base: s};
-  const trimmed = s.trim();
-  if (/\sA$/i.test(trimmed))
-    return {label: 'Andata', base: trimmed.replace(/\sA$/i, '').trim()};
-  if (/\sR$/i.test(trimmed))
-    return {label: 'Ritorno', base: trimmed.replace(/\sR$/i, '').trim()};
-  return {label: null, base: trimmed};
-};
-
 export default function LineDetailScreen({route, navigation}: Props) {
-  const {routeId, ref, name, operator, mode} = route.params;
+  const {
+    routeId,
+    ref,
+    name,
+    operator,
+    mode,
+    referenceStopId,
+    referenceStopName,
+  } = route.params;
   const theme = useTheme();
+
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [data, setData] = useState<any>(null);
+  const [nextDepartures, setNextDepartures] = useState<any[]>([]);
 
-  // riuso fetchGraphQL inline (puoi estrarlo in utils se preferisci)
+  // Funzione generica GraphQL
   const fetchGraphQL = async (query: string, variables: any) => {
-    const body = JSON.stringify({query, variables});
-    const headers = {'Content-Type': 'application/json'};
-    const res = await fetch(OTP_GRAPHQL_URL, {method: 'POST', headers, body});
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const res = await fetch(OTP_GRAPHQL_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({query, variables}),
+    });
     const json = await res.json();
     if (json.errors) throw new Error(json.errors[0].message);
     return json.data;
   };
 
+  // 🔹 Carica dettagli linea
   useEffect(() => {
-    // Imposta titolo dinamico nello stack (facoltativo)
     navigation.setOptions({
       title: ref ? `Linea ${ref}` : 'Dettagli linea',
     });
 
     const load = async () => {
       try {
-        setErr(null);
         setLoading(true);
+        setErr(null);
         const d = await fetchGraphQL(ROUTE_DETAILS_QUERY, {routeId});
         setData(d);
       } catch (e: any) {
@@ -97,35 +115,58 @@ export default function LineDetailScreen({route, navigation}: Props) {
     load();
   }, [routeId]);
 
-  const routeObj = data?.route;
+  // 🔹 Carica orari della fermata corrente
+  const fetchNextDepartures = async (stopId: string, ref: string) => {
+    try {
+      const now = Math.floor(Date.now() / 1000);
+      const d = await fetchGraphQL(STOP_TIMES_QUERY, {stopId});
+      const all = d.stop?.stoptimesForPatterns ?? [];
 
-  const header = useMemo(() => {
-    const short = routeObj?.shortName ?? ref ?? '';
-    const long = routeObj?.longName ?? name ?? '';
+      const match = all.find((p: any) =>
+        p.pattern?.route?.shortName
+          ?.trim()
+          ?.toUpperCase()
+          ?.includes(ref?.toUpperCase()),
+      );
 
-    const dirFromLong = parseDirection(long);
-    const dirFromShort = parseDirection(short);
+      if (!match) return [];
+      const times = match.stoptimes || [];
+      // Filtra solo partenze future
+      // 1️⃣ Filtra solo partenze future
+      const future = times.filter(
+        (t: any) => t.serviceDay + t.scheduledDeparture > now,
+      );
 
-    const directionLabel =
-      // se l’hai passata dai params, usa quella; altrimenti calcola qui
-      (route.params as any)?.directionLabel ??
-      dirFromLong.label ??
-      dirFromShort.label ??
-      null;
+      // 2️⃣ Ordina per timestamp reale (serviceDay + departure)
+      future.sort(
+        (a: any, b: any) =>
+          a.serviceDay +
+          a.scheduledDeparture -
+          (b.serviceDay + b.scheduledDeparture),
+      );
 
-    const displayName = dirFromLong.base || long; // nome “pulito”
-    const displayRef = short;
-    const displayOperator = routeObj?.agency?.name ?? operator ?? '';
-    const displayMode = routeObj?.mode ?? mode ?? '';
+      // 3️⃣ Ritorna le prime 4, ordinate (oggi prima, domani dopo)
+      return future.slice(0, 4);
+    } catch (err) {
+      console.error('Errore fetch orari:', err);
+      return [];
+    }
+  };
 
-    return {
-      displayRef,
-      displayName,
-      displayOperator,
-      displayMode,
-      directionLabel,
+  useEffect(() => {
+    if (!referenceStopId || !ref) return;
+
+    const loadTimes = async () => {
+      const t = await fetchNextDepartures(referenceStopId, ref);
+      setNextDepartures(t);
     };
-  }, [data, ref, name, operator, mode, route.params]);
+
+    loadTimes();
+    const interval = setInterval(loadTimes, 60000); // refresh ogni 60 s
+    return () => clearInterval(interval);
+  }, [referenceStopId, ref]);
+
+  const routeObj = data?.route;
 
   if (loading) {
     return (
@@ -154,140 +195,135 @@ export default function LineDetailScreen({route, navigation}: Props) {
     );
   }
 
-  const patterns = routeObj.patterns ?? [];
-
   const tubeColor = routeObj?.color
     ? `#${routeObj.color}`
     : theme.colors.primary;
+  const patterns = routeObj.patterns ?? [];
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* Header info */}
+      {/* Header */}
       <Card style={styles.headerCard}>
         <Card.Content>
           <View style={styles.headerRow}>
-            {header.displayRef ? (
-              <Chip compact mode="flat" style={styles.refChip}>
-                {header.displayRef}
+            {routeObj.shortName && (
+              <Chip
+                compact
+                style={[styles.refChip, {backgroundColor: tubeColor}]}>
+                <Text style={{color: '#fff', fontWeight: '700'}}>
+                  {routeObj.shortName}
+                </Text>
               </Chip>
-            ) : null}
-            <Chip compact icon="domain">
-              {header.displayOperator || 'Operatore sconosciuto'}
-            </Chip>
-            {/* <Chip compact icon="bus">
-              {header.displayMode}
-            </Chip> */}
+            )}
+            {routeObj.agency?.name && (
+              <Chip compact icon="domain">
+                {routeObj.agency.name}
+              </Chip>
+            )}
           </View>
-          {header.directionLabel ? (
-            <>
-              <Text variant="titleLarge" style={styles.title}>
-                {header.directionLabel}
+          <Text variant="titleLarge" style={styles.title}>
+            {routeObj.longName || name || 'Percorso'}
+          </Text>
+          {routeObj.desc && <Text style={styles.desc}>{routeObj.desc}</Text>}
+
+          {/* 🔹 Prossime partenze */}
+          {referenceStopId && nextDepartures.length > 0 && (
+            <View style={{marginTop: 12}}>
+              <Text style={styles.nextHeader}>
+                Prossime partenze da {referenceStopName}:
               </Text>
-              {header.displayName ? (
-                <Text style={styles.desc}>{header.displayName}</Text>
-              ) : null}
-            </>
-          ) : header.displayName ? (
-            <Text variant="titleLarge" style={styles.title}>
-              {header.displayName}
+              {nextDepartures.map((t, i) => {
+                const dep =
+                  (t.realtimeDeparture || t.scheduledDeparture) +
+                  (t.serviceDay || 0);
+
+                const depDate = new Date(dep * 1000);
+                const timeStr = depDate.toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                });
+
+                // 🔸 Calcolo se è "domani" rispetto ad oggi
+                const now = new Date();
+                const isTomorrow =
+                  depDate.getDate() !== now.getDate() ||
+                  depDate.getMonth() !== now.getMonth();
+
+                return (
+                  <Text key={i} style={styles.nextTime}>
+                    🕒 {timeStr}
+                    {isTomorrow ? ' (Domani)' : ''}{' '}
+                    {t.realtime ? '(tempo reale)' : ''}
+                  </Text>
+                );
+              })}
+            </View>
+          )}
+
+          {referenceStopId && nextDepartures.length === 0 && (
+            <Text style={[styles.nextTime, {marginTop: 8}]}>
+              Nessuna partenza imminente da {referenceStopName}.
             </Text>
-          ) : null}
-          {routeObj.desc ? (
-            <Text style={styles.desc}>{routeObj.desc}</Text>
-          ) : null}
+          )}
         </Card.Content>
       </Card>
 
-      {/* Patterns */}
-      <List.Section style={{paddingLeft: 6, marginLeft: -12}}>
-        <List.Subheader>Direzioni e fermate</List.Subheader>
+      {/* Fermate */}
+      <List.Section>
+        <List.Subheader>Fermate lungo la linea</List.Subheader>
         {patterns.length === 0 ? (
           <Text style={{paddingHorizontal: 16, color: '#666'}}>
-            Nessun pattern disponibile per questa linea.
+            Nessuna fermata disponibile.
           </Text>
         ) : (
-          patterns.map((p: any, idx: number) => (
-            <View key={p.id}>
-              <List.Accordion
-                title={p.name || `Direzione ${p.directionId ?? idx}`}
-                left={props => <List.Icon {...props} icon="arrow-right-bold" />}
-                style={styles.accordion}>
-                {p.stops?.map((s: any, i: number) => {
-                  const isRef = s.gtfsId === route.params.referenceStopId;
-                  const isFirst = i === 0;
-                  const isLast = i === (p.stops?.length ?? 1) - 1;
+          patterns[0].stops.map((s: any, i: number) => {
+            const isRef = s.gtfsId === referenceStopId;
+            const isFirst = i === 0;
+            const isLast = i === patterns[0].stops.length - 1;
 
-                  return (
-                    <View key={s.gtfsId} style={styles.stopRow}>
-                      {/* Colonna timeline */}
-                      <View style={styles.timelineCol}>
-                        {/* segmento sopra (sovrapposto di 1px per continuità) */}
-                        <View
-                          style={[
-                            styles.segment,
-                            !isFirst
-                              ? styles.segmentVisible
-                              : styles.segmentHidden,
-                            !isFirst && {backgroundColor: tubeColor},
-                          ]}
-                        />
+            return (
+              <View key={s.gtfsId} style={styles.stopRow}>
+                <View style={styles.timelineCol}>
+                  <View
+                    style={[
+                      styles.segment,
+                      !isFirst && {backgroundColor: tubeColor},
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.bullet,
+                      isRef
+                        ? {backgroundColor: tubeColor, borderColor: tubeColor}
+                        : {borderColor: '#999'},
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.segment,
+                      !isLast && {backgroundColor: tubeColor},
+                    ]}
+                  />
+                </View>
 
-                        {/* pallino */}
-                        <View
-                          style={[
-                            styles.bullet,
-                            isRef ? styles.bulletActive : styles.bulletIdle,
-                            isRef
-                              ? {
-                                  borderColor: tubeColor,
-                                  backgroundColor: tubeColor,
-                                }
-                              : {
-                                  borderColor: theme.colors.outline,
-                                  backgroundColor: theme.colors.surface,
-                                },
-                          ]}
-                        />
-
-                        {/* segmento sotto (sovrapposto di 1px per continuità) */}
-                        <View
-                          style={[
-                            styles.segment,
-                            !isLast
-                              ? styles.segmentVisible
-                              : styles.segmentHidden,
-                            !isLast && {backgroundColor: tubeColor},
-                          ]}
-                        />
-                      </View>
-
-                      {/* Testo fermata */}
-                      <View style={styles.stopContent}>
-                        <View style={styles.stopHeader}>
-                          <Text
-                            style={[
-                              styles.stopName,
-                              isRef && {color: tubeColor, fontWeight: '800'},
-                            ]}>
-                            {s.name}
-                          </Text>
-                          {isRef && (
-                            <Chip compact style={styles.nearChip}>
-                              Più vicina
-                            </Chip>
-                          )}
-                        </View>
-                        {!!s.code && (
-                          <Text style={styles.stopCode}>Codice: {s.code}</Text>
-                        )}
-                      </View>
-                    </View>
-                  );
-                })}
-              </List.Accordion>
-              <Divider />
-            </View>
-          ))
+                <View style={styles.stopContent}>
+                  <View style={styles.stopHeader}>
+                    <Text
+                      style={[
+                        styles.stopName,
+                        isRef && {color: tubeColor, fontWeight: '800'},
+                      ]}>
+                      {s.name}
+                    </Text>
+                    {isRef && <Chip compact>Più vicina</Chip>}
+                  </View>
+                  {!!s.code && (
+                    <Text style={styles.stopCode}>Codice: {s.code}</Text>
+                  )}
+                </View>
+              </View>
+            );
+          })
         )}
       </List.Section>
     </ScrollView>
@@ -298,87 +334,35 @@ const styles = StyleSheet.create({
   container: {padding: 16},
   center: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
     padding: 16,
   },
-  headerCard: {marginBottom: 12},
+  headerCard: {marginBottom: 16},
   headerRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   refChip: {alignSelf: 'flex-start'},
   title: {fontWeight: '700', marginTop: 4},
-  desc: {marginTop: 6, color: '#666'},
-  accordion: {backgroundColor: 'transparent'},
-  stopRow: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    paddingVertical: 0,
-  },
-
-  timelineCol: {
-    width: 18, // più stretto = più a sinistra
-    alignItems: 'center',
-    paddingVertical: 0,
-  },
-
-  // Segmento verticale: spesso e continuo
-  segment: {
-    width: 4,
-    flexGrow: 1,
-    borderRadius: 2,
-  },
-  segmentVisible: {
-    backgroundColor: '#000', // verrà override nel JSX se usi tubeColor
-    marginTop: -1, // sovrapposizione per evitare micro-gaps
-    marginBottom: -1,
-  },
-  segmentHidden: {
-    backgroundColor: 'transparent',
-  },
-
-  // Pallino ingrandito
+  desc: {marginTop: 4, color: '#666'},
+  nextHeader: {fontWeight: '700', marginBottom: 4},
+  nextTime: {fontSize: 14, color: '#444'},
+  stopRow: {flexDirection: 'row', alignItems: 'stretch'},
+  timelineCol: {width: 20, alignItems: 'center'},
+  segment: {width: 3, flexGrow: 1, borderRadius: 2},
   bullet: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     borderWidth: 3,
-    marginVertical: 0,
-  },
-  bulletActive: {
-    borderColor: '#000', // override nel JSX con tubeColor
-    backgroundColor: '#000',
-  },
-  bulletIdle: {
-    borderColor: '#999',
     backgroundColor: '#fff',
   },
-
-  // Contenuto: meno margine sinistro
-  stopContent: {
-    flex: 1,
-    marginLeft: 6, // 👈 meno margine: pallini più a sinistra
-    paddingVertical: 10, // lo spacing verticale sta qui, non sulla riga
-  },
-
-  stopHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stopName: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  stopNameActive: {
-    color: '#000', // override nel JSX con tubeColor
-    fontWeight: '800',
-  },
-  nearChip: {alignSelf: 'flex-start'},
-  stopCode: {marginTop: 2, fontSize: 12, color: '#666'},
+  stopContent: {flex: 1, marginLeft: 8, paddingVertical: 8},
+  stopHeader: {flexDirection: 'row', alignItems: 'center', gap: 8},
+  stopName: {fontSize: 15, fontWeight: '600'},
+  stopCode: {fontSize: 12, color: '#666', marginTop: 2},
 });

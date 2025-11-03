@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, {useState, useEffect} from 'react';
 import {
   View,
   StyleSheet,
@@ -8,7 +8,8 @@ import {
   SafeAreaView,
   StatusBar,
   Platform,
-} from "react-native";
+  Alert,
+} from 'react-native';
 import {
   Text,
   Searchbar,
@@ -16,9 +17,19 @@ import {
   ActivityIndicator,
   useTheme,
   IconButton,
-} from "react-native-paper";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { useCurrentLocation } from "../../hooks/useCurrentLocation"; //  import hook
+  Snackbar,
+  TextInput,
+  Button,
+  Divider,
+} from 'react-native-paper';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import {useCurrentLocation} from '../../hooks/useCurrentLocation';
+import {
+  useGetPlacesQuery,
+  useCreatePlaceMutation,
+} from '../../store/api/placesApi';
+import {useSelector} from 'react-redux';
+import {RootState} from '../../store/store';
 
 export interface Place {
   name: string;
@@ -30,7 +41,7 @@ export interface Place {
 
 interface PlaceSearchModalProps {
   visible: boolean;
-  type: "from" | "to";
+  type: 'from' | 'to';
   query: string;
   onClose: () => void;
   onQueryChange: (query: string) => void;
@@ -39,16 +50,6 @@ interface PlaceSearchModalProps {
   error?: string;
   onSelect: (place: Place) => void;
 }
-
-const recentPlaces: Place[] = [
-  {
-    name: "Posizione Attuale",
-    address: "Usa la tua posizione GPS",
-    lat: 0, // placeholder, verrà aggiornato dal GPS
-    lon: 0,
-    category: "current",
-  },
-];
 
 export default function PlaceSearchModal({
   visible,
@@ -62,16 +63,34 @@ export default function PlaceSearchModal({
   onSelect,
 }: PlaceSearchModalProps) {
   const theme = useTheme();
-  const [localQuery, setLocalQuery] = useState("");
+  const {access} = useSelector((state: RootState) => state.auth);
+  const {location, fetchLocation} = useCurrentLocation();
+  const [createPlace] = useCreatePlaceMutation();
 
-  // hook posizione
-  const { location, fetchLocation } = useCurrentLocation();
+  const {
+    data: rawData,
+    isFetching,
+    refetch,
+  } = useGetPlacesQuery(undefined, {
+    skip: !access,
+  });
 
-  // Reset query quando si apre il modal
+  const favoritePlaces = rawData?.data ?? [];
+
+  const [localQuery, setLocalQuery] = useState('');
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [favoriteModalVisible, setFavoriteModalVisible] = useState(false);
+  const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
+
+  // Dati del form per salvataggio preferito
+  const [favAddress, setFavAddress] = useState('');
+  const [favType, setFavType] = useState<'Casa' | 'Lavoro' | 'Altro'>('Casa');
+  const [isSaving, setIsSaving] = useState(false);
+
   useEffect(() => {
     if (visible) {
-      setLocalQuery("");
-      onQueryChange("");
+      setLocalQuery('');
+      onQueryChange('');
     }
   }, [visible]);
 
@@ -81,79 +100,215 @@ export default function PlaceSearchModal({
   };
 
   const handleSelect = async (place: Place) => {
-    if (place.category === "current") {
-      await fetchLocation(); // aggiorna posizione
+    if (place.category === 'current') {
+      await fetchLocation();
       if (location) {
         onSelect({
-          name: "Posizione Attuale",
-          address: "La tua posizione",
+          name: 'Posizione Attuale',
+          address: 'La tua posizione',
           lat: location.lat,
           lon: location.lon,
-          category: "current",
+          category: 'current',
         });
       } else {
-        onSelect(place); // fallback placeholder
+        Alert.alert(
+          'Posizione non disponibile',
+          'Assicurati che i permessi GPS siano attivi.',
+        );
       }
     } else {
       onSelect(place);
+    }
+    onClose();
+  };
+
+  const openFavoriteModal = (place: Place) => {
+    if (!access) {
+      Alert.alert(
+        'Accesso richiesto',
+        'Accedi per salvare luoghi tra i preferiti.',
+      );
+      return;
+    }
+    setSelectedPlace(place);
+    setFavAddress(place.address || place.name);
+    setFavType('Casa');
+    setFavoriteModalVisible(true);
+  };
+
+  const handleAddFavorite = async () => {
+    if (!selectedPlace || !favAddress.trim()) return;
+    try {
+      setIsSaving(true);
+
+      const mappedType =
+        favType === 'Casa'
+          ? 'home'
+          : favType === 'Lavoro'
+          ? 'work'
+          : 'favorites';
+
+      const latitude = Number(selectedPlace.lat ?? location?.lat ?? 0);
+      const longitude = Number(selectedPlace.lon ?? location?.lon ?? 0);
+
+      await createPlace({
+        address: favAddress.trim(),
+        type: mappedType,
+        latitude,
+        longitude,
+      }).unwrap();
+
+      setFavoriteModalVisible(false);
+      setSnackbarVisible(true);
+      refetch();
+
+      console.log('📍 Payload inviato:', {
+        address: favAddress.trim(),
+        type: mappedType,
+        latitude,
+        longitude,
+      });
+    } catch (err) {
+      console.error('❌ Errore salvataggio preferito:', err);
+      Alert.alert('Errore', 'Impossibile aggiungere ai preferiti.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case "current": return "crosshairs-gps";
-      case "station": return "train";
-      case "airport": return "airplane";
-      case "recent": return "clock-outline";
-      case "favorite": return "star";
-      default: return "map-marker";
+      case 'current':
+        return 'crosshairs-gps';
+      case 'station':
+        return 'train';
+      case 'airport':
+        return 'airplane';
+      case 'recent':
+        return 'clock-outline';
+      case 'favorite':
+        return 'star';
+      default:
+        return 'map-marker';
     }
   };
 
-  const displayData = localQuery.length >= 2 ? results : recentPlaces;
+  const displayData = localQuery.length >= 2 ? results : [];
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      onRequestClose={onClose}
-      presentationStyle="fullScreen"
-      statusBarTranslucent={false}
-    >
-      <SafeAreaView 
-        style={[
-          styles.safeArea, 
-          { backgroundColor: theme.colors.background }
-        ]}
-      >
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+      <SafeAreaView
+        style={[styles.safeArea, {backgroundColor: theme.colors.background}]}>
         <View style={styles.container}>
           {/* Header */}
-          <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
-            <IconButton
-              icon="arrow-left"
-              size={24}
-              onPress={onClose}
-              style={styles.backButton}
-            />
+          <View
+            style={[styles.header, {backgroundColor: theme.colors.background}]}>
+            <IconButton icon="arrow-left" size={24} onPress={onClose} />
             <Text style={styles.headerTitle}>
-              {type === "from" ? "Punto di partenza" : "Destinazione"}
+              {type === 'from' ? 'Punto di partenza' : 'Destinazione'}
             </Text>
-            <View style={styles.headerSpacer} />
+            <View style={{width: 48}} />
           </View>
 
-          {/* Search Bar */}
+          {/* Searchbar */}
           <View style={styles.searchContainer}>
             <Searchbar
               placeholder="Cerca città, indirizzi o punti di interesse"
               onChangeText={handleQueryChange}
               placeholderTextColor="#666"
-              inputStyle={{ color: theme.colors.onSurface }}
+              inputStyle={{color: theme.colors.onSurface}}
               value={localQuery}
               style={styles.searchbar}
               autoFocus
               elevation={2}
             />
           </View>
+
+          {/* 🔹 Posizione Attuale */}
+          <View style={styles.currentLocationContainer}>
+            <TouchableOpacity
+              style={styles.currentLocationButton}
+              onPress={async () => {
+                await fetchLocation();
+                if (location) {
+                  onSelect({
+                    name: 'Posizione Attuale',
+                    address: 'La tua posizione',
+                    lat: location.lat,
+                    lon: location.lon,
+                    category: 'current',
+                  });
+                  onClose();
+                } else {
+                  Alert.alert(
+                    'Posizione non disponibile',
+                    'Assicurati che i permessi GPS siano attivi.',
+                  );
+                }
+              }}>
+              <Icon
+                name="crosshairs-gps"
+                size={22}
+                color={theme.colors.primary}
+                style={{marginRight: 10}}
+              />
+              <Text style={{fontSize: 16, color: theme.colors.onSurface}}>
+                Usa la mia posizione attuale
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* 🔹 Preferiti */}
+          {access && favoritePlaces.length > 0 && (
+            <View style={styles.quickSelectContainer}>
+              <View style={styles.quickSelectHeader}>
+                <Text style={styles.quickSelectLabel}>
+                  I tuoi luoghi preferiti
+                </Text>
+                <IconButton
+                  icon="refresh"
+                  size={20}
+                  onPress={() => refetch()}
+                  disabled={isFetching}
+                />
+              </View>
+
+              <View style={styles.quickSelectRow}>
+                {favoritePlaces.map((p: any) => {
+                  let icon = 'star-outline';
+                  if (p.type === 'home') icon = 'home';
+                  else if (p.type === 'work') icon = 'briefcase';
+
+                  return (
+                    <TouchableOpacity
+                      key={p.id}
+                      style={styles.quickButton}
+                      onPress={() => {
+                        onSelect({
+                          name: p.address,
+                          address: p.address,
+                          lat: p.latitude ?? 0,
+                          lon: p.longitude ?? 0,
+                          category: 'favorite',
+                        });
+                        onClose();
+                      }}>
+                      <Icon
+                        name={icon}
+                        size={26}
+                        color={theme.colors.primary}
+                      />
+                      <Text numberOfLines={1} style={styles.quickButtonText}>
+                        {p.address.length > 20
+                          ? p.address.slice(0, 20) + '…'
+                          : p.address}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
 
           {/* Loading */}
           {loading && (
@@ -163,80 +318,128 @@ export default function PlaceSearchModal({
             </View>
           )}
 
-          {/* Error */}
-          {error && !loading && (
-            <View style={styles.emptyContainer}>
-              <Icon name="alert-circle-outline" size={48} color={theme.colors.error} />
-              <Text style={[styles.emptyText, { color: theme.colors.error }]}>
-                {error}
-              </Text>
-            </View>
-          )}
-
-          {/* Results List */}
+          {/* Risultati */}
           {!loading && !error && (
             <FlatList
               data={displayData}
               keyExtractor={(item, index) => `${item.lat}-${item.lon}-${index}`}
               contentContainerStyle={styles.listContent}
-              ListHeaderComponent={() => (
-                localQuery.length < 2 && recentPlaces.length > 0 ? (
-                  <Text style={styles.sectionHeader}>Ricerche rapide</Text>
-                ) : null
-              )}
-              renderItem={({ item }) => (
-                <TouchableOpacity 
-                  onPress={() => handleSelect(item)}
-                  activeOpacity={0.7}
-                >
-                  <List.Item
-                    title={item.name}
-                    description={item.address}
-                    titleNumberOfLines={2}
-                    descriptionNumberOfLines={2}
-                    style={styles.listItem}
-                    left={() => (
-                      <View style={styles.iconContainer}>
+              renderItem={({item}) => (
+                <View style={styles.listRow}>
+                  <TouchableOpacity
+                    onPress={() => handleSelect(item)}
+                    style={{flex: 1}}
+                    activeOpacity={0.7}>
+                    <List.Item
+                      title={item.name}
+                      description={item.address}
+                      left={() => (
                         <Icon
                           name={getCategoryIcon(item.category)}
                           size={24}
                           color={theme.colors.primary}
+                          style={{marginRight: 12}}
                         />
-                      </View>
-                    )}
-                    right={() => (
-                      <Icon
-                        name="chevron-right"
-                        size={24}
-                        color="#ccc"
-                      />
-                    )}
+                      )}
+                    />
+                  </TouchableOpacity>
+
+                  <IconButton
+                    icon="star-outline"
+                    size={34}
+                    onPress={() => openFavoriteModal(item)}
                   />
-                </TouchableOpacity>
-              )}
-              ListEmptyComponent={() => (
-                !loading && !error ? (
-                  localQuery.length >= 2 ? (
-                    <View style={styles.emptyContainer}>
-                      <Icon name="map-marker-off" size={48} color="#ccc" />
-                      <Text style={styles.emptyText}>Nessun risultato trovato</Text>
-                    </View>
-                  ) : (
-                    <View style={styles.emptyContainer}>
-                      <Icon name="magnify" size={48} color="#ccc" />
-                      <Text style={styles.emptyText}>
-                        Inserisci almeno 2 caratteri per cercare
-                      </Text>
-                      <Text style={styles.hintText}>
-                        Puoi cercare città, indirizzi o punti di interesse in tutta Italia
-                      </Text>
-                    </View>
-                  )
-                ) : null
+                </View>
               )}
             />
           )}
         </View>
+
+        {/* Snackbar */}
+        <Snackbar
+          visible={snackbarVisible}
+          onDismiss={() => setSnackbarVisible(false)}
+          duration={3000}
+          style={{backgroundColor: theme.colors.secondary}}>
+          Luogo aggiunto ai preferiti
+        </Snackbar>
+
+        {/* 🔹 Modale Aggiungi Preferito */}
+        <Modal
+          visible={favoriteModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setFavoriteModalVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.favoriteModal}>
+              <Text style={styles.modalTitle}>Aggiungi ai preferiti</Text>
+
+              <TextInput
+                label="Indirizzo"
+                value={favAddress}
+                onChangeText={setFavAddress}
+                mode="outlined"
+                outlineStyle={{borderRadius: 12}}
+                style={styles.input}
+                left={<TextInput.Icon icon="map-marker-outline" />}
+              />
+
+              <Text style={styles.label}>Tipo</Text>
+              <Button
+                mode="outlined"
+                onPress={() => {
+                  const next =
+                    favType === 'Casa'
+                      ? 'Lavoro'
+                      : favType === 'Lavoro'
+                      ? 'Altro'
+                      : 'Casa';
+                  setFavType(next);
+                }}
+                icon={
+                  favType === 'Casa'
+                    ? 'home'
+                    : favType === 'Lavoro'
+                    ? 'briefcase'
+                    : 'star-outline'
+                }
+                contentStyle={{justifyContent: 'space-between'}}
+                style={styles.dropdownButton}>
+                {favType}
+              </Button>
+              <Text
+                style={{
+                  textAlign: 'center',
+                  fontSize: 12,
+                  color: '#666',
+                  marginTop: 4,
+                }}>
+                Tocca per cambiare tipo
+              </Text>
+
+              <Button
+                mode="contained"
+                onPress={handleAddFavorite}
+                style={styles.saveButton}
+                contentStyle={{paddingVertical: 8}}
+                labelStyle={{fontSize: 16, fontWeight: '600'}}
+                disabled={isSaving || !favAddress.trim()}>
+                {isSaving ? (
+                  <ActivityIndicator animating={true} color="white" />
+                ) : (
+                  'Salva'
+                )}
+              </Button>
+
+              <Button
+                onPress={() => setFavoriteModalVisible(false)}
+                mode="text"
+                style={{marginTop: 6}}>
+                Annulla
+              </Button>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </Modal>
   );
@@ -247,88 +450,134 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
-  container: {
-    flex: 1,
-  },
+  container: {flex: 1},
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 4,
-    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-    elevation: 2,
+    borderBottomColor: '#eee',
   },
-  backButton: {
-    margin: 0,
+  headerTitle: {fontSize: 18, fontWeight: 'bold'},
+  searchContainer: {padding: 12},
+  searchbar: {elevation: 2, backgroundColor: 'white', fontSize: 16},
+
+  // Posizione attuale
+  currentLocationContainer: {
+    paddingHorizontal: 12,
+    marginBottom: 8,
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    flex: 1,
-    textAlign: "center",
+  currentLocationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    borderWidth: 1,
+    borderColor: '#eee',
   },
-  headerSpacer: {
-    width: 48,
-  },
-  searchContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: "transparent",
-  },
-  searchbar: {
-    elevation: 2,
-  },
-  listContent: {
-    flexGrow: 1,
-  },
-  sectionHeader: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#666",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: "#f5f5f5",
-  },
-  listItem: {
-    paddingVertical: 4,
-  },
-  iconContainer: {
-    justifyContent: "center",
-    alignItems: "center",
-    width: 40,
-    marginLeft: 8,
-  },
+
+  listRow: {flexDirection: 'row', alignItems: 'center', paddingRight: 8},
   loadingContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 32,
   },
-  loadingText: {
-    marginTop: 12,
-    color: "#666",
-    fontSize: 16,
-  },
-  emptyContainer: {
+  loadingText: {marginTop: 12, color: '#666', fontSize: 16},
+  modalOverlay: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 32,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  emptyText: {
-    marginTop: 16,
-    color: "#999",
-    textAlign: "center",
+  favoriteModal: {
+    width: '90%',
+    maxWidth: 400,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 25,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 6},
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  input: {
+    marginBottom: 14,
+    backgroundColor: 'white',
     fontSize: 16,
   },
-  hintText: {
-    marginTop: 8,
-    color: "#bbb",
-    textAlign: "center",
+  label: {
+    fontSize: 16,
+    marginBottom: 6,
+    fontWeight: '600',
+    color: '#333',
+  },
+  dropdownButton: {
+    borderRadius: 12,
+    borderColor: '#ccc',
+  },
+  saveButton: {
+    marginTop: 10,
+    borderRadius: 10,
+    elevation: 2,
+  },
+  quickSelectContainer: {
+    marginBottom: 14,
+    marginTop: 4,
+    paddingHorizontal: 10,
+  },
+  quickSelectHeader: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  quickSelectLabel: {
     fontSize: 14,
-    paddingHorizontal: 32,
+    fontWeight: '600',
+    color: '#555',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  quickSelectRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    flexWrap: 'wrap',
+  },
+  quickButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#eee',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    width: 100,
+    marginVertical: 4,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  quickButtonText: {
+    fontSize: 12,
+    color: '#333',
+    textAlign: 'center',
+    marginTop: 4,
   },
 });
-

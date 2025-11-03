@@ -1,8 +1,8 @@
 import React from 'react';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {useTheme} from 'react-native-paper';
-import {Image} from 'react-native';
-
+import {Image, Platform} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import MainStack from '../screens/main/MainStack';
 import LinesStack from '../screens/lines/LinesStack';
 import StopsStack from '../screens/stops/StopsStack';
@@ -14,6 +14,7 @@ const Tab = createBottomTabNavigator<TabNavigatorParamList>();
 
 export default function TabNavigator() {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
 
   const renderIcon = (
     focused: boolean,
@@ -40,9 +41,8 @@ export default function TabNavigator() {
         tabBarStyle: {
           backgroundColor: theme.colors.background,
           borderTopWidth: 0,
-          height: 80,
-          paddingTop: 8,
-          paddingBottom: 8,
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 10,
         },
         tabBarLabelStyle: {fontSize: 13},
         tabBarIconStyle: {marginBottom: 1}, // spazio tra icona e testo

@@ -1,159 +1,168 @@
-import React, { useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import React, {useState} from 'react';
+import {ScrollView, StyleSheet, View, Alert} from 'react-native';
 import {
   Text,
   RadioButton,
-  Checkbox,
   useTheme,
-} from "react-native-paper";
-
-// componente riutilizzabile
-import AppCard from "../../components/common/card/AppCard";
+  ActivityIndicator,
+  IconButton,
+} from 'react-native-paper';
+import AppCard from '../../components/common/card/AppCard';
+import {
+  useGetPlacesQuery,
+  useDeletePlaceMutation,
+} from '../../store/api/placesApi';
 
 export default function TransportPreferencesScreen() {
   const theme = useTheme();
+  const [routePref, setRoutePref] = useState('fastest');
 
-  const [routePref, setRoutePref] = useState("fastest");
-  const [transportPrefs, setTransportPrefs] = useState({
-    bus: false,
-    train: false,
-    bike: false,
-    scooter: false,
-    moped: false,
-    car: false,
-  });
+  // Query per i luoghi preferiti
+  const {data: placesResponse, isLoading, error, refetch} = useGetPlacesQuery();
 
-  const toggleTransport = (key: keyof typeof transportPrefs) => {
-    setTransportPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
+  // Mutation per eliminare un luogo
+  const [deletePlace, {isLoading: deleting}] = useDeletePlaceMutation();
+
+  // I dati reali dei luoghi
+  const favoritePlaces = placesResponse?.data ?? [];
+
+  const handleDelete = (id: number, address: string) => {
+    Alert.alert(
+      'Conferma eliminazione',
+      `Vuoi rimuovere "${address}" dai preferiti?`,
+      [
+        {text: 'Annulla', style: 'cancel'},
+        {
+          text: 'Elimina',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deletePlace(id).unwrap();
+              refetch(); // aggiorna lista
+            } catch (err) {
+              console.error('❌ Errore eliminazione luogo:', err);
+              Alert.alert(
+                'Errore',
+                'Impossibile eliminare il luogo preferito.',
+              );
+            }
+          },
+        },
+      ],
+    );
   };
 
   return (
     <ScrollView
       contentContainerStyle={[
         styles.container,
-        { backgroundColor: theme.colors.background },
+        {backgroundColor: theme.colors.background},
       ]}
-      showsVerticalScrollIndicator={false}
-    >
+      showsVerticalScrollIndicator={false}>
       {/* Header */}
-      <View style={styles.header}>
+      {/* <View style={styles.header}>
         <Text
           variant="headlineSmall"
-          style={[styles.title, { color: theme.colors.onBackground }]}
-        >
-          Imposta le tue preferenze di trasporto
+          style={[styles.title, {color: theme.colors.onBackground}]}>
+          Impostazioni
         </Text>
-      </View>
+      </View> */}
 
       {/* Tipo di Percorso */}
       <AppCard title="Tipo di Percorso">
         <RadioButton.Group
-          onValueChange={(value) => setRoutePref(value)}
-          value={routePref}
-        >
+          onValueChange={value => setRoutePref(value)}
+          value={routePref}>
           <RadioButton.Item
             label="Più veloce"
             value="fastest"
             color={theme.colors.primary}
-            labelStyle={[styles.optionLabel, { color: theme.colors.onSurface }]}
+            labelStyle={[styles.optionLabel, {color: theme.colors.onSurface}]}
             style={styles.radioItem}
           />
           <RadioButton.Item
             label="Eco-sostenibile"
             value="eco"
             color={theme.colors.primary}
-            labelStyle={[styles.optionLabel, { color: theme.colors.onSurface }]}
+            labelStyle={[styles.optionLabel, {color: theme.colors.onSurface}]}
             style={styles.radioItem}
           />
           <RadioButton.Item
             label="A piedi"
             value="walk"
             color={theme.colors.primary}
-            labelStyle={[styles.optionLabel, { color: theme.colors.onSurface }]}
+            labelStyle={[styles.optionLabel, {color: theme.colors.onSurface}]}
             style={styles.radioItem}
           />
         </RadioButton.Group>
       </AppCard>
 
-      {/* Mezzi di Trasporto */}
-      <AppCard title="Mezzi di Trasporto">
-        {/* Trasporti Pubblici */}
-        <View style={styles.categorySection}>
-          <Text
-            variant="bodyMedium"
-            style={[styles.categoryTitle, { color: theme.colors.primary }]}
-          >
-            Trasporti Pubblici
-          </Text>
-          <Checkbox.Item
-            label="Autobus"
-            status={transportPrefs.bus ? "checked" : "unchecked"}
-            onPress={() => toggleTransport("bus")}
-            color={theme.colors.primary}
-            labelStyle={[styles.optionLabel, { color: theme.colors.onSurface }]}
-            style={styles.checkboxItem}
-          />
-          <Checkbox.Item
-            label="Treno"
-            status={transportPrefs.train ? "checked" : "unchecked"}
-            onPress={() => toggleTransport("train")}
-            color={theme.colors.primary}
-            labelStyle={[styles.optionLabel, { color: theme.colors.onSurface }]}
-            style={styles.checkboxItem}
-          />
-        </View>
+      {/* Luoghi Preferiti */}
+      <AppCard title="Luoghi Preferiti">
+        {isLoading && (
+          <ActivityIndicator animating={true} color={theme.colors.primary} />
+        )}
 
-        {/* Mobilità Sostenibile */}
-        <View style={styles.categorySection}>
-          <Text
-            variant="bodyMedium"
-            style={[styles.categoryTitle, { color: theme.colors.primary }]}
-          >
-            Mobilità Sostenibile
-          </Text>
-          <Checkbox.Item
-            label="Bicicletta"
-            status={transportPrefs.bike ? "checked" : "unchecked"}
-            onPress={() => toggleTransport("bike")}
-            color={theme.colors.primary}
-            labelStyle={[styles.optionLabel, { color: theme.colors.onSurface }]}
-            style={styles.checkboxItem}
-          />
-          <Checkbox.Item
-            label="Monopattino elettrico"
-            status={transportPrefs.scooter ? "checked" : "unchecked"}
-            onPress={() => toggleTransport("scooter")}
-            color={theme.colors.primary}
-            labelStyle={[styles.optionLabel, { color: theme.colors.onSurface }]}
-            style={styles.checkboxItem}
-          />
-        </View>
+        {error && (
+          <View style={{marginVertical: 8}}>
+            <Text style={{color: theme.colors.error, fontWeight: 'bold'}}>
+              Errore nel caricamento dei luoghi
+            </Text>
+            <Text
+              style={{color: theme.colors.error, fontSize: 12, marginTop: 4}}>
+              {typeof error === 'object'
+                ? `Status: ${
+                    'status' in error ? error.status : '?'
+                  }, Body: ${JSON.stringify(
+                    'data' in error ? error.data : error,
+                  )}`
+                : String(error)}
+            </Text>
+          </View>
+        )}
 
-        {/* Veicoli Privati */}
-        <View style={styles.categorySection}>
-          <Text
-            variant="bodyMedium"
-            style={[styles.categoryTitle, { color: theme.colors.primary }]}
-          >
-            Veicoli Privati
-          </Text>
-          <Checkbox.Item
-            label="Scooter/Motocicletta"
-            status={transportPrefs.moped ? "checked" : "unchecked"}
-            onPress={() => toggleTransport("moped")}
-            color={theme.colors.primary}
-            labelStyle={[styles.optionLabel, { color: theme.colors.onSurface }]}
-            style={styles.checkboxItem}
-          />
-          <Checkbox.Item
-            label="Automobile"
-            status={transportPrefs.car ? "checked" : "unchecked"}
-            onPress={() => toggleTransport("car")}
-            color={theme.colors.primary}
-            labelStyle={[styles.optionLabel, { color: theme.colors.onSurface }]}
-            style={styles.checkboxItem}
-          />
-        </View>
+        {!isLoading && !error && favoritePlaces.length > 0
+          ? favoritePlaces.map(place => (
+              <View key={place.id} style={styles.placeItem}>
+                <View style={{flex: 1}}>
+                  <Text
+                    variant="titleMedium"
+                    style={[
+                      styles.placeTitle,
+                      {color: theme.colors.onSurface},
+                    ]}>
+                    {place.address}
+                  </Text>
+                  <Text
+                    variant="bodySmall"
+                    style={[
+                      styles.placeAddress,
+                      {color: theme.colors.onSurfaceVariant},
+                    ]}>
+                    Tipo:{' '}
+                    {place.type === 'home'
+                      ? 'Casa'
+                      : place.type === 'work'
+                      ? 'Lavoro'
+                      : 'Altro'}
+                  </Text>
+                </View>
+
+                <IconButton
+                  icon="delete-outline"
+                  size={24}
+                  iconColor={theme.colors.error}
+                  onPress={() => handleDelete(place.id, place.address)}
+                  disabled={deleting}
+                />
+              </View>
+            ))
+          : !isLoading &&
+            !error && (
+              <Text style={{color: theme.colors.onSurfaceVariant}}>
+                Nessun luogo preferito
+              </Text>
+            )}
       </AppCard>
 
       <View style={styles.bottomSpacer} />
@@ -172,37 +181,33 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   title: {
-    textAlign: "center",
-    fontWeight: "600",
-  },
-  categorySection: {
-    marginTop: 20,
-  },
-  categoryTitle: {
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    fontWeight: "500",
-    opacity: 0.8,
+    textAlign: 'center',
+    fontWeight: '600',
   },
   radioItem: {
-    paddingVertical: 4,
-  },
-  checkboxItem: {
     paddingVertical: 4,
   },
   optionLabel: {
     fontSize: 16,
     lineHeight: 20,
   },
+  placeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: '#ccc',
+    paddingBottom: 8,
+  },
+  placeTitle: {
+    fontWeight: '600',
+  },
+  placeAddress: {
+    marginTop: 2,
+    opacity: 0.8,
+  },
   bottomSpacer: {
     height: 40,
   },
 });
-
-
-
-
-
-
-
-

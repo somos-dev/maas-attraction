@@ -1,4 +1,3 @@
-// src/screens/lines/LinesScreen.tsx
 import React, {useState, useEffect} from 'react';
 import {
   View,
@@ -22,20 +21,11 @@ import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 const CONTROL_HEIGHT = 40;
 
-const getDirectionLabel = (nameOrRef?: string) => {
-  if (!nameOrRef) return null;
-  const s = nameOrRef.trim().toUpperCase();
-  if (/\sA$/.test(s)) return 'Andata';
-  if (/\sR$/.test(s)) return 'Ritorno';
-  return null;
-};
-
-// Define the GraphQL endpoint URL for your OTP server
+// 🔹 GraphQL endpoint OTP
 const OTP_GRAPHQL_URL =
   'https://otp.somos.srl/otp/routers/default/index/graphql';
 
-// GraphQL query to fetch stops within a radius and their associated routes (lines)
-// The query uses variables for dynamic latitude, longitude, and radius.
+// 🔹 Query estesa: include patterns e stops per ottenere prima/ultima fermata
 const LINES_QUERY = `
   query LinesNearMe($lat: Float!, $lon: Float!, $radius: Int!) {
     stopsByRadius(lat: $lat, lon: $lon, radius: $radius) {
@@ -50,9 +40,11 @@ const LINES_QUERY = `
               longName
               desc
               mode
-              agency {
+              agency { id name }
+              patterns {
                 id
                 name
+                stops { name }
               }
             }
           }
@@ -62,9 +54,9 @@ const LINES_QUERY = `
   }
 `;
 
-// Interface for a transport line, enriched with fields from the OTP API
+// Tipi
 interface TransportLine {
-  id: string; // gtfsId
+  id: string;
   ref: string;
   name?: string;
   operator?: string;
@@ -75,12 +67,10 @@ interface TransportLine {
   refStopName?: string;
 }
 
-// Interface for the grouped lines, keyed by operator
 interface GroupedLines {
   [operator: string]: TransportLine[];
 }
 
-// Function to normalize operator names (if needed, otherwise can be removed)
 const normalizeOperatorName = (name: string): string => {
   const lower = name.toLowerCase();
   if (lower.includes('amaco')) return 'AMACO';
@@ -104,43 +94,28 @@ export default function LinesScreen() {
   const [menuVisible, setMenuVisible] = useState(false);
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-
   const theme = useTheme();
 
-  /**
-   * @description Fetches the current device location.
-   * @returns A promise that resolves with the coordinates.
-   */
+  // 🔹 Ottiene la posizione utente
   const getCurrentLocation = () => {
     return new Promise<{lat: number; lon: number}>((resolve, reject) => {
       Geolocation.getCurrentPosition(
-        pos => {
-          resolve({lat: pos.coords.latitude, lon: pos.coords.longitude});
-        },
+        pos => resolve({lat: pos.coords.latitude, lon: pos.coords.longitude}),
         err => reject(err),
         {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
       );
     });
   };
 
-  /**
-   * @description Fetches data from the OTP GraphQL endpoint.
-   * @param query The GraphQL query string.
-   * @param variables The JSON object of query variables.
-   * @returns A promise that resolves with the fetched data.
-   */
+  // 🔹 Esegue query GraphQL generica
   const fetchGraphQL = async (query: string, variables: any): Promise<any> => {
     const body = JSON.stringify({query, variables});
     const headers = {'Content-Type': 'application/json'};
-    console.log('Fetching GraphQL with body:', body);
-
     try {
       const res = await fetch(OTP_GRAPHQL_URL, {method: 'POST', headers, body});
       if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
-
       const json = await res.json();
       if (json.errors) throw new Error(json.errors[0].message);
-      console.log('GraphQL response data:', json.data);
       return json.data;
     } catch (err) {
       console.error('Error fetching GraphQL data:', err);
@@ -148,43 +123,24 @@ export default function LinesScreen() {
     }
   };
 
-  /**
-   * @description Fetches transport lines from the OTP API based on user location.
-   * This function replaces both the previous `fetchBusLines` and `fetchTrainLines`.
-   */
+  // 🔹 Carica e raggruppa le linee (bus/treni)
   const fetchAndGroupLines = async (
-    userLocation: {
-      lat: number;
-      lon: number;
-    },
+    userLocation: {lat: number; lon: number},
     r: number,
   ) => {
     try {
       setError(null);
 
-      // Execute the GraphQL query with dynamic variables
       const data = await fetchGraphQL(LINES_QUERY, {
         lat: userLocation.lat,
         lon: userLocation.lon,
-        radius: r, // Search radius in meters
+        radius: r,
       });
 
       if (!data || !data.stopsByRadius) {
         setLines({});
         return;
       }
-
-      const uniqueLines: Record<string, TransportLine> = {};
-
-      const normalizeRef = (route: any) => {
-        const ref = (
-          route.shortName ||
-          route.longName ||
-          route.gtfsId ||
-          ''
-        ).trim();
-        return ref.replace(/\s+/g, ' ').toUpperCase(); // per dedupe case-insensitive
-      };
 
       const dedup = new Map<string, TransportLine & {ids: string[]}>();
 
@@ -199,34 +155,48 @@ export default function LinesScreen() {
             ? normalizeOperatorName(route.agency.name)
             : 'Sconosciuto';
 
-          const refNorm = normalizeRef(route);
+          // Prima/ultima fermata dal primo pattern disponibile
+          let from: string | null = null;
+          let to: string | null = null;
+          const patterns = route.patterns || [];
+          if (patterns.length > 0 && patterns[0].stops?.length >= 2) {
+            from = patterns[0].stops[0].name;
+            to = patterns[0].stops[patterns[0].stops.length - 1].name;
+          }
+
+          const ref = (
+            route.shortName ||
+            route.longName ||
+            route.gtfsId ||
+            ''
+          ).trim();
+          const refNorm = ref.replace(/\s+/g, ' ').toUpperCase();
           const key = `${operatorName}|${route.mode}|${refNorm}`;
 
           if (!dedup.has(key)) {
             dedup.set(key, {
               id: route.gtfsId,
-              ref: route.shortName || route.longName || route.gtfsId,
+              ref,
               name: route.longName,
               operator: operatorName,
               mode: route.mode,
+              from: from || undefined,
+              to: to || undefined,
               ids: [route.gtfsId],
-              refStopId: stopId, // 👈 salva fermata
-              refStopName: stopName, // 👈 salva fermata
+              refStopId: stopId,
+              refStopName: stopName,
             });
           } else {
             const cur = dedup.get(key)!;
             cur.ids.push(route.gtfsId);
             if (!cur.name && route.longName) cur.name = route.longName;
-            // se vuoi aggiornare la fermata solo se non c'è già:
-            if (!cur.refStopId) {
-              cur.refStopId = stopId;
-              cur.refStopName = stopName;
-            }
+            if (!cur.from && from) cur.from = from;
+            if (!cur.to && to) cur.to = to;
           }
         });
       });
 
-      // 2) Grouping per operatore
+      // 🔹 Raggruppa per operatore
       const grouped: GroupedLines = {};
       Array.from(dedup.values()).forEach(line => {
         const operator = line.operator || 'Sconosciuto';
@@ -234,10 +204,10 @@ export default function LinesScreen() {
         grouped[operator].push(line);
       });
 
-      // 3) Ordina in modo "umano" (10 dopo 9, non dopo 1)
+      // 🔹 Ordina per nome linea
       Object.keys(grouped).forEach(operator => {
         grouped[operator].sort((a, b) =>
-          a.ref.localeCompare(b.ref, undefined, {
+          (a.ref || '').localeCompare(b.ref || '', undefined, {
             numeric: true,
             sensitivity: 'base',
           }),
@@ -252,9 +222,7 @@ export default function LinesScreen() {
     }
   };
 
-  /**
-   * @description Initializes geolocation on component mount.
-   */
+  // 🔹 Inizializza la geolocalizzazione
   useEffect(() => {
     const initLocation = async () => {
       try {
@@ -277,9 +245,7 @@ export default function LinesScreen() {
     initLocation();
   }, []);
 
-  /**
-   * @description Fetches data when the location is available.
-   */
+  // 🔹 Carica linee appena disponibile la posizione
   useEffect(() => {
     if (!location) return;
     const loadLines = async () => {
@@ -290,19 +256,15 @@ export default function LinesScreen() {
     loadLines();
   }, [location, radius]);
 
-  /**
-   * @description Handles pull-to-refresh action.
-   */
+  // 🔹 Refresh manuale
   const onRefresh = async () => {
     if (!location) return;
     setRefreshing(true);
-    await fetchAndGroupLines(location, radius); // <-- usa il radius corrente
+    await fetchAndGroupLines(location, radius);
     setRefreshing(false);
   };
 
-  /**
-   * @description Renders the list of lines filtered by the selected transport mode.
-   */
+  // 🔹 Rendering lista linee
   const renderLines = () => {
     const linesToDisplay = Object.entries(lines).reduce(
       (acc, [operator, list]) => {
@@ -310,11 +272,9 @@ export default function LinesScreen() {
           if (value === 'bus') return line.mode === 'BUS';
           if (value === 'train')
             return line.mode === 'RAIL' || line.mode === 'SUBWAY';
-          return true; // For other tabs, e.g., favorites
+          return true;
         });
-        if (filteredList.length > 0) {
-          acc[operator] = filteredList;
-        }
+        if (filteredList.length > 0) acc[operator] = filteredList;
         return acc;
       },
       {} as GroupedLines,
@@ -328,6 +288,7 @@ export default function LinesScreen() {
         </View>
       );
     }
+
     if (error) {
       return (
         <View style={styles.centerContainer}>
@@ -335,6 +296,7 @@ export default function LinesScreen() {
         </View>
       );
     }
+
     if (Object.keys(linesToDisplay).length === 0 && !loading) {
       return (
         <View style={styles.centerContainer}>
@@ -357,55 +319,48 @@ export default function LinesScreen() {
             <Text style={[styles.operatorTitle, {color: theme.colors.primary}]}>
               {operator}
             </Text>
-            {linesToDisplay[operator].map(line => {
-              const dirLabel = getDirectionLabel(line.name || line.ref);
-
-              return (
-                <TouchableRipple
-                  key={line.id}
-                  onPress={() =>
-                    navigation.navigate('LineDetail', {
-                      routeId: line.id,
-                      ref: line.ref,
-                      name: line.name,
-                      operator: line.operator,
-                      mode: line.mode,
-                      referenceStopId: line.refStopId,
-                      referenceStopName: line.refStopName,
-                      // opzionale: passiamo anche la direzione
-                      directionLabel: dirLabel || undefined,
-                    })
-                  }
-                  rippleColor="rgba(0,0,0,0.1)"
-                  style={styles.lineRow}
-                  borderless>
-                  <View
-                    style={{flexDirection: 'row', alignItems: 'flex-start'}}>
-                    <Text
-                      style={[styles.lineRef, {color: theme.colors.secondary}]}>
-                      {line.ref}
+            {linesToDisplay[operator].map(line => (
+              <TouchableRipple
+                key={line.id}
+                onPress={() =>
+                  navigation.navigate('LineDetail', {
+                    routeId: line.id,
+                    ref: line.ref,
+                    name: line.name,
+                    operator: line.operator,
+                    mode: line.mode,
+                    referenceStopId: line.refStopId,
+                    referenceStopName: line.refStopName,
+                    from: line.from,
+                    to: line.to,
+                  })
+                }
+                rippleColor="rgba(0,0,0,0.1)"
+                style={styles.lineRow}
+                borderless>
+                <View style={{flexDirection: 'row', alignItems: 'flex-start'}}>
+                  <Text
+                    style={[styles.lineRef, {color: theme.colors.secondary}]}>
+                    {line.ref}
+                  </Text>
+                  <View style={styles.lineInfo}>
+                    <Text style={styles.lineName}>
+                      {line.name || `Linea ${line.ref}`}
                     </Text>
-                    <View style={styles.lineInfo}>
-                      <Text style={styles.lineName}>
-                        {dirLabel ?? (line.name || `Linea ${line.mode}`)}
+
+                    {line.from && line.to ? (
+                      <Text style={styles.lineSubtitle}>
+                        {line.from} → {line.to}
                       </Text>
-
-                      {line.refStopName && (
-                        <Text style={styles.lineSubtitle}>
-                          Fermata: {line.refStopName}
-                        </Text>
-                      )}
-
-                      {line.from && line.to && (
-                        <Text style={styles.lineSubtitle}>
-                          {line.from} ↔ {line.to}
-                        </Text>
-                      )}
-                    </View>
+                    ) : line.refStopName ? (
+                      <Text style={styles.lineSubtitle}>
+                        Fermata: {line.refStopName}
+                      </Text>
+                    ) : null}
                   </View>
-                </TouchableRipple>
-              );
-            })}
+                </View>
+              </TouchableRipple>
+            ))}
           </View>
         )}
         contentContainerStyle={styles.listContainer}
@@ -414,6 +369,7 @@ export default function LinesScreen() {
     );
   };
 
+  // 🔹 UI principale
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
@@ -466,7 +422,7 @@ export default function LinesScreen() {
               mode="outlined"
               onPress={() => setMenuVisible(true)}
               style={styles.radiusBtn}
-              contentStyle={{height: CONTROL_HEIGHT}} // 👈 forza la stessa altezza
+              contentStyle={{height: CONTROL_HEIGHT}}
               labelStyle={{fontWeight: 'bold'}}>
               {radius < 1000 ? `${radius} m` : '1 km'}
             </Button>
@@ -494,23 +450,23 @@ export default function LinesScreen() {
   );
 }
 
+// 🔹 STILI
 const styles = StyleSheet.create({
   container: {flex: 1, padding: 16},
   topBar: {
     flexDirection: 'row',
-    alignItems: 'center', // 👈 centra verticalmente
+    alignItems: 'center',
     gap: 8,
-    marginBottom: 12, // spaziatura sotto la top bar
+    marginBottom: 12,
   },
   segmentedWrap: {
     flex: 1,
-    height: CONTROL_HEIGHT, // 👈 stessa altezza
-    justifyContent: 'center', // centra i tab verticalmente
+    height: CONTROL_HEIGHT,
+    justifyContent: 'center',
   },
   radiusBtn: {
-    borderRadius: CONTROL_HEIGHT / 2, // look ovale coerente
+    borderRadius: CONTROL_HEIGHT / 2,
   },
-  segmented: {marginBottom: 20},
   content: {flex: 1},
   title: {marginBottom: 10, fontWeight: 'bold'},
   operatorBlock: {marginBottom: 20},
@@ -532,18 +488,9 @@ const styles = StyleSheet.create({
     minWidth: 60,
     textAlign: 'center',
   },
-  lineInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  lineName: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  lineSubtitle: {
-    fontSize: 13,
-    color: '#666',
-  },
+  lineInfo: {flex: 1, marginLeft: 12},
+  lineName: {fontSize: 15, fontWeight: '600'},
+  lineSubtitle: {fontSize: 13, color: '#666'},
   centerContainer: {
     flex: 1,
     justifyContent: 'center',

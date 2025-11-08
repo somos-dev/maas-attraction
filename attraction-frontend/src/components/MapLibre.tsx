@@ -8,12 +8,12 @@ import { useStopsStore } from '@/store/stopsStore';
 import { Route } from '@/app/api/plan-trip/route';
 import { useRoutesStore } from '@/store/routesStore';
 import { useFetchRoutes } from '@/hooks/use-fetch-routes';
-import { useShouldFetchStore } from '@/store/shouldFetchStore';
-import { set } from 'date-fns';
 import { useInputStateStore } from '@/store/inputsStateStore';
 import { reverseNominatim } from '@/hooks/use-nomination';
+import { useAdminStore } from '@/store/adminStore';
+import { tripHistoryToGeoJSON } from '@/utils/adminUtils';
+import { useGetTripHistoryQuery } from '@/redux/services/tripHistoryApi';
 
-// Types
 interface Coordinate {
   lat: number;
   lon: number;
@@ -21,6 +21,7 @@ interface Coordinate {
 
 interface MapLibreProps {
   onMapClick: (lat: number, lng: number) => void;
+  isAdminMode?: boolean;
 }
 
 interface TransportConfig {
@@ -35,9 +36,7 @@ const MAPTILER_API_KEY = 'FcUd8A9NfAmbxojT9gM7';
 const MAP_STYLES = {
   streets: `https://api.maptiler.com/maps/streets/style.json?key=${MAPTILER_API_KEY}`,
   satellite: `https://api.maptiler.com/maps/satellite/style.json?key=${MAPTILER_API_KEY}`,
-  // terrain: `https://api.maptiler.com/maps/terrain/style.json?key=${MAPTILER_API_KEY}`,
   osm: `https://api.maptiler.com/maps/openstreetmap/style.json?key=${MAPTILER_API_KEY}`,
-  // dark: `https://api.maptiler.com/maps/dark/style.json?key=${MAPTILER_API_KEY}`
 };
 
 const TRANSPORT_CONFIG: Record<string, TransportConfig> = {
@@ -60,6 +59,9 @@ export const getMapStyle = (style: string): string => {
 const getTransportConfig = (mode: string): TransportConfig => {
   return TRANSPORT_CONFIG[mode] || TRANSPORT_CONFIG.other;
 };
+
+const HEATMAP_ZOOM_THRESHOLD = 14;
+
 
 // Function to calculate midpoint of a LineString
 const calculateMidpoint = (coordinates: [number, number][]): [number, number] => {
@@ -107,30 +109,61 @@ const calculateMidpoint = (coordinates: [number, number][]): [number, number] =>
 
 const MapLibre: React.FC<MapLibreProps> = ({
   onMapClick,
+  isAdminMode = false,
 }) => {
   // Refs and state
   const mapContainer = useRef<HTMLDivElement>(null);
   const { map, originMarker, destinationMarker } = useMap();
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const routeLayersRef = useRef<Set<string>>(new Set());
-  const { routes, selectedRouteIndex, setRoutes, setSelectedRouteIndex } = useRoutesStore()
-  const { shouldFetch, toggleShouldFetch, setShouldFetch } = useShouldFetchStore()
+  const stopsListenersAttached = useRef(false);
+  const imageLoadedRef = useRef(false);
+  const { routes, selectedRouteIndex} = useRoutesStore()
+  const heatmapInitializedRef = useRef(false); // Track if heatmap is initialized
 
-  const prevCoords = useRef<{origin: Coordinate | null, destination: Coordinate | null}>({origin: null, destination: null});
-  // Store hooks
+
+  const prevCoords = useRef<{ origin: Coordinate | null, destination: Coordinate | null }>({ origin: null, destination: null });
+  
   const { setOrigin, setDestination, origin, destination } = useLocationStore();
   const { is3D, mapView, setMapView, mapStyle } = useMapStore();
   const { stopsGeoJson, loading, fetchStops } = useStopsStore();
   const { fetchRoutes } = useFetchRoutes()
+    const { tripHistory, setTripHistory } = useAdminStore()
+    
+    // Fetch trip history using RTK Query when in admin mode
+    const { data: tripHistoryData, isLoading: isTripHistoryLoading } = useGetTripHistoryQuery(undefined, {
+      skip: !isAdminMode, // Only fetch when admin mode is enabled
+    });
 
   const { originInputText, setDestInputText, setOriginInputText, destInputText } = useInputStateStore()
+
+    // Helper function to set layer visibility
+    const setLayerVisibility = useCallback((layerId: string, visibility: 'visible' | 'none') => {
+      if (!map.current) return;
+      
+      try {
+        if (map.current.getLayer(layerId)) {
+          map.current.setLayoutProperty(layerId, 'visibility', visibility);
+        }
+      } catch (error) {
+        console.warn(`Error setting visibility for layer ${layerId}:`, error);
+      }
+    }, []);
 
   // Initialize stops data once
   useEffect(() => {
     if (!loading && (!stopsGeoJson.features || stopsGeoJson.features.length === 0)) {
       fetchStops();
     }
-  }, []);
+  }, [loading, stopsGeoJson, fetchStops]);
+
+    // Store trip history data from RTK Query into Zustand store
+    useEffect(() => {
+      if (tripHistoryData && tripHistoryData.length > 0) {
+        console.log('Trip history fetched from API:', tripHistoryData.length, 'trips');
+        setTripHistory(tripHistoryData);
+      }
+    }, [tripHistoryData, setTripHistory]);
 
   // Initialize map only once
   useEffect(() => {
@@ -211,20 +244,19 @@ const MapLibre: React.FC<MapLibreProps> = ({
     if (!map.current || !isMapLoaded) return;
 
     map.current.setStyle(getMapStyle(mapStyle));
+    
 
-    // Re-add layers after style loads
-    map.current.once('styledata', () => {
-      // Wait for style to fully load before re-adding layers
-      setTimeout(() => {
-        initializeStopsLayer();
-        if (is3D) {
-          add3DBuildingsLayer();
-        }
-        // Re-add route layers
-        renderRoutes();
-        // Re-add markers
-        updateMarkers();
-      }, 100);
+    map.current.once('idle', () => {
+    if(isAdminMode) {
+      initializeHeatmapLayer();
+      initializeStopsLayer();
+      handleLayerVisibility()
+    }else {
+      initializeStopsLayer();
+    }
+      if (is3D) add3DBuildingsLayer();
+      renderRoutes();
+      updateMarkers();
     });
   }, [mapStyle]);
 
@@ -254,113 +286,7 @@ const MapLibre: React.FC<MapLibreProps> = ({
     }
   }, [is3D, isMapLoaded]);
 
-  // Initialize stops layer
-  const initializeStopsLayer = useCallback(async () => {
-    if (!map.current || !stopsGeoJson.features?.length) return;
-
-    try {
-      // Check if source already exists and remove it
-      if (map.current.getSource('stops')) {
-        // Remove existing layers first
-        ['clusters', 'cluster-count', 'unclustered-point'].forEach(layerId => {
-          if (map.current!.getLayer(layerId)) {
-            try {
-              map.current!.removeLayer(layerId);
-            } catch (error) {
-              console.warn(`Error removing layer ${layerId}:`, error);
-            }
-          }
-        });
-
-        // Remove source
-        try {
-          map.current.removeSource('stops');
-        } catch (error) {
-          console.warn('Error removing stops source:', error);
-        }
-      }
-
-      // Check if custom marker image already exists
-      if (!map.current.getImage('custom-marker')) {
-        try {
-          const image = await map.current.loadImage('https://maplibre.org/maplibre-gl-js/docs/assets/osgeo-logo.png');
-          map.current.addImage('custom-marker', image.data);
-        } catch (error) {
-          console.warn('Error loading custom marker image:', error);
-        }
-      }
-
-      // Add stops source
-      map.current.addSource('stops', {
-        type: 'geojson',
-        data: stopsGeoJson,
-        cluster: true,
-        clusterMaxZoom: 14,
-        clusterRadius: 40,
-      });
-
-      // Add cluster layers
-      map.current.addLayer({
-        id: 'clusters',
-        type: 'circle',
-        source: 'stops',
-        filter: ['has', 'point_count'],
-        paint: {
-          'circle-color': [
-            'step',
-            ['get', 'point_count'],
-            '#51bbd6',
-            50, '#f1f075',
-            100, '#f28cb1',
-            457, '#d7263d'
-          ],
-          'circle-radius': [
-            'step',
-            ['get', 'point_count'],
-            20,
-            50, 20,
-            100, 30,
-            457, 40
-          ]
-        },
-      });
-
-      map.current.addLayer({
-        id: 'cluster-count',
-        type: 'symbol',
-        source: 'stops',
-        filter: ['has', 'point_count'],
-        layout: {
-          'text-field': '{point_count_abbreviated}',
-          'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
-          'text-size': 12,
-        },
-      });
-
-      // Only add unclustered-point layer if custom-marker image exists
-      if (map.current.getImage('custom-marker')) {
-        map.current.addLayer({
-          id: "unclustered-point",
-          // id: "stop-point",
-          type: "symbol",
-          source: "stops",
-          filter: ["!", ["has", "point_count"]],
-          layout: {
-            'icon-image': 'custom-marker',
-            'text-offset': [0, 1.25],
-            'text-anchor': 'top'
-          }
-        });
-      }
-
-      // Add event listeners
-      addStopsEventListeners();
-    } catch (error) {
-      console.error('Error initializing stops layer:', error);
-    }
-  }, [stopsGeoJson]);
-
-  // Add stops event listeners
+  // stops event listeners
   const addStopsEventListeners = useCallback(() => {
     if (!map.current) return;
 
@@ -427,6 +353,299 @@ const MapLibre: React.FC<MapLibreProps> = ({
       }
     });
   }, []);
+
+  // Initialize heatmap layer for trip history
+  const initializeHeatmapLayer = useCallback(() => {
+    if (!map.current || !tripHistory || tripHistory.length === 0) {
+      console.log('No trip history data for heatmap');
+      return;
+    }
+
+    // Prevent double initialization
+    if (heatmapInitializedRef.current && map.current.getLayer('trip-heatmap')) {
+      console.log('Heatmap already initialized, skipping...');
+      return;
+    }
+
+    try {
+      // Remove existing heatmap layers if they exist
+      ['trip-heatmap', 'trip-heatmap-origin', 'trip-heatmap-destination'].forEach(layerId => {
+        if (map.current!.getLayer(layerId)) {
+          map.current!.removeLayer(layerId);
+        }
+      });
+
+      // Remove existing sources
+      ['trip-heatmap-data', 'trip-origin-data', 'trip-destination-data'].forEach(sourceId => {
+        if (map.current!.getSource(sourceId)) {
+          map.current!.removeSource(sourceId);
+        }
+      });
+
+      // Convert trip history to GeoJSON (both origins and destinations)
+      const tripGeoJSON = tripHistoryToGeoJSON(tripHistory, 'both') as GeoJSON.FeatureCollection;
+
+      console.log('Trip history GeoJSON:', tripGeoJSON.features.length, 'points');
+
+      // Add trip heatmap source
+      map.current.addSource('trip-heatmap-data', {
+        type: 'geojson',
+        data: tripGeoJSON,
+      });
+
+      // Determine where to insert the layer
+      // Try to add before 'clusters', but if it doesn't exist, just add normally
+      let beforeLayerId: string | undefined;
+      if (map.current.getLayer('clusters')) {
+        beforeLayerId = 'clusters';
+      } else if (map.current.getLayer('waterway')) {
+        beforeLayerId = 'waterway';
+      }
+
+      // Add heatmap layer for all trips
+      const heatmapLayer: any = {
+        id: 'trip-heatmap',
+        type: 'heatmap',
+        source: 'trip-heatmap-data',
+        paint: {
+          // Increase weight for better visibility
+          'heatmap-weight': 1,
+          // Increase intensity as zoom level increases
+          'heatmap-intensity': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            0, 1,
+            HEATMAP_ZOOM_THRESHOLD, 0.5
+          ],
+          // Color ramp for heatmap - Blue (low) to Red (high)
+          'heatmap-color': [
+            'interpolate',
+            ['linear'],
+            ['heatmap-density'],
+            0, 'rgba(33,102,172,0)',
+            0.2, 'rgb(103,169,207)',
+            0.4, 'rgb(209,229,240)',
+            0.6, 'rgb(253,219,199)',
+            0.8, 'rgb(239,138,98)',
+            1, 'rgb(178,24,43)'
+          ],
+          // Adjust the heatmap radius by zoom level
+          'heatmap-radius': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            0, 3,
+            5, 10,
+            10, 20,
+            HEATMAP_ZOOM_THRESHOLD, 30
+          ],
+          // Transition from heatmap to circle layer by zoom level
+          'heatmap-opacity': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            7, 0.8,
+            HEATMAP_ZOOM_THRESHOLD - 1, 0.6,
+            HEATMAP_ZOOM_THRESHOLD, 0
+          ]
+        }
+      };
+
+      // Add layer with or without beforeId
+      if (beforeLayerId) {
+        map.current.addLayer(heatmapLayer, beforeLayerId);
+        console.log(`Trip history heatmap layer added before '${beforeLayerId}'`);
+      } else {
+        map.current.addLayer(heatmapLayer);
+        console.log('Trip history heatmap layer added without beforeId');
+      }
+
+      // Mark as initialized
+      heatmapInitializedRef.current = true;
+      console.log('Trip history heatmap layer initialized successfully');
+    } catch (error) {
+      console.error('Error initializing trip history heatmap layer:', error);
+      heatmapInitializedRef.current = false;
+    }
+  }, [tripHistory]);
+
+
+  const initializeStopsLayer = useCallback(async () => {
+    const m = map.current;
+    if (!m || !stopsGeoJson?.features?.length) return;
+
+    // Ensure the custom marker image exists (with proper race condition handling)
+    try {
+      if (!m.hasImage('custom-marker') && !imageLoadedRef.current) {
+        imageLoadedRef.current = true; // Set flag before async operation
+        const img = await m.loadImage(
+          'https://maplibre.org/maplibre-gl-js/docs/assets/osgeo-logo.png'
+        );
+        // Check again after async operation completes
+        if (!m.hasImage('custom-marker')) {
+          m.addImage('custom-marker', img.data);
+        }
+      }
+    } catch (e: any) {
+      // Reset flag on error
+      imageLoadedRef.current = false;
+      // If a concurrent call added it already, that's fine
+      if (!String(e?.message || '').includes('already exists')) {
+        console.warn('addImage(custom-marker) failed:', e);
+      }
+    }
+
+    // Source: update if present, otherwise add
+    const src = m.getSource('stops') as maplibregl.GeoJSONSource | undefined;
+    if (src) {
+      src.setData(stopsGeoJson as any);
+    } else {
+      m.addSource('stops', {
+        type: 'geojson',
+        data: stopsGeoJson,
+        cluster: true,
+        clusterMaxZoom: 14,
+        clusterRadius: 40,
+      });
+    }
+
+    // Helper: add layer only if it doesn't exist
+    const ensureLayer = (spec: maplibregl.LayerSpecification) => {
+      if (!m.getLayer(spec.id)) m.addLayer(spec);
+    };
+
+    // Layers: add if missing (no remove/re-add churn)
+    ensureLayer({
+      id: 'clusters',
+      type: 'circle',
+      source: 'stops',
+      filter: ['has', 'point_count'],
+      paint: {
+        'circle-color': [
+          'step',
+          ['get', 'point_count'],
+          '#51bbd6',
+          50,
+          '#f1f075',
+          100,
+          '#f28cb1',
+          457,
+          '#d7263d',
+        ],
+        'circle-radius': [
+          'step',
+          ['get', 'point_count'],
+          20,
+          50,
+          20,
+          100,
+          30,
+          457,
+          40,
+        ],
+      },
+    });
+
+    ensureLayer({
+      id: 'cluster-count',
+      type: 'symbol',
+      source: 'stops',
+      filter: ['has', 'point_count'],
+      layout: {
+        'text-field': '{point_count_abbreviated}',
+        'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+        'text-size': 12,
+      },
+    });
+
+    if (m.hasImage('custom-marker')) {
+      ensureLayer({
+        id: 'unclustered-point',
+        type: 'symbol',
+        source: 'stops',
+        filter: ['!', ['has', 'point_count']],
+        layout: {
+          'icon-image': 'custom-marker',
+          'text-offset': [0, 1.25],
+          'text-anchor': 'top',
+        },
+      });
+    }
+
+    // Event listeners: attach once
+    if (!stopsListenersAttached.current) {
+      addStopsEventListeners();
+      stopsListenersAttached.current = true;
+    }
+  }, [stopsGeoJson, addStopsEventListeners]);
+
+  // Handle layer visibility based on admin mode and zoom level
+  const handleLayerVisibility = useCallback(() => {
+    if (!map.current || !isMapLoaded) return;
+
+    const currentZoom = map.current.getZoom();
+
+    if (isAdminMode) {
+      if (currentZoom < HEATMAP_ZOOM_THRESHOLD) {
+        // Low zoom: show heatmap, hide stops
+        setLayerVisibility('trip-heatmap', 'visible');
+        setLayerVisibility('clusters', 'none');
+        setLayerVisibility('cluster-count', 'none');
+        setLayerVisibility('unclustered-point', 'none');
+        console.log('Admin mode: Showing trip heatmap (zoom < 14)');
+      } else {
+        // High zoom: hide heatmap, show stops
+        setLayerVisibility('trip-heatmap', 'none');
+        setLayerVisibility('clusters', 'visible');
+        setLayerVisibility('cluster-count', 'visible');
+        setLayerVisibility('unclustered-point', 'visible');
+        console.log('Admin mode: Showing stops (zoom >= 14)');
+      }
+    } else {
+      // User mode: hide heatmap, always show stops
+      setLayerVisibility('trip-heatmap', 'none');
+      setLayerVisibility('clusters', 'visible');
+      setLayerVisibility('cluster-count', 'visible');
+      setLayerVisibility('unclustered-point', 'visible');
+      console.log('User mode: Showing stops only');
+    }
+  }, [isAdminMode, isMapLoaded, setLayerVisibility]);
+
+  // Handle admin mode changes
+  useEffect(() => {
+    if (!map.current || !isMapLoaded) return;
+    
+    // Initialize heatmap when entering admin mode
+    if (isAdminMode && tripHistory.length > 0) {
+      // delay to ensure all layers are ready
+      const timer = setTimeout(() => {
+        initializeHeatmapLayer();
+        handleLayerVisibility();
+      }, 300);
+      
+      return () => clearTimeout(timer);
+    } else {
+      handleLayerVisibility();
+    }
+  }, [isAdminMode, isMapLoaded, tripHistory, handleLayerVisibility, initializeHeatmapLayer]);
+
+  // Zoom event listener for dynamic layer switching
+  useEffect(() => {
+    if (!map.current || !isMapLoaded) return;
+
+    const handleZoom = () => {
+      handleLayerVisibility();
+    };
+
+    map.current.on('zoom', handleZoom);
+
+    return () => {
+      if (map.current) {
+        map.current.off('zoom', handleZoom);
+      }
+    };
+  }, [isMapLoaded, handleLayerVisibility]);
 
   // Add 3D buildings layer
   const add3DBuildingsLayer = useCallback(() => {
@@ -677,19 +896,10 @@ const MapLibre: React.FC<MapLibreProps> = ({
       marker.current.remove();
       marker.current = null;
     }
-    
-      // const iconPath = type === 'Origin' ? '/images/Official-logos/UI-detailed/flag-grey.png' : '/images/Official-logos/UI-detailed/icone_flag.png';
 
-      // const el = document.createElement('div');
-      // el.style.backgroundImage = `url(${iconPath})`;
-      // el.style.width = '60px';      // adjust size
-      // el.style.height = '60px';
-      // el.style.backgroundSize = 'contain';
-      // el.style.backgroundRepeat = 'no-repeat';
 
-    
     marker.current = new Marker({ color, draggable: true })
-    // marker.current = new Marker({ color, element: el, draggable: true })
+      // marker.current = new Marker({ color, element: el, draggable: true })
       .setLngLat([coord.lon, coord.lat])
       .setPopup(new maplibregl.Popup().setHTML(`<h3>${type}</h3>`))
       .addTo(map.current);
@@ -700,41 +910,25 @@ const MapLibre: React.FC<MapLibreProps> = ({
         const lngLat = marker.current.getLngLat();
         onDragEnd({ lat: lngLat.lat, lon: lngLat.lng });
 
-        // Reverse geocode to get the name/address
-        // const response = await fetch(
-        //   `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lngLat.lat}&lon=${lngLat.lng}`
-        // );
-        // const data = await response.json();
-        // const displayName = data.display_name || 'Unknown location';
-        // console.log(`Marker dragged to: ${displayName}`);
-
-        // Now you have both coordinates and the name
-        // if(type === 'Origin') {
-
-        // }
-        // if(type === 'Destination') {
-        // }
-        // setShouldFetch(true)
-
-        if(type === 'Origin'){
+        if (type === 'Origin') {
           if (routes.length > 0 && routes[0].fromStationName !== originInputText) {
             setOriginInputText(routes[0].fromStationName);
           }
           else {
             async function fetchname() {
-            if ( lngLat.lat && lngLat.lng) {
-              const placeName = await reverseNominatim(lngLat.lat, lngLat.lng);
-              if (placeName) {
-                setOriginInputText(placeName);
+              if (lngLat.lat && lngLat.lng) {
+                const placeName = await reverseNominatim(lngLat.lat, lngLat.lng);
+                if (placeName) {
+                  setOriginInputText(placeName);
+                }
               }
             }
+            fetchname()
           }
-          fetchname()
         }
-      }
-        if(type === 'Destination') {
+        if (type === 'Destination') {
           async function fetchname() {
-            if ( lngLat.lat && lngLat.lng) {
+            if (lngLat.lat && lngLat.lng) {
               const placeName = await reverseNominatim(lngLat.lat, lngLat.lng);
               if (placeName) {
                 setDestInputText(placeName);
@@ -786,52 +980,24 @@ const MapLibre: React.FC<MapLibreProps> = ({
     }
   }, [origin, destination, isMapLoaded, fitMapToBounds]);
 
-  // useEffect(() => {
-  //   if (
-  //     origin
-  //     &&
-  //     destination
-  //     // && 
-  //     // shouldFetch
-  //   ) {
-  //     console.log(`Origin: ${origin.lat}, ${origin.lon} | Destination: ${destination.lat}, ${destination.lon}`);
-  //     fetchRoutes();
-  //     setShouldFetch(false);
-  //   } else {
-  //     console.log("no origin or destination", origin, destination)
-  //   }
-  // }, [
-  //   origin,
-  //   destination
-  //   // shouldFetch,
-  // ]);
+  // Auto-fetch routes when origin/destination change
+  useEffect(() => {
+    if (
+      origin &&
+      destination &&
+      (
+        prevCoords.current.origin?.lat !== origin.lat ||
+        prevCoords.current.origin?.lon !== origin.lon ||
+        prevCoords.current.destination?.lat !== destination.lat ||
+        prevCoords.current.destination?.lon !== destination.lon
+      )
+    ) {
+      console.log(`Origin: ${origin.lat}, ${origin.lon} | Destination: ${destination.lat}, ${destination.lon}`);
 
-
-
-useEffect(() => {
-  if (
-    origin &&
-    destination &&
-    (
-      prevCoords.current.origin?.lat !== origin.lat ||
-      prevCoords.current.origin?.lon !== origin.lon ||
-      prevCoords.current.destination?.lat !== destination.lat ||
-      prevCoords.current.destination?.lon !== destination.lon
-    )
-  ) {
-    console.log(`Origin: ${origin.lat}, ${origin.lon} | Destination: ${destination.lat}, ${destination.lon}`);
-
-    fetchRoutes();
-    prevCoords.current = { origin, destination };
-  }
-}, [origin, destination]);
-
-  // useEffect(() => {
-  //   if(origin && destination) {
-  //     setShouldFetch(true)
-  //   }
-  // }, [origin,destination]);
-
+      fetchRoutes();
+      prevCoords.current = { origin, destination };
+    }
+  }, [origin, destination]);
 
   return (
     <div

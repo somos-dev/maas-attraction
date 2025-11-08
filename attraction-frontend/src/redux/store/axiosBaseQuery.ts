@@ -1,4 +1,3 @@
-// lib/axiosBaseQuery.ts
 import axios, { AxiosError, AxiosRequestConfig } from "axios";
 import { BaseQueryFn } from "@reduxjs/toolkit/query";
 import { getModalController } from "@/lib/modalController";
@@ -51,7 +50,7 @@ export const axiosBaseQuery = (): BaseQueryFn<
       } catch (refreshError) {
         console.log("Error refreshing token:", refreshError);
         localStorage.clear();
-        getModalController()?.onOpen(); // Open modal imperatively
+        getModalController()?.onOpen(); 
         return { error: refreshError };
       }
     }
@@ -62,7 +61,7 @@ export const axiosBaseQuery = (): BaseQueryFn<
       respMessage: error.response?.data
     };
 
-    return { error: safeError }; // ✅ serializable only
+    return { error: safeError }; 
   
   }
 };

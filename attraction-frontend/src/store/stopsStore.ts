@@ -59,7 +59,8 @@ export const useStopsStore = create<StopsState>()(
             name: "stops-storage-attraction",
             partialize: (state) => ({
                 stops: state.stops,
-                lastFetched: state.lastFetched
+                lastFetched: state.lastFetched,
+                stopsGeoJson: state.stopsGeoJson
             })
         }
     )

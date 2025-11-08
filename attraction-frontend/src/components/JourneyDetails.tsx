@@ -170,16 +170,26 @@ const JourneyDetails: React.FC<JourneyDetailsProps> = ({ selectedRoute }) => {
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getStepColor(step.type)}`}>
                     {getStepIcon(step.type)}
                   </div>
+                  <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary" className="text-xs font-medium">
                       {step.type.toUpperCase()}
                     </Badge>
-                    {step.route && (
+                    {step.bus_name  &&  (
                       <Badge className="text-xs bg-blue-600 hover:bg-blue-700 text-white">
-                        {String(translate('directions.route'))} {step.route}
+                        {step.bus_name}
                       </Badge>
                     )}
                   </div>
+                  <div className="flex items-center gap-2">
+                    
+                    {step.authority_name &&  (
+                      <Badge className="text-xs bg-blue-600 hover:bg-blue-700 text-white">
+                        {step.authority_name}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
                 </div>
                 <span className="text-sm font-medium text-gray-600">{step.duration}</span>
               </div>

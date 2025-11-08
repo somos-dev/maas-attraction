@@ -26,7 +26,7 @@ export const tripHistoryApi = createApi({
             }),
             providesTags: ['TripHistory'],
             transformResponse: (response: TripHistoryItem[]) => {
-                // Sort by most recent first
+                // Sort by recent first
                 return response.sort((a, b) => 
                     new Date(b.requested_at).getTime() - new Date(a.requested_at).getTime()
                 );

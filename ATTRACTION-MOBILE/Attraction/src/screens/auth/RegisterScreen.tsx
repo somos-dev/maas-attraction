@@ -177,7 +177,7 @@ export default function RegisterScreen({navigation}: Props) {
             {emailError && <Text style={styles.errorText}>{emailError}</Text>}
 
             {/* Codice Fiscale */}
-            <TextInput
+            {/* <TextInput
               label="Codice Fiscale (opzionale)"
               value={codiceFiscale}
               onChangeText={text => {
@@ -192,10 +192,10 @@ export default function RegisterScreen({navigation}: Props) {
             />
             {codiceFiscaleError && (
               <Text style={styles.errorText}>{codiceFiscaleError}</Text>
-            )}
+            )} */}
 
             {/* Tipo utente */}
-            <Menu
+            {/* <Menu
               visible={menuVisible}
               onDismiss={() => setMenuVisible(false)}
               anchor={
@@ -240,7 +240,7 @@ export default function RegisterScreen({navigation}: Props) {
                 }}
                 title="Altro"
               />
-            </Menu>
+            </Menu> */}
 
             {/* Password */}
             <TextInput

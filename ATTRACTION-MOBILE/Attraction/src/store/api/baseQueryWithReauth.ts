@@ -1,17 +1,18 @@
-import { fetchBaseQuery } from "@reduxjs/toolkit/query";
-import type { RootState } from "../store";
-import { updateAccessToken, clearAuth } from "../slices/authSlice";
-import { API_CONFIG } from "../../config/apiConfig";
+import {fetchBaseQuery} from '@reduxjs/toolkit/query';
+import type {RootState} from '../store';
+import {updateAccessToken, clearAuth} from '../slices/authSlice';
+import {API_CONFIG} from '../../config/apiConfig';
 
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: `${API_CONFIG.BASE_URL}auth/`,
-  prepareHeaders: (headers, { getState }) => {
+  prepareHeaders: (headers, {getState}) => {
     const token = (getState() as RootState).auth.access;
     if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
+      headers.set('Authorization', `Bearer ${token}`);
     }
+    console.log('Impostazione headers per richiesta API', token);
     Object.entries(API_CONFIG.HEADERS).forEach(([k, v]) =>
-      headers.set(k, v as string)
+      headers.set(k, v as string),
     );
     return headers;
   },
@@ -20,7 +21,7 @@ const rawBaseQuery = fetchBaseQuery({
 export const baseQueryWithReauth: typeof rawBaseQuery = async (
   args,
   api,
-  extraOptions
+  extraOptions,
 ) => {
   let result = await rawBaseQuery(args, api, extraOptions);
 
@@ -30,16 +31,16 @@ export const baseQueryWithReauth: typeof rawBaseQuery = async (
     if (refresh) {
       const refreshResult = await rawBaseQuery(
         {
-          url: "token/refresh/",
-          method: "POST",
-          body: { refresh },
+          url: 'token/refresh/',
+          method: 'POST',
+          body: {refresh},
         },
         api,
-        extraOptions
+        extraOptions,
       );
 
       if (refreshResult.data) {
-        const newAccess = (refreshResult.data as { access: string }).access;
+        const newAccess = (refreshResult.data as {access: string}).access;
         api.dispatch(updateAccessToken(newAccess));
 
         // ripeti la query originale

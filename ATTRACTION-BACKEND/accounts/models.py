@@ -5,10 +5,12 @@ class CustomUser(AbstractUser):
     WORKER = 'worker'
     STUDENT = 'student'
     OTHER = 'other'
+    ADMIN = 'admin'
     USER_TYPE_CHOICES = [
         (WORKER, 'Worker'),
         (STUDENT, 'Student'),
         (OTHER, 'Other'),
+        (ADMIN, 'Admin'),
     ]
 
     codice_fiscale = models.CharField(max_length=50, unique=True, blank=True, null=True)

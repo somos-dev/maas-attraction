@@ -123,7 +123,7 @@ EMAIL_HOST = 'mail.somos.srl'
 EMAIL_PORT = 465
 EMAIL_USE_SSL = True
 EMAIL_HOST_USER = 'noreply@somos.srl'
-EMAIL_HOST_PASSWORD = 'RBKx9@r=uXF[S@2025'
+EMAIL_HOST_PASSWORD = 'Ty-qsOs@43TW_25!'
 DEFAULT_FROM_EMAIL = 'noreply@somos.srl'
 
 
